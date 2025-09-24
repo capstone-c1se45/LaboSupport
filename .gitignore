@@ -72,7 +72,6 @@ Thumbs.db
 # Database & Storage
 # =========================
 # MySQL dumps
-*.sql
 *.bak
 
 # Uploaded files / contracts
