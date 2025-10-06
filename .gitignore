@@ -37,11 +37,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Virtual environment
-venv/
-.venv/
-env/
-ENV/
+
 
 # Python packaging
 *.egg

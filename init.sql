@@ -1,5 +1,9 @@
 -- MYSQL (8.0)
 -- c1se captone 1
+CREATE DATABASE IF NOT EXISTS db_labosupport;
+USE db_labosupport;
+
+
 CREATE TABLE IF NOT EXISTS Role (
   role_id CHAR(36) PRIMARY KEY,
   role_name VARCHAR(50) NOT NULL,

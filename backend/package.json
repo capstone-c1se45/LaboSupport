@@ -1,8 +1,14 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "directory": "https://github.com/capstone-c1se45/LaboSupport"
+  },
   "main": "index.js",
   "scripts": {
+   "start": "node -r dotenv-flow/config ./src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -10,12 +16,19 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "dotenv-flow": "^4.1.0",
     "express": "^5.1.0",
     "joi": "^18.0.1",
     "morgan": "^1.10.1",
     "mysql2": "^3.15.0",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0",
+    "winston-loki": "^6.1.3"
   }
 }
