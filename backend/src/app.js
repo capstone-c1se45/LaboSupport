@@ -30,9 +30,7 @@ app.use("/api", router);
 app.get("/", async (req, res) => {
   res.send("Hello World! this is backend server c1se45");
 });
-app.get("/api/users", (req, res) => {
-  res.json([{ id: 1, name: "Nhật" }]);
-});
+
 
 swaggerDocs(app, PORT);
 
