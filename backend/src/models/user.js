@@ -84,6 +84,14 @@ export const userModel = {
     return result.affectedRows > 0;
   },
 
+  async getUserByUsername(username) {
+    const [rows] = await pool.query(
+      "SELECT * FROM User WHERE username = ? AND is_active = TRUE",
+      [username]
+    );
+    return rows[0] || null;
+  },
+
   /**
    * 🔹 Kiểm tra đăng nhập
    */
