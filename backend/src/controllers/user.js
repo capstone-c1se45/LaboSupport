@@ -1,6 +1,11 @@
 import bcrypt from "bcryptjs";
 import { userModel } from "../models/user.js";
 import { nanoidNumbersOnly } from "../untils/nanoid.js";
+import { jwtService } from "../config/jwt.js";
+import { mailer } from "../config/nodemailer.js";
+
+// Bộ nhớ tạm lưu mã xác thực
+const verifyCodes = new Map();
 
 /**
  * Controller xử lý các API liên quan đến người dùng
@@ -37,33 +42,66 @@ export const userController = {
     }
   },
 
-  /**
-   * Tạo người dùng mới
-   */
-  async createUser(req, res) {
+  // 📨 Gửi mã xác nhận email
+  async sendVerifyCode(req, res) {
     try {
-      const { username, password, full_name, email, phone, role_id } = req.body;
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ message: "Thiếu email" });
 
-      if (!username || !password) {
-        return res.status(400).json({ message: "Thiếu username hoặc password" });
+      const code = Math.floor(100000 + Math.random() * 900000).toString(); // mã 6 số
+      verifyCodes.set(email, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
+
+      await mailer.sendMail({
+        from: `"LaboSupport" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: "Mã xác nhận đăng ký tài khoản",
+        text: `Mã xác nhận của bạn là: ${code} (hết hạn sau 5 phút)`,
+      });
+
+      res.status(200).json({ message: "Đã gửi mã xác nhận qua email" });
+    } catch (error) {
+      console.error("Error sendVerifyCode:", error);
+      res.status(500).json({ message: "Lỗi khi gửi mã xác nhận" });
+    }
+  },
+
+  
+
+  // ✅ Đăng ký người dùng (chỉ khi mã đúng)
+  async register(req, res) {
+    try {
+      const { username, password, full_name, email, phone, role_id, verify_code } = req.body;
+
+      if (!username || !password || !email || !verify_code)
+        return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+
+      const record = verifyCodes.get(email);
+      if (!record || record.code !== verify_code)
+        return res.status(400).json({ message: "Mã xác nhận không đúng" });
+
+      if (record.expires < Date.now()) {
+        verifyCodes.delete(email);
+        return res.status(400).json({ message: "Mã xác nhận đã hết hạn" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = {
         user_id: nanoidNumbersOnly(10),
         username,
-        password_hash: hashedPassword,
+        password: hashedPassword,
         full_name,
         email,
         phone,
-        role_id,
+        role_id: role_id || "1", // mặc định Nhân viên
       };
 
       const created = await userModel.createUser(newUser);
-      res.status(201).json(created);
+
+      verifyCodes.delete(email);
+      res.status(201).json({ message: "Đăng ký thành công", user: created });
     } catch (error) {
-      console.error("Error createUser:", error);
-      res.status(500).json({ message: "Lỗi khi tạo người dùng mới" });
+      console.error("Error register:", error);
+      res.status(500).json({ message: "Lỗi khi đăng ký người dùng" });
     }
   },
 
@@ -123,8 +161,11 @@ export const userController = {
         return res.status(401).json({ message: "Sai username hoặc password" });
       }
 
+      const token = jwtService.generateToken(user);
+
       res.status(200).json({
         message: "Đăng nhập thành công",
+        token, // trả về token
         user: {
           id: user.user_id,
           username: user.username,

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.js";
+import { authMiddleware } from "../middlewares/auth.js";
 
 const router = Router();
 
@@ -20,7 +21,13 @@ const router = Router();
  *       200:
  *         description: Thành công
  */
-router.get("/", userController.getAllUsers);
+router.get("/", authMiddleware.verifyToken, userController.getAllUsers);
+
+// Gửi mã xác nhận
+router.post("/send-verify-code", userController.sendVerifyCode);
+
+// Đăng ký với mã xác nhận
+router.post("/register", userController.register);
 
 /**
  * @openapi
@@ -41,7 +48,7 @@ router.get("/", userController.getAllUsers);
  *       404:
  *         description: Không tìm thấy người dùng
  */
-router.get("/:id", userController.getUserById);
+router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
 
 /**
  * @openapi
@@ -83,7 +90,6 @@ router.get("/:id", userController.getUserById);
  *       400:
  *         description: Thiếu dữ liệu
  */
-router.post("/", userController.createUser);
 
 /**
  * @openapi
@@ -117,7 +123,7 @@ router.post("/", userController.createUser);
  *       404:
  *         description: Không tìm thấy người dùng
  */
-router.put("/:id", userController.updateUser);
+router.put("/:id", authMiddleware.verifyToken, userController.updateUser);
 
 /**
  * @openapi
@@ -138,7 +144,7 @@ router.put("/:id", userController.updateUser);
  *       404:
  *         description: Không tìm thấy người dùng
  */
-router.delete("/:id", userController.deleteUser);
+router.delete("/:id", authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
 
 /**
  * @openapi
