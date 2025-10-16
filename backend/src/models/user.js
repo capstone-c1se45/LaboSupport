@@ -34,15 +34,14 @@ export const userModel = {
    */
   async createUser(data) {
     const id = nanoidNumbersOnly(12); // ví dụ sinh ID số dài 12 ký tự
-    const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const [result] = await pool.query(
-      `INSERT INTO User (user_id, username, password_hash, full_name, email, phone, role_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, data.username, hashedPassword, data.full_name, data.email, data.phone, data.role_id]
-    );
+  const [result] = await pool.query(
+    `INSERT INTO User (user_id, username, password_hash, full_name, email, phone, role_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, data.username, data.password, data.full_name, data.email, data.phone, data.role_id] // password đã được hash sẵn ở controller
+  );
 
-    return { user_id: id, affectedRows: result.affectedRows };
+  return { user_id: id, affectedRows: result.affectedRows };
   },
 
   /**

@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "JWT_SECRET=skibididopdop";
+const JWT_SECRET = process.env.JWT_SECRET || "skibididopdop";
 const JWT_EXPIRES = "1h"; // token có hiệu lực 1 tiếng
 
 export const jwtService = {
