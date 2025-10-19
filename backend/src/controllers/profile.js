@@ -19,7 +19,7 @@ export const profileController = {
   async updateProfile(req, res) {
     try {
       const userId = req.user.user_id;
-      const { full_name, phone } = req.body;
+      const { full_name, phone, dob, gender, address, occupation } = req.body;
 
       if (!full_name || !phone) {
         return responseHandler.badRequest(res, "Full name and phone are required");
@@ -33,6 +33,10 @@ export const profileController = {
       const updated = await profileModel.updateUserProfile(userId, {
         full_name,
         phone,
+        dob,
+        gender,
+        address,
+        occupation,
       });
 
       if (!updated) {
