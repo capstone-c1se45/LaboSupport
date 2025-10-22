@@ -37,6 +37,12 @@ __pycache__/
 *.pyo
 *.pyd
 
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+
 
 
 # Python packaging
