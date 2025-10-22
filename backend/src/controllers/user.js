@@ -65,7 +65,7 @@ export const userController = {
     }
   },
 
-  
+
 
   // ✅ Đăng ký người dùng (chỉ khi mã đúng)
   async register(req, res) {
@@ -161,15 +161,21 @@ export const userController = {
         return res.status(401).json({ message: "Sai username hoặc password" });
       }
 
-      const token = jwtService.generateToken(user);
+      // Tạo token với role
+      const token = jwtService.generateToken({
+        user_id: user.user_id,
+        username: user.username,
+        role_id: user.role_id,
+        role_name: user.role_name,
+      });
 
       res.status(200).json({
         message: "Đăng nhập thành công",
-        token, // trả về token
+        token,
         user: {
           id: user.user_id,
           username: user.username,
-          role: user.role_id,
+          role: user.role_name || (user.role_id == 2 ? "admin" : "user"),
         },
       });
     } catch (error) {
@@ -177,4 +183,21 @@ export const userController = {
       res.status(500).json({ message: "Lỗi khi đăng nhập" });
     }
   },
+
+  async getAllUsersWithProfile() {
+    const [rows] = await pool.query(`
+    SELECT 
+      u.user_id,
+      u.username,
+      u.full_name,
+      u.email,
+      u.phone,
+      r.role_name
+    FROM User u
+    LEFT JOIN Role r ON u.role_id = r.role_id
+  `);
+    return rows;
+  } 
+
+
 };

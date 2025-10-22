@@ -133,5 +133,9 @@ CREATE TABLE IF NOT EXISTS Audit_Log (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
 
-
+forgotpassword CREATE TABLE IF NOT EXISTS ForgotPassword (
+  username VARCHAR(100) PRIMARY KEY,
+  otp_code VARCHAR(10) NOT NULL,
+  expire_at DATETIME NOT NULL
+);
 

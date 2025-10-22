@@ -84,12 +84,16 @@ export const userModel = {
   },
 
   async getUserByUsername(username) {
-    const [rows] = await pool.query(
-      "SELECT * FROM User WHERE username = ? AND is_active = TRUE",
-      [username]
-    );
-    return rows[0] || null;
-  },
+  const [rows] = await pool.query(
+    `SELECT u.*, r.role_name
+     FROM User u
+     LEFT JOIN Role r ON u.role_id = r.role_id
+     WHERE u.username = ?`,
+    [username]
+  );
+  return rows[0];
+},
+
 
   /**
    * 🔹 Kiểm tra đăng nhập
@@ -105,4 +109,77 @@ export const userModel = {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     return isMatch ? user : null;
   },
+
+  async getAllUsersWithProfile() {
+  const [rows] = await pool.query(`
+    SELECT 
+      u.user_id,
+      u.username,
+      u.full_name,
+      u.email,
+      u.phone,
+      u.role_id,
+      r.role_name,
+      p.address,
+      p.gender,
+      p.dob,
+      p.occupation
+    FROM User u
+    LEFT JOIN Role r ON u.role_id = r.role_id
+    LEFT JOIN User_Profile p ON u.user_id = p.user_id
+  `);
+  return rows;
+},
+
+async updateUserWithProfile(user_id, data) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // build update cho User (chỉ cập nhật field có value)
+      const userFields = {
+        full_name: data.full_name,
+        email: data.email,
+        phone: data.phone,
+        role_id: data.role_id,
+        password_hash: data.password, // nếu bạn lưu tên field khác thì đổi lại
+        is_active: data.is_active,
+      };
+
+      const entries = Object.entries(userFields).filter(([, v]) => v !== undefined);
+      if (entries.length > 0) {
+        const cols = entries.map(([k]) => `${k} = ?`).join(", ");
+        const vals = entries.map(([, v]) => v);
+        await conn.query(`UPDATE User SET ${cols}, updated_at = NOW() WHERE user_id = ?`, [...vals, user_id]);
+      }
+
+      // profile
+      const { address, dob, gender, occupation } = data;
+      if (address || dob || gender || occupation) {
+        const [rows] = await conn.query(`SELECT profile_id FROM User_Profile WHERE user_id = ?`, [user_id]);
+        if (rows.length > 0) {
+          await conn.query(
+            `UPDATE User_Profile SET address = ?, dob = ?, gender = ?, occupation = ? WHERE user_id = ?`,
+            [address, dob, gender, occupation, user_id]
+          );
+        } else {
+          const profile_id = crypto.randomUUID();
+          await conn.query(
+            `INSERT INTO User_Profile (profile_id, user_id, dob, gender, address, occupation) VALUES (?, ?, ?, ?, ?, ?)`,
+            [profile_id, user_id, dob, gender, address, occupation]
+          );
+        }
+      }
+
+      await conn.commit();
+      return true;
+    } catch (err) {
+      await conn.rollback();
+      console.error("Error updateUserWithProfile:", err);
+      throw err;
+    } finally {
+      conn.release();
+    }
+  },
+
 };
