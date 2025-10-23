@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 // import Login from "./pages/Login";
-// import Register from "./pages/Register";
+ import RegisterPage from "./pages/RegisterPage";
 // import Dashboard from "./pages/Dashboard";
 // import Laws from "./pages/Laws";
 // import OCR from "./pages/OCR";
@@ -15,10 +15,10 @@ function App() {
       <Routes>
         {/* Home */}
         <Route path="/" element={<Home />} />
-
+        <Route path="/register" element={<RegisterPage />} />
         {/* Auth
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <Route path="/register" element={<RegisterPage />} />
 
         {/* Main features */}
         {/* <Route path="/dashboard" element={<Dashboard />} />
