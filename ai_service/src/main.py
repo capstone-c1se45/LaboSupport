@@ -4,13 +4,15 @@ import requests, os
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx
 from vector_store import query_law
 from typing import List, Dict
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI()
 
 LM_STUDIO_API = "http://localhost:1234/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-20b"  
 
-
+executor = ThreadPoolExecutor()
 chat_sessions: Dict[str, List[Dict[str, str]]] = {}
 
 
@@ -91,60 +93,110 @@ Trình bày bằng tiếng Việt dễ hiểu.
 
     return {"summary": answer}
 
+def ask_model_sync(messages):
+    payload = {"model": MODEL_NAME, "messages": messages}
+    res = requests.post(LM_STUDIO_API, json=payload, timeout=600)
+    res.raise_for_status()
+    result = res.json()
+    return result.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-# 💬 API chat (hỏi đáp luật)
+# # 💬 API chat (hỏi đáp luật)
+# @app.post("/chat")
+# async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
+#     message = message.strip()
+#     if not message:
+#         return {"error": "Tin nhắn không được để trống."}
+
+#     # --- Khởi tạo lịch sử chat nếu chưa có ---
+#     if session_id not in chat_sessions:
+#         chat_sessions[session_id] = [
+#             {"role": "system", "content": "Bạn là chuyên gia pháp lý Việt Nam, am hiểu Bộ luật Lao động 2019."}
+#         ]
+
+#     # --- Tìm điều luật liên quan ---
+#     related_laws = query_law(message, top_k=3)
+#     law_context = "\n\n".join(
+#         [f"Điều {l['article_number']}: {l['article_title']}\n{l['content']}" for l in related_laws]
+#     )
+
+#     # --- Tạo prompt hợp nhất ---
+#     prompt = f"""
+# Câu hỏi: {message}
+
+# --- Điều luật liên quan ---
+# {law_context}
+
+# Yêu cầu:
+# - Trả lời bằng tiếng Việt dễ hiểu.
+# - Dẫn điều luật nếu có.
+# - Nếu không có quy định phù hợp, trả lời: "Không có quy định cụ thể trong Bộ luật Lao động 2019".
+# """
+
+#     # --- Thêm vào lịch sử ---
+#     chat_sessions[session_id].append({"role": "user", "content": prompt})
+
+#     # --- Gọi model ---
+#     try:
+#         # Chạy model trong thread (không block FastAPI)
+#         loop = asyncio.get_event_loop()
+#         answer = await loop.run_in_executor(executor, ask_model_sync, chat_sessions[session_id])
+#     except Exception as e:
+#         return {"error": f"Lỗi khi gọi LM Studio API: {e}"}
+
+#     # --- Lưu phản hồi vào lịch sử ---
+#     chat_sessions[session_id].append({"role": "assistant", "content": answer})
+
+#     return {
+#         "session_id": session_id,
+#         "user_message": message,
+#         "ai_reply": answer,
+#         "related_articles": related_laws,
+#         "history_count": len(chat_sessions[session_id])
+#     }
+
 @app.post("/chat")
 async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
     message = message.strip()
     if not message:
         return {"error": "Tin nhắn không được để trống."}
 
-    # --- Khởi tạo lịch sử chat nếu chưa có ---
+    # Nếu chưa có hội thoại, khởi tạo
     if session_id not in chat_sessions:
         chat_sessions[session_id] = [
-            {"role": "system", "content": "Bạn là chuyên gia pháp lý Việt Nam, am hiểu Bộ luật Lao động 2019."}
+            {
+                "role": "system",
+                "content": (
+                    "Bạn là chuyên gia pháp lý Việt Nam, am hiểu Bộ luật Lao động 2019. "
+                    "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "
+                    "Không dùng từ chuyên môn phức tạp trừ khi cần thiết."
+                )
+            }
         ]
 
-    # --- Tìm điều luật liên quan ---
-    related_laws = query_law(message, top_k=3)
-    law_context = "\n\n".join(
-        [f"Điều {l['article_number']}: {l['article_title']}\n{l['content']}" for l in related_laws]
-    )
+    # Thêm tin nhắn mới vào hội thoại
+    chat_sessions[session_id].append({"role": "user", "content": message})
 
-    # --- Tạo prompt hợp nhất ---
-    prompt = f"""
-Câu hỏi: {message}
-
---- Điều luật liên quan ---
-{law_context}
-
-Yêu cầu:
-- Trả lời bằng tiếng Việt dễ hiểu.
-- Dẫn điều luật nếu có.
-- Nếu không có quy định phù hợp, trả lời: "Không có quy định cụ thể trong Bộ luật Lao động 2019".
-"""
-
-    # --- Thêm vào lịch sử ---
-    chat_sessions[session_id].append({"role": "user", "content": prompt})
-
-    # --- Gọi model ---
     try:
-        answer = ask_model(chat_sessions[session_id])
+        loop = asyncio.get_event_loop()
+        answer = await loop.run_in_executor(executor, ask_model_sync, chat_sessions[session_id])
     except Exception as e:
         return {"error": f"Lỗi khi gọi LM Studio API: {e}"}
 
-    # --- Lưu phản hồi vào lịch sử ---
+    answer = answer.strip()
+    if len(answer) > 600:  # quá dài, cắt bớt phần dư
+        answer = answer[:600].rsplit('.', 1)[0] + "."
+
+    # Lưu phản hồi
     chat_sessions[session_id].append({"role": "assistant", "content": answer})
 
     return {
         "session_id": session_id,
         "user_message": message,
         "ai_reply": answer,
-        "related_articles": related_laws,
-        "history_count": len(chat_sessions[session_id])
+        "history_count": len(chat_sessions[session_id]),
     }
 
-# 🔄 API reset chat (xóa lịch sử phiên)
+# API reset chat (xóa lịch sử phiên)
 @app.post("/reset_chat")
 def reset_chat(session_id: str = Form("default")):
     if session_id in chat_sessions:
