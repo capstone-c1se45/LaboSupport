@@ -5,17 +5,17 @@ from typing import List, Dict
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import json
-from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx
-from vector_store import query_law
+from internal_analysis import generate_internal_report 
+from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
+from vector_store import query_law 
 
 
 GEMINI_API_KEY = "AIzaSyB0GGFyJLAytwEUGQk8ztw4nXjQQeAwEFU" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
-GEMINI_CHAT_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_CHAT}:generateContent?key={GEMINI_API_KEY}"
-
+# GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
+# GEMINI_CHAT_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_CHAT}:generateContent?key={GEMINI_API_KEY}"
 
 
 app = FastAPI()
@@ -29,7 +29,14 @@ def read_root():
 def call_gemini_api(messages: List[Dict[str, str]], model_url: str):
     
     gemini_contents = []
+    system_instruction = None
+    
     for msg in messages:
+        # Tách System message ra khỏi contents
+        if msg['role'] == 'system':
+            system_instruction = msg['content']
+            continue
+            
         role = 'model' if msg['role'] == 'assistant' else 'user'
         gemini_contents.append({
             "role": role,
@@ -40,10 +47,8 @@ def call_gemini_api(messages: List[Dict[str, str]], model_url: str):
         "contents": gemini_contents,
     }
     
-    system_instruction = next((msg['content'] for msg in messages if msg['role'] == 'system'), None)
     if system_instruction:
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
-        payload["contents"] = [c for c in gemini_contents if c['role'] != 'system']
 
     headers = {
         "Content-Type": "application/json"
@@ -57,10 +62,10 @@ def call_gemini_api(messages: List[Dict[str, str]], model_url: str):
     answer = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
     return answer
 
-# 📄 PHÂN TÍCH HỢP ĐỒNG (SỬ DỤNG GEMINI 2.5 PRO)
+#PHÂN TÍCH HỢP ĐỒNG
+#api phân tích
 @app.post("/analyze_contract")
 async def analyze_contract(file: UploadFile = File(...)):
-    """API phân tích hợp đồng lao động từ file PDF/DOCX"""
     
     os.makedirs("uploads", exist_ok=True)
     file_path = os.path.join("uploads", file.filename)
@@ -78,7 +83,6 @@ async def analyze_contract(file: UploadFile = File(...)):
                 file_bytes = f.read()
             contract_text = extract_text_from_pdf_bytes(file_bytes)
         except Exception:
-             # Xử lý lỗi trích xuất PDF
             raise HTTPException(status_code=400, detail="Lỗi trích xuất văn bản từ file PDF.")
             
     elif file.filename.endswith(".docx"):
@@ -128,15 +132,14 @@ async def analyze_contract(file: UploadFile = File(...)):
 
 
 def call_gemini_api_sync(messages: List[Dict[str, str]]):
-  
+    
     model_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_CHAT}:generateContent?key={GEMINI_API_KEY}"
     
     return call_gemini_api(messages, model_url)
 
-# 💬 API chat (hỏi đáp luật, sử dụng GEMINI 2.5 FLASH)
+# 💬 API chat (hỏi đáp luật)
 @app.post("/chat")
 async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
-    """API hỏi đáp luật - bản rút gọn, không dùng query_law"""
 
     message = message.strip()
     if not message:
@@ -147,18 +150,37 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
             {
                 "role": "system",
                 "content": (
-                    "Bạn là chuyên gia pháp lý Việt Nam, am hiểu Bộ luật Lao động 2019. "
+                    "Bạn là chuyên gia pháp lý Việt Nam, am hiểu **duy nhất về Bộ luật Lao động 2019**. "
+                    "Nhiệm vụ của bạn chỉ là trả lời các câu hỏi liên quan đến Luật Lao động. "
+                    "Nếu người dùng hỏi về bất kỳ chủ đề nào khác (ví dụ: công thức nấu ăn, tin tức, lịch sử, toán học, luật dân sự, luật hình sự, v.v.), "
+                    "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động.' " # THAY ĐỔI LỚN
+                    
+                    "Hãy chú ý phân tích các thông tin được cung cấp trong phần 'PHÂN TÍCH NỘI BỘ' và 'Điều luật liên quan' để trả lời. "
                     "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "
                     "Chỉ dẫn điều luật khi thật sự cần thiết."
-                    "Và đưa ra những điều luật liên quan nếu có thể."
                 )
             }
         ]
 
-    # 2. Thêm câu hỏi người dùng vào lịch sử
-    chat_sessions[session_id].append({"role": "user", "content": message})
+    # Phân tích Nội bộ: Nhận dạng các thực thể pháp lý trong câu hỏi người dùng
+    internal_report = generate_internal_report(message)
 
-    # 3. Gọi model AI (qua Gemini hoặc LM Studio)
+
+
+    rag_prompt = f"""
+    Câu hỏi người dùng: {message}
+
+    {internal_report}
+    
+ 
+
+    Yêu cầu:
+    - Dựa vào các điều luật và thông tin phân tích nội bộ để trả lời câu hỏi người dùng.
+    - Trả lời bằng tiếng Việt dễ hiểu, không lặp lại nguyên văn luật, và không cần lặp lại "Điều luật liên quan" hay "PHÂN TÍCH NỘI BỘ".
+    """
+    
+    chat_sessions[session_id].append({"role": "user", "content": rag_prompt})
+
     try:
         loop = asyncio.get_event_loop()
         answer = await loop.run_in_executor(executor, call_gemini_api_sync, chat_sessions[session_id])
@@ -171,26 +193,23 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API (Chat): {e}")
 
-    # 4. Làm gọn phản hồi nếu quá dài
     answer = answer.strip()
     if len(answer) > 800:
         answer = answer[:800].rsplit('.', 1)[0] + "."
 
-    # 5. Lưu phản hồi vào lịch sử hội thoại
     chat_sessions[session_id].append({"role": "assistant", "content": answer})
 
-    # 6. Trả kết quả cho client
     return {
         "session_id": session_id,
         "user_message": message,
         "ai_reply": answer,
+        "internal_entities": internal_report.splitlines()[1:-1] if internal_report else [],
         "history_count": len(chat_sessions[session_id]),
     }
 
 # API reset chat (xóa lịch sử phiên)
 @app.post("/reset_chat")
 def reset_chat(session_id: str = Form("default")):
-    """API xóa lịch sử chat của một phiên"""
     if session_id in chat_sessions:
         del chat_sessions[session_id]
         return {"message": f"Đã xóa lịch sử chat của phiên {session_id}."}
