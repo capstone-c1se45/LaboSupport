@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import { api } from "../lib/api-client";
 // import { useNavigate } from "react-router-dom"; // Đã xóa
 
 // Dummy image URL for left artwork; replace with your own if needed:
@@ -59,16 +59,7 @@ const SocialIcons = () => (
   </div>
 );
 
-function mockApi(endpoint, payload) {
-  // Mocked API: POST '/api/send-otp' returns {success: true} 80% of the time, else failure
-  //             POST '/api/verify-otp' returns {success: true} 80% of the time, else failure
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (Math.random() < 0.8) resolve({ data: { success: true } });
-      else reject({ response: { data: { message: "API error, please try again." } } });
-    }, 1200);
-  });
-}
+// Removed mockApi; using real backend APIs via api-client
 
 const OTP_COOLDOWN = 60; // 60s resend timer
 
@@ -147,7 +138,11 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       // Mock sending OTP
-      await mockApi("/api/send-otp", { email, password });
+      const resp = await api.post("/users/send-verify-code", { email });
+      if (resp?.data?.code) {
+        setOtp(resp.data.code);
+        setToast({ type: "success", message: `OTP (dev): ${resp.data.code}` });
+      }
       setStep("otp");
       setOtp(""); // Clear any previous OTP
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
@@ -168,7 +163,7 @@ const RegisterPage = () => {
     setOtpLoading(true);
     setOtpError("");
     try {
-      await mockApi("/api/verify-otp", { email, otp });
+      await api.post("/users/register", { username, password, email, verify_code: otp });
       // Success: store role & navigate
       localStorage.setItem("role", "Người dùng đã đăng ký");
       setToast({ type: "success", message: "Đăng ký thành công!" });
@@ -189,7 +184,11 @@ const RegisterPage = () => {
     setOtpLoading(true);
     setOtpError("");
     try {
-      await mockApi("/api/send-otp", { email, password });
+      const resp = await api.post("/users/send-verify-code", { email });
+      if (resp?.data?.code) {
+        setOtp(resp.data.code);
+        setToast({ type: "success", message: `OTP (dev): ${resp.data.code}` });
+      }
       setOtpResendCooldown(OTP_COOLDOWN);
       setToast({ type: "success", message: "OTP mới đã được gửi!" });
     } catch (err) {
@@ -507,4 +506,3 @@ export default RegisterPage;
  * 3. Make sure your main.jsx is wrapped in BrowserRouter and you have Tailwind installed.
  * 4. Ready to test! Adjust illustrationUrl as you like.
  */
-
