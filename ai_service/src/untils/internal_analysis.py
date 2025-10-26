@@ -7,8 +7,8 @@ from typing import Dict, List
 LEGAL_ENTITY_PATTERNS = {
     "LUAT": r"(bộ\s*luật|luật|nghị\s*định|thông\s*tư|hiến\s*pháp)\s*[a-zA-Z0-9\s]*",
     "DIEU_KHOAN": r"(điều\s*\d+|khoản\s*\d+|mục\s*\d+)",
-    "LOAI_HOP_DONG": r"(hợp\s*đồng\s*không\s*xác\s*định\s*thời\s*hạn|hợp\s*đồng\s*xác\s*định\s*thời\s*hạn|hợp\s*đồng\s*lao\s*động|thử\s*việc)", # CHỨC NĂNG MỚI
-    "CHAM_DUT": r"(chấm\s*dứt\s*hợp\s*đồng|đơn\s*phương\s*chấm\s*dứt|thôi\s*việc)", # CHỨC NĂNG MỚI
+    "LOAI_HOP_DONG": r"(hợp\s*đồng\s*không\s*xác\s*định\s*thời\s*hạn|hợp\s*đồng\s*xác\s*định\s*thời\s*hạn|hợp\s*đồng\s*lao\s*động|thử\s*việc)",
+    "CHAM_DUT": r"(chấm\s*dứt\s*hợp\s*đồng|đơn\s*phương\s*chấm\s*dứt|thôi\s*việc)",
     "THOI_HAN": r"(thời\s*hạn|ngày\s*hết\s*hạn|tháng\s*bao\s*lâu)",
     "QUYEN_LOI": r"(quyền\s*lợi|phụ\s*cấp|bảo\s*hiểm|nghỉ\s*phép|lương)",
     "NGHIA_VU": r"(nghĩa\s*vụ|trách\s*nhiệm|bồi\s*thường)",
