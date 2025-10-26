@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
+import AiTool from "./pages/AiTool";
 // import Login from "./pages/Login";
  import RegisterPage from "./pages/RegisterPage";
 // import Dashboard from "./pages/Dashboard";
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         {/* Home */}
         <Route path="/" element={<Home />} />
+        <Route path="/ai-tool" element={<AiTool />} />
         <Route path="/register" element={<RegisterPage />} />
         {/* Auth
         <Route path="/login" element={<Login />} />
