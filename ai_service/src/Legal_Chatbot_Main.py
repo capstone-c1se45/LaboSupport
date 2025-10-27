@@ -195,8 +195,8 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
         raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API (Chat): {e}")
 
     answer = answer.strip()
-    if len(answer) > 800:
-        answer = answer[:800].rsplit('.', 1)[0] + "."
+    # if len(answer) > 800:
+    #     answer = answer[:800].rsplit('.', 1)[0] + "."
 
     chat_sessions[session_id].append({"role": "assistant", "content": answer})
 

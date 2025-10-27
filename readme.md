@@ -82,7 +82,7 @@ PORT=5000
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASS=123456
+DB_PASS=captone1@se45
 DB_NAME=workerguard
 JWT_SECRET=supersecret
 

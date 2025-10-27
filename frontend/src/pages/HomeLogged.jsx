@@ -50,7 +50,7 @@ export default function HomeLogged() {
         </div>
         <nav className='flex-1 p-3 text-sm'>
           <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'><HomeIcon/> Trang Chính</a>
-          <a href='/guest-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><AiIcon/> Trợ lý AI</a>
+          <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><AiIcon/> Trợ lý AI</a>
           <a href='#' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><CalcIcon/> Tính lương/thuế</a>
           <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><UserIcon/> Hồ sơ cá nhân</a>
           <a href='#' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><BellIcon/> Thông báo</a>

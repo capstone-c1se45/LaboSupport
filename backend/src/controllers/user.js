@@ -92,7 +92,7 @@ export const userController = {
         full_name,
         email,
         phone,
-        role_id: role_id || "1", // mặc định Nhân viên
+        role_id: role_id || "0527428348936424", // mặc định Nhân viên
       };
 
       const created = await userModel.createUser(newUser);

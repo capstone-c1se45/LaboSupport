@@ -13,6 +13,7 @@ import Logout from "./pages/Logout";
 // import Chat from "./pages/Chat";
 // import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
+import UserChat from "./pages/UserChat";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         {/* Home */}
         <Route path="/" element={<LandingHome />} />
         <Route path="/guest-chat" element={<GuestChat />} />
+        <Route path="/user-chat" element={<UserChat />} />
         <Route path="/home" element={<HomeLogged />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />
