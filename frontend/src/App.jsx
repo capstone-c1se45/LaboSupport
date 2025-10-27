@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingHome from "./pages/LandingHome";
 import GuestChat from "./pages/GuestChat";
+import HomeLogged from "./pages/HomeLogged";
+import Profile from "./pages/Profile";
 import LoginPage from "./pages/LoginPage";
 import Logout from "./pages/Logout";
 // import Login from "./pages/Login";
@@ -19,6 +21,8 @@ function App() {
         {/* Home */}
         <Route path="/" element={<LandingHome />} />
         <Route path="/guest-chat" element={<GuestChat />} />
+        <Route path="/home" element={<HomeLogged />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/logout" element={<Logout />} />

@@ -55,7 +55,7 @@ export default function LoginPage() {
       storeToken(token);
       setToast({ type: 'success', message: 'Đăng nhập thành công!' });
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.href = '/home';
       }, 500);
     } catch (err) {
       const msg = err?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';

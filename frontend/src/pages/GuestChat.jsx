@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../lib/api-client';
+
 const USE_BACKEND = import.meta.env.VITE_USE_AI_BACKEND === '1';
 
-// Simple inline SVG icons (no external deps)
 const BotIcon = ({ className = 'w-8 h-8 text-blue-600' }) => (
   <svg className={className} viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>
     <path d='M12 2a1 1 0 011 1v1.05A7.002 7.002 0 0119 11v4a4 4 0 01-4 4h-1a2 2 0 11-4 0H9a4 4 0 01-4-4v-4a7.002 7.002 0 016-6.95V3a1 1 0 011-1zm-5 9a5 5 0 005 5h2a5 5 0 005-5v-.5a5.5 5.5 0 10-12 0V11z' />
@@ -23,7 +23,6 @@ const CopyIcon = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
-// Guest AI call with graceful mock fallback
 async function askGuestAI({ question, history }) {
   const mock = async () => {
     await new Promise((r) => setTimeout(r, 500));
@@ -35,27 +34,22 @@ async function askGuestAI({ question, history }) {
   };
 
   if (!USE_BACKEND) return mock();
-
   try {
     const resp = await api.post('/ai/guest-chat', { question, history });
     return resp.data;
-  } catch (_err) {
+  } catch {
     return mock();
   }
 }
 
 export default function GuestChat() {
   const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        'Xin chào! Tôi là trợ lý AI Pháp Lý. Hãy đặt câu hỏi về luật lao động Việt Nam, tôi sẽ hỗ trợ ngay lập tức.'
-    }
+    { role: 'assistant', content: 'Xin chào! Tôi là trợ lý AI Pháp Lý. Hãy đặt câu hỏi về luật lao động Việt Nam.' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const listRef = useRef(null);
   const [copiedIdx, setCopiedIdx] = useState(-1);
+  const listRef = useRef(null);
 
   const suggestions = useMemo(
     () => [
@@ -87,28 +81,20 @@ export default function GuestChat() {
 
     const history = messages.concat(userMsg).slice(-10);
     const data = await askGuestAI({ question: content, history });
-    const assistantMsg = {
-      role: 'assistant',
-      content: data?.answer || 'Xin loi, toi chua co cau tra loi.'
-    };
+    const assistantMsg = { role: 'assistant', content: data?.answer || 'Xin lỗi, tôi chưa có câu trả lời.' };
     setMessages((prev) => [...prev, assistantMsg]);
     setLoading(false);
   }
 
-  // Auto-ask if query param "q" is provided (from Home quick input)
   const { search } = useLocation();
   useEffect(() => {
     const q = new URLSearchParams(search).get('q');
-    if (q) {
-      // slight delay to allow initial render
-      setTimeout(() => handleSend(q), 50);
-    }
+    if (q) setTimeout(() => handleSend(q), 50);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   return (
     <div className='min-h-screen bg-gray-50'>
-      {/* Minimal top bar for guests */}
       <header className='border-b bg-white'>
         <div className='max-w-6xl mx-auto px-4 h-14 flex items-center justify-between'>
           <div className='flex items-center gap-2 select-none'>
@@ -117,6 +103,7 @@ export default function GuestChat() {
           </div>
           <nav className='hidden sm:flex items-center gap-6 text-sm text-gray-600'>
             <a href='/' className='hover:text-gray-900'>Trang chủ</a>
+            <a href='/guest-chat' className='text-gray-900 font-medium'>AI Chat (Khách)</a>
             <a href='#features' className='hover:text-gray-900'>Tính năng</a>
             <a href='#about' className='hover:text-gray-900'>Giới thiệu</a>
           </nav>
@@ -128,7 +115,6 @@ export default function GuestChat() {
       </header>
 
       <main className='max-w-5xl mx-auto px-4 py-10'>
-        {/* Hero */}
         <section className='text-center mb-8'>
           <h1 className='text-[34px] md:text-[40px] font-extrabold leading-tight text-gray-900'>
             Giải Đáp Mọi Thắc Mắc
@@ -140,9 +126,7 @@ export default function GuestChat() {
           </p>
         </section>
 
-        {/* Chat card */}
         <section className='bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in'>
-          {/* Header */}
           <div className='px-5 py-4 border-b flex items-center gap-3'>
             <span className='p-2 bg-blue-50 rounded-full'><BotIcon /></span>
             <div>
@@ -151,23 +135,17 @@ export default function GuestChat() {
             </div>
           </div>
 
-          {/* Suggestions */}
           <div className='px-5 py-3 border-b'>
             <div className='text-xs text-gray-500 mb-2'>Gợi ý câu hỏi phổ biến:</div>
             <div className='flex flex-wrap gap-2'>
               {suggestions.map((s, idx) => (
-                <button
-                  key={idx}
-                  className='text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full'
-                  onClick={() => handleSend(s)}
-                >
+                <button key={idx} className='text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full' onClick={() => handleSend(s)}>
                   {s}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Messages */}
           <div ref={listRef} className='px-5 py-5 h-[48vh] overflow-y-auto bg-gray-50/60 chat-scroll'>
             <ul className='space-y-4'>
               {messages.map((m, i) => (
@@ -214,58 +192,24 @@ export default function GuestChat() {
             </ul>
           </div>
 
-          {/* Input */}
-          <form
-            className='px-4 py-4 border-t bg-white flex gap-2'
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-          >
-            <input
-              type='text'
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder='Nhập câu hỏi của bạn...'
-              className='flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-blue-500'
-            />
-            <button
-              type='submit'
-              disabled={loading || !input.trim()}
-              className='inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md'
-            >
+          <form className='px-4 py-4 border-t bg-white flex gap-2' onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+            <input type='text' value={input} onChange={(e) => setInput(e.target.value)} placeholder='Nhập câu hỏi của bạn...' className='flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-blue-500' />
+            <button type='submit' disabled={loading || !input.trim()} className='inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md'>
               <SendIcon /> Gửi
             </button>
           </form>
         </section>
-        
-        {/* Feature cards */}
+
         <section id='features' className='mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5'>
           {[
-            {
-              title: 'Phân tích hợp đồng',
-              desc: 'AI phân tích hợp đồng lao động, phát hiện rủi ro và cảnh báo điều khoản bất lợi.',
-              color: 'text-blue-600',
-            },
-            {
-              title: 'Tính lương & thuế',
-              desc: 'Tính toán lương Gross/Net, thuế TNCN và các khoản bảo hiểm chính xác.',
-              color: 'text-indigo-600',
-            },
-            {
-              title: 'Tính BHXH',
-              desc: 'Tính quyền lợi bảo hiểm xã hội: lương hưu, thai sản, ốm đau...',
-              color: 'text-emerald-600',
-            },
-            {
-              title: 'Tư vấn AI 24/7',
-              desc: 'Chat với AI để được tư vấn mọi vấn đề pháp lý lao động bất cứ lúc nào.',
-              color: 'text-purple-600',
-            },
+            { title: 'Phân tích hợp đồng', desc: 'AI phân tích hợp đồng lao động, phát hiện rủi ro và cảnh báo điều khoản bất lợi.', color: 'text-blue-600' },
+            { title: 'Tính lương & thuế', desc: 'Tính toán lương Gross/Net, thuế TNCN và các khoản bảo hiểm chính xác.', color: 'text-indigo-600' },
+            { title: 'Tính BHXH', desc: 'Tính quyền lợi bảo hiểm xã hội: lương hưu, thai sản, ốm đau...', color: 'text-emerald-600' },
+            { title: 'Tư vấn AI 24/7', desc: 'Chat với AI để được tư vấn mọi vấn đề pháp lý lao động bất cứ lúc nào.', color: 'text-purple-600' },
           ].map((f, i) => (
             <div key={i} className='bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
               <div className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center mb-3 ${f.color}`}>
-                <svg className='w-6 h-6' viewBox='0 0 24 24' fill='currentColor'><rect x='4' y='4' width='16' height='16' rx='3'/></svg>
+                <svg className='w-6 h-6' viewBox='0 0 24 24' fill='currentColor'><rect x='4' y='4' width='16' height='16' rx='3' /></svg>
               </div>
               <div className='font-semibold text-gray-800'>{f.title}</div>
               <div className='text-sm text-gray-600 mt-1'>{f.desc}</div>
@@ -273,7 +217,6 @@ export default function GuestChat() {
           ))}
         </section>
 
-        {/* CTA banner */}
         <section className='mt-12'>
           <div className='rounded-2xl bg-blue-600 text-white p-8 text-center'>
             <div className='text-lg font-semibold'>Sẵn sàng trải nghiệm đầy đủ tính năng?</div>
@@ -286,7 +229,6 @@ export default function GuestChat() {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className='mt-14 border-t pt-8 text-sm text-gray-600'>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
             <div>
@@ -312,3 +254,4 @@ export default function GuestChat() {
     </div>
   );
 }
+

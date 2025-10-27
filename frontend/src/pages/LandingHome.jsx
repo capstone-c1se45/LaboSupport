@@ -36,6 +36,7 @@ export default function LandingHome() {
           </div>
           <nav className='hidden sm:flex items-center gap-6 text-sm text-gray-600'>
             <a href='/' className='hover:text-gray-900'>Trang chủ</a>
+            <a href='/guest-chat' className='hover:text-gray-900'>AI Chat (Khách)</a>
             <a href='#features' className='hover:text-gray-900'>Tính năng</a>
             <a href='#about' className='hover:text-gray-900'>Giới thiệu</a>
           </nav>
