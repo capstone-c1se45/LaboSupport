@@ -44,7 +44,7 @@ async function askGuestAI({ question, history }) {
   }
 }
 
-export default function AiTool() {
+export default function GuestChat() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',

@@ -6,7 +6,7 @@ const BotIcon = ({ className = 'w-8 h-8 text-blue-600' }) => (
   </svg>
 );
 
-export default function Home() {
+export default function LandingHome() {
   const [q, setQ] = useState('');
   const suggestions = useMemo(
     () => [
@@ -22,7 +22,7 @@ export default function Home() {
   function goAsk(text) {
     const query = encodeURIComponent((text ?? q).trim());
     if (!query) return;
-    window.location.href = `/ai-tool?q=${query}`;
+    window.location.href = `/guest-chat?q=${query}`;
   }
 
   return (
@@ -165,4 +165,3 @@ export default function Home() {
     </div>
   );
 }
-

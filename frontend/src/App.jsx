@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import AiTool from "./pages/AiTool";
+import LandingHome from "./pages/LandingHome";
+import GuestChat from "./pages/GuestChat";
+import LoginPage from "./pages/LoginPage";
+import Logout from "./pages/Logout";
 // import Login from "./pages/Login";
  import RegisterPage from "./pages/RegisterPage";
 // import Dashboard from "./pages/Dashboard";
@@ -15,9 +17,11 @@ function App() {
     <Router>
       <Routes>
         {/* Home */}
-        <Route path="/" element={<Home />} />
-        <Route path="/ai-tool" element={<AiTool />} />
+        <Route path="/" element={<LandingHome />} />
+        <Route path="/guest-chat" element={<GuestChat />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/logout" element={<Logout />} />
         {/* Auth
         <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
