@@ -1,7 +1,7 @@
 // backend/src/controllers/aiController.js
 import axios from 'axios';
 import { chatLogModel } from '../models/chatLog.js';
-import responseHandler from "../untils/response.js"; 
+import responseHandler from "../utils/response.js"; 
 import dotenvFlow from "dotenv-flow";
 
 dotenvFlow.config();
