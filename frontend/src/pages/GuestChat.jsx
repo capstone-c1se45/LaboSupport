@@ -165,7 +165,9 @@ export default function GuestChat() {
                             await navigator.clipboard.writeText(m.content);
                             setCopiedIdx(i);
                             setTimeout(() => setCopiedIdx(-1), 1200);
-                          } catch {}
+                          } catch(err) {
+                            console.error("Failed to copy text:", err);
+                          }
                         }}
                         className='absolute -top-2 -right-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-600 rounded p-1 shadow-sm'
                         aria-label='Copy'

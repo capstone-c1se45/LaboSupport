@@ -7,12 +7,21 @@ import router from "./routes/index.js";
 import swaggerDocs from "./swagger.js";
 import { createServer } from "http";
 import cookieParser from "cookie-parser"
-
+import { pool } from "./config/mysql.js";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
 
 const PORT = process.env.PORT || 3000;
+
+try {
+  const connection = await pool.getConnection();
+  console.log("✅ Đã kết nối MySQL thành công!");
+  connection.release(); // Trả lại pool
+} catch (error) {
+  console.error("❌ Lỗi kết nối MySQL:", error.message);
+}
+
 
 
 app.use(cookieParser());
