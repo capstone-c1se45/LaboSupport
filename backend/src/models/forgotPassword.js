@@ -1,5 +1,5 @@
 import {pool} from "../config/mysql.js";
-import { createCustomNanoid } from "../untils/nanoid.js";
+import { createCustomNanoid } from "../utils/nanoid.js";
 
 export const forgotPasswordModel = {
   async createOTP(username, otpCode, expireAt) {

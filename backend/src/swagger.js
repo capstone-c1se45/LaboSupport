@@ -1,7 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { readFileSync } from "fs";
-import { logger } from "./untils/logger.js";
+import { logger } from "./utils/logger.js";
 
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url)));
 const options = {

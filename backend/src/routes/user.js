@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.js";
 import { authMiddleware } from "../middlewares/auth.js";
+import { validateRegister, validateLogin } from "../middlewares/validateUser.js"; // thêm middleware validate
 
 const router = Router();
 
@@ -23,11 +24,11 @@ const router = Router();
  */
 router.get("/", authMiddleware.verifyToken, userController.getAllUsers);
 
-// Gửi mã xác nhận
+// 📨 Gửi mã xác nhận email
 router.post("/send-verify-code", userController.sendVerifyCode);
 
-// Đăng ký với mã xác nhận
-router.post("/register", userController.register);
+// 📝 Đăng ký (validate đầu vào trước khi gọi controller)
+router.post("/register", validateRegister, userController.register);
 
 /**
  * @openapi
@@ -49,47 +50,6 @@ router.post("/register", userController.register);
  *         description: Không tìm thấy người dùng
  */
 router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
-
-/**
- * @openapi
- * /api/users:
- *   post:
- *     summary: Tạo người dùng mới
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - password
- *             properties:
- *               username:
- *                 type: string
- *                 example: "nhat123"
- *               password:
- *                 type: string
- *                 example: "123456"
- *               full_name:
- *                 type: string
- *                 example: "Trần Nhật"
- *               email:
- *                 type: string
- *                 example: "nhat@example.com"
- *               phone:
- *                 type: string
- *                 example: "0987654321"
- *               role_id:
- *                 type: string
- *                 example: "1"
- *     responses:
- *       201:
- *         description: Tạo người dùng thành công
- *       400:
- *         description: Thiếu dữ liệu
- */
 
 /**
  * @openapi
@@ -144,7 +104,12 @@ router.put("/:id", authMiddleware.verifyToken, userController.updateUser);
  *       404:
  *         description: Không tìm thấy người dùng
  */
-router.delete("/:id", authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
+router.delete(
+  "/:id",
+  authMiddleware.verifyToken,
+  authMiddleware.isAdmin,
+  userController.deleteUser
+);
 
 /**
  * @openapi
@@ -174,6 +139,7 @@ router.delete("/:id", authMiddleware.verifyToken, authMiddleware.isAdmin, userCo
  *       401:
  *         description: Sai username hoặc password
  */
-router.post("/login", userController.login);
+// ✅ validate login trước khi gọi controller
+router.post("/login", validateLogin, userController.login);
 
 export default router;

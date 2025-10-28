@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { nanoidNumbersOnly } from "../untils/nanoid.js";
+import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import { pool } from "../config/mysql.js";
 
 export const userModel = {
@@ -14,6 +14,11 @@ export const userModel = {
       [userId]
     );
     return rows.length ? rows[0] : null;
+  },
+
+   async getUserByEmail(email) {
+    const [rows] = await pool.query("SELECT * FROM User WHERE email = ?", [email]);
+    return rows[0];
   },
 
   /**

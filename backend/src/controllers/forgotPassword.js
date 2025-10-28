@@ -1,8 +1,9 @@
 import { userModel } from "../models/user.js";
 import { forgotPasswordModel } from "../models/forgotPassword.js";
-import { mailer } from "../config/nodemailer.js"; // ✅ sửa import
-import { nanoidNumbersOnly } from "../untils/nanoid.js";
+import { mailer } from "../config/nodemailer.js"; // sửa import
+import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import bcrypt from "bcrypt";
+import { validator } from "../utils/validator.js";
 
 export const forgotPasswordController = {
   // 📩 Gửi mã OTP

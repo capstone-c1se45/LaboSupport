@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { userModel } from "../models/user.js";
-import { nanoidNumbersOnly } from "../untils/nanoid.js";
+import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import { jwtService } from "../config/jwt.js";
 import { mailer } from "../config/nodemailer.js";
 
@@ -68,42 +68,52 @@ export const userController = {
 
 
   // ✅ Đăng ký người dùng (chỉ khi mã đúng)
-  async register(req, res) {
-    try {
-      const { username, password, full_name, email, phone, role_id, verify_code } = req.body;
+async register(req, res) {
+  try {
+    const { username, password, full_name, email, phone, role_id, verify_code } = req.body;
 
-      if (!username || !password || !email || !verify_code)
-        return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
-
-      const record = verifyCodes.get(email);
-      if (!record || record.code !== verify_code)
-        return res.status(400).json({ message: "Mã xác nhận không đúng" });
-
-      if (record.expires < Date.now()) {
-        verifyCodes.delete(email);
-        return res.status(400).json({ message: "Mã xác nhận đã hết hạn" });
-      }
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = {
-        user_id: nanoidNumbersOnly(10),
-        username,
-        password: hashedPassword,
-        full_name,
-        email,
-        phone,
-        role_id: role_id || "1", // mặc định Nhân viên
-      };
-
-      const created = await userModel.createUser(newUser);
-
-      verifyCodes.delete(email);
-      res.status(201).json({ message: "Đăng ký thành công", user: created });
-    } catch (error) {
-      console.error("Error register:", error);
-      res.status(500).json({ message: "Lỗi khi đăng ký người dùng" });
+    // ✅ Kiểm tra xem có mã xác nhận hợp lệ không
+    const record = verifyCodes.get(email);
+    if (!record || record.code !== verify_code) {
+      return res.status(400).json({ message: "Mã xác nhận không đúng hoặc đã hết hạn" });
     }
-  },
+
+    // 🚨 Kiểm tra username/email đã tồn tại chưa
+    const existingUser = await userModel.getUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({ message: "Username đã tồn tại, vui lòng chọn tên khác" });
+    }
+
+    const existingEmail = await userModel.getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email đã được sử dụng, vui lòng chọn email khác" });
+    }
+
+    // ✅ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Tạo user mới
+    const newUser = {
+      user_id: nanoidNumbersOnly(10),
+      username,
+      password: hashedPassword,
+      full_name,
+      email,
+      phone,
+      role_id: role_id || "1", // mặc định role user
+    };
+
+    const created = await userModel.createUser(newUser);
+
+    // Xóa mã xác nhận sau khi đăng ký thành công
+    verifyCodes.delete(email);
+
+    res.status(201).json({ message: "Đăng ký thành công", user: created });
+  } catch (error) {
+    console.error("Error register:", error);
+    res.status(500).json({ message: "Lỗi khi đăng ký người dùng" });
+  }
+},
 
   /**
    * Cập nhật thông tin người dùng
