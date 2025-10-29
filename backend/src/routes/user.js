@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.js";
 import { authMiddleware } from "../middlewares/auth.js";
-import { validateRegister, validateLogin } from "../middlewares/validateUser.js"; // thêm middleware validate
+import { validateRegister, validateLogin, validateEmailForOtp } from "../middlewares/validateUser.js"; // thêm middleware validate
 
 const router = Router();
 
@@ -25,7 +25,7 @@ const router = Router();
 router.get("/", authMiddleware.verifyToken, userController.getAllUsers);
 
 // 📨 Gửi mã xác nhận email
-router.post("/send-verify-code", userController.sendVerifyCode);
+router.post("/send-verify-code", validateEmailForOtp, userController.sendVerifyCode);
 
 // 📝 Đăng ký (validate đầu vào trước khi gọi controller)
 router.post("/register", validateRegister, userController.register);
@@ -143,3 +143,5 @@ router.delete(
 router.post("/login", validateLogin, userController.login);
 
 export default router;
+
+
