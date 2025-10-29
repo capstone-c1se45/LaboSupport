@@ -1,4 +1,3 @@
-// frontend/src/pages/UserChat.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { api } from '../lib/api-client';
@@ -25,12 +24,12 @@ const CopyIcon = ({ className = 'w-4 h-4' }) => (
 
 
 export default function UserChat() {
-  const [messages, setMessages] = useState([]); // Khởi tạo rỗng, sẽ fetch history
+  const [messages, setMessages] = useState([]); 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(true); // State cho việc tải history
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState(-1);
-  const [sessionId, setSessionId] = useState(null); // Lưu session_id trả về từ AI service
+  const [sessionId, setSessionId] = useState(null); 
   const listRef = useRef(null);
   const navigate = useNavigate();
 

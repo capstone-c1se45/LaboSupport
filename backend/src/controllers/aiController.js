@@ -48,7 +48,40 @@ export const aiController = {
       return responseHandler.internalServerError(res, "Đã có lỗi xảy ra khi xử lý yêu cầu chat.");
     }
   },
+  async handleGuestChat(req, res) {
+    //const userId = req.user?.user_id; 
+    const userId = 'guest_user_0000'; // userId mặc định cho guest
+    const { message, session_id = `${userId}` } = req.body;
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return responseHandler.badRequest(res, "Nội dung tin nhắn không được để trống.");
+    }
 
+    try {
+      const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, {
+        message: message.trim(),
+        session_id: session_id
+      }, {
+         headers: { 'Content-Type': 'application/x-www-form-urlencoded' } // xử lý form data bên ai sẻvice
+      });
+
+      const aiReply = aiResponse.data?.ai_reply || "Xin lỗi, tôi không thể xử lý yêu cầu này.";
+
+      // // trả lời truocsws khi lưu vào db
+      // chatLogModel.createLog(userId, message.trim(), aiReply, 'AI_CHAT_LOGGED_IN')
+      //   .catch(dbError => {
+      //     console.error("Failed to save chat log:", dbError);
+      //   });
+
+      return responseHandler.success(res, "AI đã trả lời.", {
+        reply: aiReply,
+        session_id: aiResponse.data?.session_id || session_id,
+      });
+
+    } catch (error) {
+      console.error("Error calling AI service or processing chat:", error?.response?.data || error.message);
+      return responseHandler.internalServerError(res, "Đã có lỗi xảy ra khi xử lý yêu cầu chat.");
+    }
+  },
     // Lấy lịch sử chat của người dùng đã đăng nhập
   async getChatHistory(req, res) {
      const userId = req.user?.user_id;

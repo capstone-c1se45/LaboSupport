@@ -6,9 +6,10 @@ import { authMiddleware } from "../middlewares/auth.js"; // Import middleware x�
 const router = Router();
 
 router.post("/chat", authMiddleware.verifyToken, aiController.handleUserChat);
+router
 router.get("/chat/history", authMiddleware.verifyToken, aiController.getChatHistory);
 
 // không cần xác thực
-// router.post("/guest-chat", aiController.handleGuestChat);
+router.post("/guest-chat", aiController.handleGuestChat);
 
 export default router;

@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { api } from '../lib/api-client';
-
-const USE_BACKEND = import.meta.env.VITE_USE_AI_BACKEND === '1';
+import { api } from '../lib/api-client.js'; 
 
 const BotIcon = ({ className = 'w-8 h-8 text-blue-600' }) => (
   <svg className={className} viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>
@@ -22,25 +20,7 @@ const CopyIcon = ({ className = 'w-4 h-4' }) => (
     <path d='M6 7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2H6zm10 12H6V9h10v10z' />
   </svg>
 );
-
-async function askGuestAI({ question, history }) {
-  const mock = async () => {
-    await new Promise((r) => setTimeout(r, 500));
-    return {
-      ok: true,
-      answer:
-        'Xin chào! Tính năng AI đang ở chế độ demo (mock). Hãy mô tả câu hỏi về luật lao động Việt Nam: tăng ca, nghỉ thai sản, thử việc, hợp đồng...'
-    };
-  };
-
-  if (!USE_BACKEND) return mock();
-  try {
-    const resp = await api.post('/ai/guest-chat', { question, history });
-    return resp.data;
-  } catch {
-    return mock();
-  }
-}
+// -------------------------------------------------------------------
 
 export default function GuestChat() {
   const [messages, setMessages] = useState([
@@ -49,6 +29,7 @@ export default function GuestChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [sessionId, setSessionId] = useState(`guest_${Date.now()}`); // Tạo session ID tạm cho khách
   const listRef = useRef(null);
 
   const suggestions = useMemo(
@@ -62,37 +43,73 @@ export default function GuestChat() {
     []
   );
 
+  // Cuộn xuống cuối khi có tin nhắn mới
   useEffect(() => {
     if (!listRef.current) return;
     try {
-      listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+        // Delay nhẹ để DOM cập nhật
+       setTimeout(() => {
+        listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+       }, 50);
     } catch {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
+       setTimeout(() => {
+         listRef.current.scrollTop = listRef.current.scrollHeight;
+       }, 50);
     }
   }, [messages, loading]);
 
+  // Hàm xử lý gửi tin nhắn
   async function handleSend(text) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
-    setInput('');
+
     const userMsg = { role: 'user', content };
     setMessages((prev) => [...prev, userMsg]);
+    setInput(''); // Xóa input sau khi gửi
     setLoading(true);
 
-    const history = messages.concat(userMsg).slice(-10);
-    const data = await askGuestAI({ question: content, history });
-    const assistantMsg = { role: 'assistant', content: data?.answer || 'Xin lỗi, tôi chưa có câu trả lời.' };
-    setMessages((prev) => [...prev, assistantMsg]);
-    setLoading(false);
+    try {
+      // *** THAY ĐỔI CHÍNH: Gọi API backend /api/ai/guest-chat ***
+      const response = await api.post('/ai/guest-chat', { // Đảm bảo endpoint này tồn tại và không cần xác thực
+        message: content,
+        session_id: sessionId // Gửi session ID hiện tại
+      });
+      // -------------------------------------------------------
+
+      // Lấy câu trả lời từ response của backend
+      const aiReply = response.data?.data?.reply || 'Xin lỗi, tôi chưa có câu trả lời.';
+      const newSessionId = response.data?.data?.session_id; // Lấy session_id mới (nếu backend trả về)
+
+      if (newSessionId) {
+        setSessionId(newSessionId); // Cập nhật session_id nếu có
+      }
+
+      const assistantMsg = { role: 'assistant', content: aiReply };
+      setMessages((prev) => [...prev, assistantMsg]);
+
+    } catch (err) {
+      console.error("Error sending guest message:", err);
+      // Hiển thị lỗi cho người dùng
+      const errorMsg = { role: 'assistant', content: 'Đã có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại.' };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
   }
 
+  // Xử lý query param `?q=` (giữ nguyên)
   const { search } = useLocation();
   useEffect(() => {
     const q = new URLSearchParams(search).get('q');
-    if (q) setTimeout(() => handleSend(q), 50);
+    if (q) {
+        // Đặt câu hỏi vào input và tự động gửi sau một khoảng trễ ngắn
+        setInput(q);
+        setTimeout(() => handleSend(q), 100);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search]); // Chỉ chạy khi search param thay đổi
 
+  // --- Phần Render JSX giữ nguyên cấu trúc ---
   return (
     <div className='min-h-screen bg-gray-50'>
       <header className='border-b bg-white'>
@@ -149,27 +166,41 @@ export default function GuestChat() {
           <div ref={listRef} className='px-5 py-5 h-[48vh] overflow-y-auto bg-gray-50/60 chat-scroll'>
             <ul className='space-y-4'>
               {messages.map((m, i) => (
-                <li key={i} className='flex gap-3 animate-fade-in'>
+                <li key={i} className='flex gap-3 animate-fade-in group'> {/* Thêm group để hover copy button */}
                   {m.role === 'assistant' ? (
                     <span className='shrink-0 mt-1'><BotIcon className='w-6 h-6 text-blue-600' /></span>
                   ) : (
-                    <span className='shrink-0 mt-1'><div className='w-6 h-6 rounded-full bg-gray-400' /></span>
+                    <span className='shrink-0 mt-1'><div className='w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs'>You</div></span>
                   )}
                   <div className={m.role === 'assistant' ? 'relative bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-[80%]' : 'bg-blue-600 text-white rounded-lg px-3 py-2 text-sm ml-auto max-w-[80%]'}>
-                    {m.content}
+                     {/* Sử dụng pre để giữ định dạng xuống dòng từ AI */}
+                    <pre className="whitespace-pre-wrap font-sans">{m.content}</pre>
                     {m.role === 'assistant' && (
                       <button
                         title='Sao chép'
                         onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(m.content);
-                            setCopiedIdx(i);
-                            setTimeout(() => setCopiedIdx(-1), 1200);
-                          } catch(err) {
-                            console.error("Failed to copy text:", err);
-                          }
+                           try {
+                             // Sử dụng clipboard API nếu có, fallback về execCommand
+                             if (navigator.clipboard && window.isSecureContext) {
+                               await navigator.clipboard.writeText(m.content);
+                             } else {
+                               const textArea = document.createElement("textarea");
+                               textArea.value = m.content;
+                               textArea.style.position = "fixed"; // Prevent scrolling to bottom
+                               document.body.appendChild(textArea);
+                               textArea.focus();
+                               textArea.select();
+                               document.execCommand('copy');
+                               document.body.removeChild(textArea);
+                             }
+                             setCopiedIdx(i);
+                             setTimeout(() => setCopiedIdx(-1), 1200);
+                           } catch(err) {
+                             console.error("Failed to copy text:", err);
+                             // Có thể hiển thị thông báo lỗi copy
+                           }
                         }}
-                        className='absolute -top-2 -right-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-600 rounded p-1 shadow-sm'
+                        className='absolute -top-2 -right-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-600 rounded p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity' // Hiện khi hover group li
                         aria-label='Copy'
                       >
                         <CopyIcon />
@@ -195,7 +226,14 @@ export default function GuestChat() {
           </div>
 
           <form className='px-4 py-4 border-t bg-white flex gap-2' onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
-            <input type='text' value={input} onChange={(e) => setInput(e.target.value)} placeholder='Nhập câu hỏi của bạn...' className='flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-blue-500' />
+            <input
+               type='text'
+               value={input}
+               onChange={(e) => setInput(e.target.value)}
+               placeholder='Nhập câu hỏi của bạn...'
+               className='flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-blue-500'
+               disabled={loading} // Disable input khi đang chờ AI
+            />
             <button type='submit' disabled={loading || !input.trim()} className='inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md'>
               <SendIcon /> Gửi
             </button>
