@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../lib/api-client';
+import { api, getErrorMessage } from '../lib/api-client';
 
 const Label = ({ children }) => <div className='text-xs text-gray-500 mb-1'>{children}</div>;
 const Field = ({ value }) => <div className='text-sm text-gray-800'>{value || '—'}</div>;
@@ -60,7 +60,7 @@ export default function Profile() {
       setMode('view');
       setTimeout(() => setMessage(''), 1200);
     } catch (e) {
-      const serverMsg = e?.response?.data?.message || e.message || 'Lưu thất bại';
+      const serverMsg = getErrorMessage(e);
       setError(serverMsg);
       setTimeout(() => setError(''), 2500);
     }

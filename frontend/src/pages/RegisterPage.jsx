@@ -506,3 +506,5 @@ export default RegisterPage;
  * 3. Make sure your main.jsx is wrapped in BrowserRouter and you have Tailwind installed.
  * 4. Ready to test! Adjust illustrationUrl as you like.
  */
+
+

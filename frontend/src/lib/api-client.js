@@ -25,3 +25,32 @@ export function logout() {
     sessionStorage.removeItem('auth_token');
   } catch {}
 }
+
+// Map API errors to friendly Vietnamese messages, independent of server text
+export function getErrorMessage(err, fallback) {
+  try {
+    const status = err?.response?.status;
+    const type = err?.response?.data?.errorType;
+    if (fallback) return fallback;
+    // Basic mapping when no explicit fallback provided
+    switch (status) {
+      case 400:
+        return 'Yêu cầu không hợp lệ. Vui lòng kiểm tra lại thông tin.';
+      case 401:
+        return 'Không được phép. Vui lòng đăng nhập.';
+      case 403:
+        return 'Bạn không có quyền truy cập.';
+      case 404:
+        return 'Không tìm thấy tài nguyên.';
+      case 429:
+        return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau.';
+      case 500:
+      default:
+        // Optionally use errorType for more granularity later
+        void type;
+        return 'Có lỗi xảy ra. Vui lòng thử lại sau.';
+    }
+  } catch {
+    return fallback || 'Có lỗi xảy ra.';
+  }
+}

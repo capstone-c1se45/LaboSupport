@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { api } from '../lib/api-client';
+import { api, getErrorMessage } from '../lib/api-client';
 
 const illustrationUrl =
   'https://static.vecteezy.com/system/resources/previews/027/112/209/original/concept-of-law-and-justice-scales-books-and-lawyers-in-flat-cartoon-style-legal-advice-illustration-vector.jpg';
@@ -58,7 +58,7 @@ export default function LoginPage() {
         window.location.href = '/home';
       }, 500);
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';
+      const msg = getErrorMessage(err, 'Tên đăng nhập hoặc mật khẩu không đúng');
       setError(msg);
     }
     setLoading(false);
