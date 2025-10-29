@@ -78,10 +78,10 @@ export default function GuestChat() {
 
       // Lấy câu trả lời từ response của backend
       const aiReply = response.data?.data?.reply || 'Xin lỗi, tôi chưa có câu trả lời.';
-      const newSessionId = response.data?.data?.session_id; // Lấy session_id mới (nếu backend trả về)
+      const newSessionId = response.data?.data?.session_id; 
 
       if (newSessionId) {
-        setSessionId(newSessionId); // Cập nhật session_id nếu có
+        setSessionId(newSessionId); 
       }
 
       const assistantMsg = { role: 'assistant', content: aiReply };
