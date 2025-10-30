@@ -15,7 +15,9 @@ api.interceptors.request.use((config) => {
   try {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     if (token) config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
-  } catch {}
+  } catch(err) {
+    console.error("Error attaching auth token to request:", err);
+  }
   return config;
 });
 
@@ -23,7 +25,9 @@ export function logout() {
   try {
     localStorage.removeItem('auth_token');
     sessionStorage.removeItem('auth_token');
-  } catch {}
+  } catch(err) {
+    console.error("Error during logout token removal:", err);
+  }
 }
 
 // Map API errors to friendly Vietnamese messages, independent of server text
