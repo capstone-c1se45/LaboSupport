@@ -7,6 +7,11 @@ const HomeIcon = () => (
 const AiIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg>
 );
+
+const AiAnalysisIcon = () => (
+  <svg className="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12l2 2 4-4"/></svg>
+);
+
 const DocIcon = () => (
   <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
 );
@@ -31,6 +36,7 @@ export default function HomeLogged() {
     { value: '5,678', label: 'Câu hỏi đã trả lời', icon: AiIcon },
     { value: '890', label: 'Người dùng hoạt động', icon: UserIcon },
     { value: '2,340h', label: 'Thời gian tiết kiệm', icon: ClockIcon },
+    { value: '99.9%', label: 'Độ chính xác AI', icon: AiAnalysisIcon },
   ];
 
   const activities = [
@@ -51,6 +57,7 @@ export default function HomeLogged() {
         <nav className='flex-1 p-3 text-sm'>
           <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'><HomeIcon/> Trang Chính</a>
           <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><AiIcon/> Trợ lý AI</a>
+          <a href='/contract-analysis' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><AiAnalysisIcon/> AI Phân Tích Hợp Đồng</a>
           <a href='#' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><CalcIcon/> Tính lương/thuế</a>
           <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><UserIcon/> Hồ sơ cá nhân</a>
           <a href='#' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'><BellIcon/> Thông báo</a>

@@ -137,6 +137,7 @@ export default function UserChat() {
              <nav className='flex-1 p-3 text-sm'>
                 <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'> Trang Chính</a>
                  <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium mt-1'>🤖 Trợ lý AI</a>
+                 <a href='/contract-analysis' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'> AI Phân Tích Hợp Đồng</a>
                   <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>👤 Hồ sơ cá nhân</a>
             </nav>
              <div className='border-t p-3'>

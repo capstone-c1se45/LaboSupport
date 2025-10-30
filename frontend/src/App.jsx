@@ -14,6 +14,7 @@ import Logout from "./pages/Logout";
 // import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
 import UserChat from "./pages/UserChat";
+import ContractAnalysis from "./pages/ContractAnalysis";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/" element={<LandingHome />} />
         <Route path="/guest-chat" element={<GuestChat />} />
         <Route path="/user-chat" element={<UserChat />} />
+        <Route path="/contract-analysis" element={<ContractAnalysis />} />
         <Route path="/home" element={<HomeLogged />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />

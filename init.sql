@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS Contract (
   file_path VARCHAR(255) NOT NULL, -- đường dẫn lưu file hợp đồng(firebase, s3,...)
   original_name VARCHAR(200),
   uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   status VARCHAR(20) DEFAULT 'PENDING',
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS Report (
   category VARCHAR(100),
   description TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   status VARCHAR(20) DEFAULT 'NEW',
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
