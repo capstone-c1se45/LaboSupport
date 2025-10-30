@@ -35,3 +35,15 @@ export const validateLogin = (req, res, next) => {
 
   next();
 };
+
+// Validate only email for OTP sending
+export const validateEmailForOtp = (req, res, next) => {
+  const { email } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ message: "Thiếu email" });
+  }
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ message: "Email không hợp lệ" });
+  }
+  next();
+};
