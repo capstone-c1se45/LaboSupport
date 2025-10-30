@@ -21,9 +21,9 @@ Provides legal lookup, OCR contract analysis, AI chatbot, and violation reportin
 |------------|------------|
 | **Frontend** | ReactJS, TailwindCSS |
 | **Backend**  | Node.js (Express), MySQL (Sequelize ORM) |
-| **AI Service** | Python (FastAPI, Tesseract OCR, HuggingFace, VectorDB) |
+| **AI Service** | Python (FastAPI, Tesseract OCR,Google Gemini API,) |
 | **Database**  | MySQL + VectorDB (Weaviate/Milvus/Pinecone) |
-| **Storage**   | Firebase / AWS S3 |
+| **Storage**   | Multer |
 
 ---
 
@@ -108,3 +108,4 @@ Frontend (React)
 ⚖️ Disclaimer
 This app provides basic legal information but is not a substitute for professional legal advice.
 Always consult a certified lawyer or government authority for official guidance.
+
