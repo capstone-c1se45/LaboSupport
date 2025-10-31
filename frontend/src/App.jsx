@@ -5,6 +5,7 @@ import HomeLogged from "./pages/HomeLogged";
 import Profile from "./pages/Profile";
 import LoginPage from "./pages/LoginPage";
 import Logout from "./pages/Logout";
+import SalaryTool from "./pages/SalaryTool";
 // import Login from "./pages/Login";
  import RegisterPage from "./pages/RegisterPage";
 // import Dashboard from "./pages/Dashboard";
@@ -26,6 +27,7 @@ function App() {
         <Route path="/user-chat" element={<UserChat />} />
         <Route path="/contract-analysis" element={<ContractAnalysis />} />
         <Route path="/home" element={<HomeLogged />} />
+        <Route path="/salary" element={<SalaryTool />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />

@@ -112,21 +112,17 @@ const RegisterPage = () => {
 
   // HANDLERS
   // Registration form validation
-  function validateForm() {
+      function validateForm() {
     const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;\r\n    if (username.length < 2)
-      return "TÃªn Ä‘Äƒng nháº­p pháº£i cÃ³ Ã­t nháº¥t 2 kÃ½ tá»±.";
-    if (!reEmail.test(email))
-      return "Email khÃ´ng há»£p lá»‡.";
-    if (!strongPw.test(password))\r\n      return "M?t kh?u ph?i t?i thi?u 8 ký t? và g?m ch? hoa, ch? thu?ng, s? và ký t? d?c bi?t.";
-    if (password !== password2)
-      return "Máº­t kháº©u xÃ¡c nháº­n khÃ´ng khá»›p.";
-    if (!agreed)
-      return "Báº¡n pháº£i Ä‘á»“ng Ã½ vá»›i Äiá»u khoáº£n vÃ  ChÃ­nh sÃ¡ch.";
+    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (username.trim().length < 2) return "Tên dang nh?p ph?i có ít nh?t 2 ký t?.";
+    if (!reEmail.test(email)) return "Email không h?p l?.";
+    if (!strongPw.test(password)) return "M?t kh?u ph?i t?i thi?u 8 ký t? và g?m ch? hoa, ch? thu?ng, s? và ký t? d?c bi?t.";
+    if (password !== password2) return "M?t kh?u xác nh?n không kh?p.";
+    if (!agreed) return "B?n ph?i d?ng ý v?i Ði?u kho?n và Chính sách.";
     return null;
   }
-
-  // Handle registration (Step 1)
+// Handle registration (Step 1)
   async function handleSubmit(e) {
     e.preventDefault();
     const error = validateForm();
@@ -505,6 +501,8 @@ export default RegisterPage;
  * 3. Make sure your main.jsx is wrapped in BrowserRouter and you have Tailwind installed.
  * 4. Ready to test! Adjust illustrationUrl as you like.
  */
+
+
 
 
 
