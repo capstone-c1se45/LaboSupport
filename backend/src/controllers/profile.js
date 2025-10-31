@@ -20,7 +20,7 @@ export const profileController = {
   async updateProfile(req, res) {
     try {
       const userId = req.user.user_id;
-      const { full_name, phone, dob, gender, address, occupation } = req.body;
+      const { full_name, phone, dob, gender, address, occupation, email } = req.body;
 
       // ✅ Validate input
       if (!validator.isValidName(full_name)) {
@@ -39,6 +39,10 @@ export const profileController = {
         return responseHandler.badRequest(res, "Invalid gender value");
       }
 
+      if (email && !validator.isEmail(email)) {
+        return responseHandler.badRequest(res, "Invalid email format");
+      }
+
       // ✅ Update model
       const updated = await profileModel.updateUserProfile(userId, {
         full_name,
@@ -47,6 +51,7 @@ export const profileController = {
         gender,
         address,
         occupation,
+        email,
       });
 
       if (!updated) {

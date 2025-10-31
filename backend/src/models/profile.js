@@ -23,8 +23,8 @@ export const profileModel = {
 
       // cập nhật bảng User
       await conn.query(
-        `UPDATE User SET full_name = ?, phone = ? WHERE user_id = ?`,
-        [full_name, phone, userId]
+        `UPDATE User SET full_name = ?, phone = ?, email = COALESCE(?, email) WHERE user_id = ?`,
+        [full_name, phone, email || null, userId]
       );
 
       // kiểm tra đã có profile chưa
@@ -61,3 +61,4 @@ export const profileModel = {
     }
   },
 };
+
