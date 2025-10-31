@@ -152,7 +152,9 @@ function validateForm() {
   // Handle OTP verification (Step 2)
   async function handleOtpSubmit(e) {
     e.preventDefault();
-    if (!/^\\d{6}$/.test(otp)) {`r`n      setOtpError("OTP phai la 6 chu so");`r`n      return;`r`n    }
+    if (!/^\\d{6}$/.test(otp)) {
+      setOtpError('OTP phai la 6 chu so');
+      return;
     }
     setOtpLoading(true);
     setOtpError("");
