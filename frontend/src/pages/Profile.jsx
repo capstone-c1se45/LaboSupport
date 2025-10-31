@@ -57,6 +57,9 @@ export default function Profile() {
           phone,
           address: profile.address,
           email,
+          dob: profile.dob || null,
+          gender: profile.gender || '',
+          occupation: profile.occupation || '',
         });
       } else {
         localStorage.setItem('mock_profile', JSON.stringify(profile));
@@ -167,6 +170,35 @@ export default function Profile() {
                     <Field value={profile.address} />
                   ) : (
                     <input className='w-full border border-gray-300 rounded px-3 py-2' value={profile.address} onChange={(e)=>setProfile({...profile, address: e.target.value})} />
+                  )}
+                </div>
+                <div>
+                  <Label>Ngày sinh</Label>
+                  {mode === 'view' ? (
+                    <Field value={profile.dob} />
+                  ) : (
+                    <input type='date' className='w-full border border-gray-300 rounded px-3 py-2' value={profile.dob || ''} onChange={(e)=>setProfile({...profile, dob: e.target.value})} />
+                  )}
+                </div>
+                <div>
+                  <Label>Giới tính</Label>
+                  {mode === 'view' ? (
+                    <Field value={profile.gender} />
+                  ) : (
+                    <select className='w-full border border-gray-300 rounded px-3 py-2' value={profile.gender || ''} onChange={(e)=>setProfile({...profile, gender: e.target.value})}>
+                      <option value=''>Không xác định</option>
+                      <option value='male'>Nam</option>
+                      <option value='female'>Nữ</option>
+                      <option value='other'>Khác</option>
+                    </select>
+                  )}
+                </div>
+                <div className='md:col-span-2'>
+                  <Label>Nghề nghiệp</Label>
+                  {mode === 'view' ? (
+                    <Field value={profile.occupation} />
+                  ) : (
+                    <input className='w-full border border-gray-300 rounded px-3 py-2' value={profile.occupation || ''} onChange={(e)=>setProfile({...profile, occupation: e.target.value})} />
                   )}
                 </div>
               </div>
