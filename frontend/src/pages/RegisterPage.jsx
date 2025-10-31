@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { api } from "../lib/api-client";
+import { api, getErrorMessage } from "../lib/api-client";
 // import { useNavigate } from "react-router-dom"; // Đã xóa
 
 // Dummy image URL for left artwork; replace with your own if needed:
@@ -114,12 +114,11 @@ const RegisterPage = () => {
   // Registration form validation
   function validateForm() {
     const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (username.length < 2)
+    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;\r\n    if (username.length < 2)
       return "Tên đăng nhập phải có ít nhất 2 ký tự.";
     if (!reEmail.test(email))
       return "Email không hợp lệ.";
-    if (password.length < 6)
-      return "Mật khẩu phải có ít nhất 6 ký tự.";
+    if (!strongPw.test(password))\r\n      return "M?t kh?u ph?i t?i thi?u 8 k� t? v� g?m ch? hoa, ch? thu?ng, s? v� k� t? d?c bi?t.";
     if (password !== password2)
       return "Mật khẩu xác nhận không khớp.";
     if (!agreed)
@@ -148,7 +147,7 @@ const RegisterPage = () => {
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
       setToast({ type: "success", message: "Mã OTP đã được gửi đến email của bạn!" });
     } catch (err) {
-      setToast({ type: "error", message: "Gửi OTP thất bại. Vui lòng thử lại!" });
+      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui l�ng th? l?i!") });
     }
     setLoading(false);
   }
@@ -157,7 +156,7 @@ const RegisterPage = () => {
   async function handleOtpSubmit(e) {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) {
-      setOtpError("OTP phải là 6 chữ số");
+      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
       return;
     }
     setOtpLoading(true);
@@ -173,7 +172,7 @@ const RegisterPage = () => {
         // navigate("/home", { state: { role: "Người dùng đã đăng ký" } });
       }, 900);
     } catch (err) {
-      setOtpError("OTP sai hoặc đã hết hạn. Vui lòng thử lại.");
+      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
     }
     setOtpLoading(false);
   }
@@ -506,5 +505,6 @@ export default RegisterPage;
  * 3. Make sure your main.jsx is wrapped in BrowserRouter and you have Tailwind installed.
  * 4. Ready to test! Adjust illustrationUrl as you like.
  */
+
 
 

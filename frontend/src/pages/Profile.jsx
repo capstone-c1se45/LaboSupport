@@ -38,6 +38,8 @@ export default function Profile() {
       // Client-side validation
       const name = (profile.full_name || '').trim();
       const phone = (profile.phone || '').trim();
+      const email = (profile.email || '').trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const phoneRegex = /^0\d{9,10}$/; // 10-11 digits starting with 0
       if (name.length < 2) {
         throw new Error('Họ và tên phải có ít nhất 2 ký tự');
@@ -45,12 +47,16 @@ export default function Profile() {
       if (!phoneRegex.test(phone)) {
         throw new Error('Số điện thoại không hợp lệ (10-11 số, bắt đầu bằng 0)');
       }
+      if (email && !emailRegex.test(email)) {
+        throw new Error('Email không hợp lệ');
+      }
 
       if (isAuthed) {
         await api.put('/profile', {
           full_name: name,
           phone,
           address: profile.address,
+          email,
         });
       } else {
         localStorage.setItem('mock_profile', JSON.stringify(profile));
