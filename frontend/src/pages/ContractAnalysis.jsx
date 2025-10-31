@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { api } from '../lib/api-client.js';
 import { useNavigate } from 'react-router-dom';
 
@@ -220,7 +223,6 @@ export default function ContractAnalysis() {
                       onClick={() => fetchContractDetails(contract.contract_id)}>
                     <div className="flex items-center justify-between gap-2">
                          <span className='text-sm font-medium text-gray-800 truncate' title={contract.original_name}><DocIcon className="inline w-4 h-4 mr-1 text-gray-400"/>{contract.original_name}</span>
-                         {/* Nút Phân tích chỉ hiện khi status là PENDING hoặc ERROR */}
                          {(contract.status === 'PENDING' || contract.status.startsWith('ERROR')) && (
                              <button
                                  onClick={(e) => { e.stopPropagation(); handleAnalyze(contract.contract_id); }}
@@ -266,10 +268,14 @@ export default function ContractAnalysis() {
                 {isLoadingAnalysis === selectedContract.id && <p className="text-sm text-blue-500 my-4">AI đang phân tích, vui lòng chờ...</p> }
 
                  {selectedContract.data.analysis ? (
-                   <div className="mt-4 prose prose-sm max-w-none">
+                   <div className="prose prose-slate max-w-none p-4 rounded bg-gray-50 border border-gray-200">
                        <h4>Tóm tắt và Đánh giá từ AI:</h4>
-                       <pre className="whitespace-pre-wrap font-sans bg-gray-50 p-3 rounded border border-gray-200 text-gray-700">{selectedContract.data.analysis.summary || "Chưa có tóm tắt."}</pre>
-                   </div>
+<ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    rehypePlugins={[rehypeRaw]}
+  >
+    {selectedContract.data.analysis.summary || "Chưa có tóm tắt."}
+  </ReactMarkdown>                   </div>
                  ) : selectedContract.data.status === 'ANALYZED' ? (
                     <p className="text-sm text-gray-500 mt-4">Không tìm thấy kết quả phân tích đã lưu.</p>
                  ): selectedContract.data.status === 'PENDING' ? (

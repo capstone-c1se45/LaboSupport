@@ -111,17 +111,18 @@ const RegisterPage = () => {
   }, [toast]);
 
   // HANDLERS
-  // Registration form validation
-      function validateForm() {
-    const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (username.trim().length < 2) return "Tên dang nh?p ph?i có ít nh?t 2 ký t?.";
-    if (!reEmail.test(email)) return "Email không h?p l?.";
-    if (!strongPw.test(password)) return "M?t kh?u ph?i t?i thi?u 8 ký t? và g?m ch? hoa, ch? thu?ng, s? và ký t? d?c bi?t.";
-    if (password !== password2) return "M?t kh?u xác nh?n không kh?p.";
-    if (!agreed) return "B?n ph?i d?ng ý v?i Ði?u kho?n và Chính sách.";
-    return null;
-  }
+// Registration form validation
+function validateForm() {
+  const reEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+  const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+  if (username.trim().length < 2) return 'Ten dang nhap phai co it nhat 2 ky tu.';
+  if (!reEmail.test(email)) return 'Email khong hop le.';
+  if (!strongPw.test(password)) return 'Mat khau phai toi thieu 8 ky tu va gom chu hoa, chu thuong, so va ky tu dac biet.';
+  if (password !== password2) return 'Mat khau xac nhan khong khop.';
+  if (!agreed) return 'Ban phai dong y voi Dieu khoan va Chinh sach.';
+  return null;
+}
+
 // Handle registration (Step 1)
   async function handleSubmit(e) {
     e.preventDefault();
@@ -141,9 +142,9 @@ const RegisterPage = () => {
       setStep("otp");
       setOtp(""); // Clear any previous OTP
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
-      setToast({ type: "success", message: "MÃ£ OTP Ä‘Ã£ Ä‘Æ°á»£c gá»­i Ä‘áº¿n email cá»§a báº¡n!" });
+      setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
-      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui lòng th? l?i!") });
+      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui lï¿½ng th? l?i!") });
     }
     setLoading(false);
   }
@@ -151,9 +152,7 @@ const RegisterPage = () => {
   // Handle OTP verification (Step 2)
   async function handleOtpSubmit(e) {
     e.preventDefault();
-    if (!/^\d{6}$/.test(otp)) {
-      setOtpError(getErrorMessage(err, "Ðang ký th?t b?i. Vui lòng ki?m tra thông tin và th? l?i."));
-      return;
+    if (!/^\\d{6}$/.test(otp)) {`r`n      setOtpError("OTP phai la 6 chu so");`r`n      return;`r`n    }
     }
     setOtpLoading(true);
     setOtpError("");
@@ -161,14 +160,14 @@ const RegisterPage = () => {
       await api.post("/users/register", { username, password, email, verify_code: otp });
       // Success: store role & navigate
       localStorage.setItem("role", "NgÆ°á»i dÃ¹ng Ä‘Ã£ Ä‘Äƒng kÃ½");
-      setToast({ type: "success", message: "ÄÄƒng kÃ½ thÃ nh cÃ´ng!" });
+      setToast({ type: "success", message: "OTP moi da duoc gui!" });
       setTimeout(() => {
         // ÄÃ£ thay tháº¿ navigate báº±ng window.location.href
         window.location.href = "/home";
         // navigate("/home", { state: { role: "NgÆ°á»i dÃ¹ng Ä‘Ã£ Ä‘Äƒng kÃ½" } });
       }, 900);
     } catch (err) {
-      setOtpError(getErrorMessage(err, "Ðang ký th?t b?i. Vui lòng ki?m tra thông tin và th? l?i."));
+      setOtpError(getErrorMessage(err, "ï¿½ang kï¿½ th?t b?i. Vui lï¿½ng ki?m tra thï¿½ng tin vï¿½ th? l?i."));
     }
     setOtpLoading(false);
   }
@@ -185,7 +184,7 @@ const RegisterPage = () => {
         setToast({ type: "success", message: `OTP (dev): ${resp.data.code}` });
       }
       setOtpResendCooldown(OTP_COOLDOWN);
-      setToast({ type: "success", message: "OTP má»›i Ä‘Ã£ Ä‘Æ°á»£c gá»­i!" });
+      setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
       setOtpError("Gá»­i láº¡i OTP tháº¥t báº¡i. Vui lÃ²ng thá»­ láº¡i.");
     }
@@ -501,6 +500,7 @@ export default RegisterPage;
  * 3. Make sure your main.jsx is wrapped in BrowserRouter and you have Tailwind installed.
  * 4. Ready to test! Adjust illustrationUrl as you like.
  */
+
 
 
 
