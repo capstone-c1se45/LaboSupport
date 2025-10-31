@@ -114,11 +114,11 @@ const RegisterPage = () => {
   // Registration form validation
   function validateForm() {
     const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;\r\n    if (username.length < 2)
+    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;    if (username.length < 2)
       return "Tên đăng nhập phải có ít nhất 2 ký tự.";
     if (!reEmail.test(email))
       return "Email không hợp lệ.";
-    if (!strongPw.test(password))\r\n      return "M?t kh?u ph?i t?i thi?u 8 k� t? v� g?m ch? hoa, ch? thu?ng, s? v� k� t? d?c bi?t.";
+    if (!strongPw.test(password))      return "M?t kh?u ph?i t?i thi?u 8 k� t? v� g?m ch? hoa, ch? thu?ng, s? v� k� t? d?c bi?t.";
     if (password !== password2)
       return "Mật khẩu xác nhận không khớp.";
     if (!agreed)
@@ -147,7 +147,7 @@ const RegisterPage = () => {
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
       setToast({ type: "success", message: "Mã OTP đã được gửi đến email của bạn!" });
     } catch (err) {
-      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui l�ng th? l?i!") });
+      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui l�ng th? l?i!") });
     }
     setLoading(false);
   }
@@ -156,7 +156,7 @@ const RegisterPage = () => {
   async function handleOtpSubmit(e) {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) {
-      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
+      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
       return;
     }
     setOtpLoading(true);
@@ -172,7 +172,7 @@ const RegisterPage = () => {
         // navigate("/home", { state: { role: "Người dùng đã đăng ký" } });
       }, 900);
     } catch (err) {
-      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
+      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
     }
     setOtpLoading(false);
   }
