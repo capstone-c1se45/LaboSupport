@@ -9,7 +9,7 @@ from untils.internal_analysis import generate_internal_report
 from untils.compliance import run_compliance_check 
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from vector_store import query_law 
-
+from ocr.ocr_utils import process_images
 
 GEMINI_API_KEY = "AIzaSyB0GGFyJLAytwEUGQk8ztw4nXjQQeAwEFU" 
 
@@ -215,3 +215,17 @@ def reset_chat(session_id: str = Form("default")):
         del chat_sessions[session_id]
         return {"message": f"Đã xóa lịch sử chat của phiên {session_id}."}
     return {"message": "Không có phiên nào để xóa."}
+
+@app.post("/ocr")
+async def ocr_endpoint(files: List[UploadFile] = File(...)):
+    """
+    Nhận 1 hoặc nhiều ảnh từ Node.js, xử lý OCR và trả kết quả.
+    """
+    contents = [await f.read() for f in files]
+    result = process_images(contents)
+
+    return {
+        "message": "OCR thành công!",
+        "text": result["text"],
+        "pdf_path": result["pdf_path"]
+    }
