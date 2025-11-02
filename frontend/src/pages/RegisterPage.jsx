@@ -113,8 +113,8 @@ const RegisterPage = () => {
   // HANDLERS
 // Registration form validation
 function validateForm() {
-  const reEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-  const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+  const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   if (username.trim().length < 2) return 'Ten dang nhap phai co it nhat 2 ky tu.';
   if (!reEmail.test(email)) return 'Email khong hop le.';
   if (!strongPw.test(password)) return 'Mat khau phai toi thieu 8 ky tu va gom chu hoa, chu thuong, so va ky tu dac biet.';
@@ -152,7 +152,7 @@ function validateForm() {
   // Handle OTP verification (Step 2)
   async function handleOtpSubmit(e) {
     e.preventDefault();
-    if (!/^\\d{6}$/.test(otp)) {
+    if (!/^\d{6}$/.test(otp)) {
       setOtpError('OTP phai la 6 chu so');
       return;
     }
