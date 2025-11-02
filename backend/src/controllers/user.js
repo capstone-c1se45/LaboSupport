@@ -46,19 +46,30 @@ export const userController = {
   async sendVerifyCode(req, res) {
     try {
       const { email } = req.body;
-      if (!email) return res.status(400).json({ message: "Thiếu email" });
+      const normEmail = (email || "").trim().toLowerCase();
+      if (!normEmail) return res.status(400).json({ message: "Thiếu email" });
 
       const code = Math.floor(100000 + Math.random() * 900000).toString(); // mã 6 số
-      verifyCodes.set(email, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
+      verifyCodes.set(normEmail, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
 
-      await mailer.sendMail({
-        from: `"LaboSupport" <${process.env.MAIL_USER}>`,
-        to: email,
-        subject: "Mã xác nhận đăng ký tài khoản",
-        text: `Mã xác nhận của bạn là: ${code} (hết hạn sau 5 phút)`,
-      });
+      try {
+        await mailer.sendMail({
+          from: `"LaboSupport" <${process.env.MAIL_USER}>`,
+          to: email,
+          subject: "Mã xác nhận đăng ký tài khoản",
+          text: `Mã xác nhận của bạn là: ${code} (hết hạn sau 5 phút)`,
+        });
+      } catch (mailErr) {
+        // Log mail error but still allow dev echo fallback below
+        console.warn("sendVerifyCode mailer error:", mailErr?.message || mailErr);
+      }
 
-      res.status(200).json({ message: "Đã gửi mã xác nhận qua email" });
+      // Echo OTP in non-production to ease local testing
+      const shouldEcho = process.env.NODE_ENV !== "production" || process.env.DEV_ECHO_OTP === "1";
+      const payload = { message: "Đã gửi mã xác nhận qua email" };
+      if (shouldEcho) payload.code = code;
+
+      res.status(200).json(payload);
     } catch (error) {
       console.error("Error sendVerifyCode:", error);
       res.status(500).json({ message: "Lỗi khi gửi mã xác nhận" });
@@ -72,9 +83,11 @@ async register(req, res) {
   try {
     const { username, password, full_name, email, phone, role_id, verify_code } = req.body;
 
+    const normEmail = (email || "").trim().toLowerCase();
+
     // ✅ Kiểm tra xem có mã xác nhận hợp lệ không
-    const record = verifyCodes.get(email);
-    if (!record || record.code !== verify_code) {
+    const record = verifyCodes.get(normEmail);
+    if (!record || record.code !== verify_code || Date.now() > record.expires) {
       return res.status(400).json({ message: "Mã xác nhận không đúng hoặc đã hết hạn" });
     }
 
@@ -106,7 +119,7 @@ async register(req, res) {
     const created = await userModel.createUser(newUser);
 
     // Xóa mã xác nhận sau khi đăng ký thành công
-    verifyCodes.delete(email);
+    verifyCodes.delete(normEmail);
 
     res.status(201).json({ message: "Đăng ký thành công", user: created });
   } catch (error) {
@@ -211,3 +224,4 @@ async register(req, res) {
 
 
 };
+

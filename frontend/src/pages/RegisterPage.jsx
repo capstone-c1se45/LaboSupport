@@ -113,8 +113,8 @@ const RegisterPage = () => {
   // HANDLERS
 // Registration form validation
 function validateForm() {
-  const reEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-  const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+  const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   if (username.trim().length < 2) return 'Ten dang nhap phai co it nhat 2 ky tu.';
   if (!reEmail.test(email)) return 'Email khong hop le.';
   if (!strongPw.test(password)) return 'Mat khau phai toi thieu 8 ky tu va gom chu hoa, chu thuong, so va ky tu dac biet.';
@@ -144,7 +144,7 @@ function validateForm() {
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
       setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
-      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui l�ng th? l?i!") });
+      setToast({ type: "error", message: getErrorMessage(err) });
     }
     setLoading(false);
   }
@@ -152,7 +152,7 @@ function validateForm() {
   // Handle OTP verification (Step 2)
   async function handleOtpSubmit(e) {
     e.preventDefault();
-    if (!/^\\d{6}$/.test(otp)) {
+    if (!/^\d{6}$/.test(otp)) {
       setOtpError('OTP phai la 6 chu so');
       return;
     }
@@ -169,7 +169,7 @@ function validateForm() {
         // navigate("/home", { state: { role: "Người dùng đã đăng ký" } });
       }, 900);
     } catch (err) {
-      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
+      setOtpError(getErrorMessage(err));
     }
     setOtpLoading(false);
   }
@@ -188,7 +188,7 @@ function validateForm() {
       setOtpResendCooldown(OTP_COOLDOWN);
       setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
-      setOtpError("Gửi lại OTP thất bại. Vui lòng thử lại.");
+      setOtpError(getErrorMessage(err));
     }
     setOtpLoading(false);
   }
@@ -488,9 +488,9 @@ function validateForm() {
         </div>
       </div>
       {Toast}
-    </div> // Missing closing div tag was here
+    </div>
   );
-}; // The stray '};' was here, now correctly closes the component
+};
 
 export default RegisterPage;
 
