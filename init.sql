@@ -41,7 +41,6 @@ CREATE TABLE IF NOT EXISTS Handbook_Section (
   law_name VARCHAR(200) NOT NULL,        -- "Bộ luật Lao động 2019"
   chapter VARCHAR(100),                  -- "Chương I"
   law_reference VARCHAR(100), -- ví dụ: "Điều 14 - Bộ luật Lao động 2019"
-  article_number VARCHAR(50),            -- "Điều 1"
   article_title VARCHAR(255),            -- "Phạm vi điều chỉnh"
   chunk_index INT DEFAULT 1,             -- Thứ tự đoạn trong điều luật
   content TEXT NOT NULL,                 -- Nội dung cụ thể

@@ -8,6 +8,7 @@ import swaggerDocs from "./swagger.js";
 import { createServer } from "http";
 import cookieParser from "cookie-parser"
 import { pool } from "./config/mysql.js";
+import main from "./utils/init_handbook.js";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
@@ -22,6 +23,10 @@ try {
   console.error("❌ Lỗi kết nối MySQL:", error.message);
 }
 
+// chèn luật
+// (async () => {
+//   await main();
+// })();
 
 
 app.use(cookieParser());
