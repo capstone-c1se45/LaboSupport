@@ -35,17 +35,23 @@ CREATE TABLE IF NOT EXISTS User_Profile (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
 
--- kho kiến thức pháp luật lao động
+-- kho kiến thức pháp luật lao động để AI chatbot tra cứu, trả lời người dùng.
 CREATE TABLE IF NOT EXISTS Handbook_Section (
-  section_id CHAR(36) PRIMARY KEY,
-  title VARCHAR(200) NOT NULL,
-  content TEXT NOT NULL,
-  category VARCHAR(100),
+  section_id CHAR(36) PRIMARY KEY,       -- UUID
+  law_name VARCHAR(200) NOT NULL,        -- "Bộ luật Lao động 2019"
+  chapter VARCHAR(100),                  -- "Chương I"
+  law_reference VARCHAR(100), -- ví dụ: "Điều 14 - Bộ luật Lao động 2019"
+  article_number VARCHAR(50),            -- "Điều 1"
+  article_title VARCHAR(255),            -- "Phạm vi điều chỉnh"
+  chunk_index INT DEFAULT 1,             -- Thứ tự đoạn trong điều luật
+  content TEXT NOT NULL,                 -- Nội dung cụ thể
+  category VARCHAR(100),                 -- Tùy chọn (VD: "Quan hệ lao động")
   created_by CHAR(36),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES User(user_id)
 );
+
 
 -- tập hợp câu hỏi thường gặp để cải thiện chatbot.
 CREATE TABLE IF NOT EXISTS FAQ (
