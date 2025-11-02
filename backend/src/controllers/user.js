@@ -45,11 +45,8 @@ export const userController = {
   // 📨 Gửi mã xác nhận email
   async sendVerifyCode(req, res) {
     try {
-      const { email } = req.body;
-      if (!email) return res.status(400).json({ message: "Thiếu email" });
-
-      const code = Math.floor(100000 + Math.random() * 900000).toString(); // mã 6 số
-      verifyCodes.set(email, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
+      const { email } = req.body;\r\n      const normEmail = (email || "").trim().toLowerCase();\r\n      if (!normEmail) return res.status(400).json({ message: "Thi?u email" });\r\n\r\n      const code = Math.floor(100000 + Math.random() * 900000).toString(); // mã 6 số
+      verifyCodes.set(normEmail, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
 
       await mailer.sendMail({
         from: `"LaboSupport" <${process.env.MAIL_USER}>`,
@@ -70,10 +67,10 @@ export const userController = {
   // ✅ Đăng ký người dùng (chỉ khi mã đúng)
 async register(req, res) {
   try {
-    const { username, password, full_name, email, phone, role_id, verify_code } = req.body;
+    const { username, password, full_name, email, phone, role_id, verify_code } = req.body;\r\n\r\n    const normEmail = (email || "").trim().toLowerCase();
 
     // ✅ Kiểm tra xem có mã xác nhận hợp lệ không
-    const record = verifyCodes.get(email);
+    const record = verifyCodes.get(normEmail);
     if (!record || record.code !== verify_code) {
       return res.status(400).json({ message: "Mã xác nhận không đúng hoặc đã hết hạn" });
     }
@@ -106,7 +103,7 @@ async register(req, res) {
     const created = await userModel.createUser(newUser);
 
     // Xóa mã xác nhận sau khi đăng ký thành công
-    verifyCodes.delete(email);
+    verifyCodes.delete(normEmail);
 
     res.status(201).json({ message: "Đăng ký thành công", user: created });
   } catch (error) {
@@ -211,3 +208,4 @@ async register(req, res) {
 
 
 };
+
