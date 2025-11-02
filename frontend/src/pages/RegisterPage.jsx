@@ -488,7 +488,7 @@ function validateForm() {
         </div>
       </div>
       {Toast}
-    </div> {/* container end */}
+    </div>
   );
 };
 
