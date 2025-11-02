@@ -218,14 +218,57 @@ def reset_chat(session_id: str = Form("default")):
 
 @app.post("/ocr")
 async def ocr_endpoint(files: List[UploadFile] = File(...)):
-    """
-    Nhận 1 hoặc nhiều ảnh từ Node.js, xử lý OCR và trả kết quả.
-    """
+  
     contents = [await f.read() for f in files]
-    result = process_images(contents)
+
+    try:
+        result = process_images(contents)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi OCR ảnh: {e}")
+
+    ocr_text = result.get("text", "").strip()
+    pdf_path = result.get("pdf_path", "")
+
+    if not ocr_text:
+        raise HTTPException(status_code=400, detail="Không thể đọc được văn bản từ ảnh.")
+
+    contract_excerpt = ocr_text[:8000].rsplit('.', 1)[0] + '.' if len(ocr_text) > 8000 else ocr_text
+
+    system_prompt = "Bạn là chuyên gia pháp lý Việt Nam, am hiểu Bộ luật Lao động 2019."
+    user_prompt = f"""
+    Dưới đây là nội dung hợp đồng được trích xuất bằng OCR từ ảnh:
+
+    --- NỘI DUNG HỢP ĐỒNG ---
+    {contract_excerpt}
+
+    Hãy thực hiện các yêu cầu sau:
+    1. Tóm tắt ngắn gọn nội dung hợp đồng.
+    2. Đánh giá quyền lợi và nghĩa vụ của người lao động.
+    3. Xác định xem có điều khoản nào có dấu hiệu vi phạm Bộ luật Lao động 2019 không.
+    4. Đề xuất chỉnh sửa để hợp đồng hợp pháp hơn.
+    Trình bày bằng **Markdown**, ngắn gọn, rõ ràng, dễ hiểu.
+    """
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    try:
+        loop = asyncio.get_event_loop()
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
+        analysis_result = await loop.run_in_executor(executor, call_gemini_api, messages, api_url)
+    except requests.exceptions.HTTPError as http_err:
+        raise HTTPException(
+            status_code=http_err.response.status_code if http_err.response else 500,
+            detail=f"Lỗi HTTP khi gọi Gemini API: {http_err}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi phân tích hợp đồng: {e}")
 
     return {
-        "message": "OCR thành công!",
-        "text": result["text"],
-        "pdf_path": result["pdf_path"]
+        "message": "OCR và phân tích hợp đồng thành công!",
+        "ocr_text": ocr_text,
+        "pdf_path": pdf_path,
+        "analysis": analysis_result
     }

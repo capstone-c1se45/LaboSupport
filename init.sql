@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS FAQ (
 CREATE TABLE IF NOT EXISTS Contract (
   contract_id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
-  file_path VARCHAR(255) NOT NULL, -- đường dẫn lưu file hợp đồng(firebase, s3,...)
+  file_path VARCHAR(255) NOT NULL,
   original_name VARCHAR(200),
   uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
