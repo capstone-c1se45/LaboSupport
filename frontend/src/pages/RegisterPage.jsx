@@ -144,7 +144,7 @@ function validateForm() {
       setOtpResendCooldown(OTP_COOLDOWN); // start timer on OTP screen
       setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
-      setToast({ type: "error", message: getErrorMessage(err, "G?i OTP th?t b?i. Vui l�ng th? l?i!") });
+      setToast({ type: "error", message: getErrorMessage(err) });
     }
     setLoading(false);
   }
@@ -169,7 +169,7 @@ function validateForm() {
         // navigate("/home", { state: { role: "Người dùng đã đăng ký" } });
       }, 900);
     } catch (err) {
-      setOtpError(getErrorMessage(err, "�ang k� th?t b?i. Vui l�ng ki?m tra th�ng tin v� th? l?i."));
+      setOtpError(getErrorMessage(err));
     }
     setOtpLoading(false);
   }
@@ -188,7 +188,7 @@ function validateForm() {
       setOtpResendCooldown(OTP_COOLDOWN);
       setToast({ type: "success", message: "OTP moi da duoc gui!" });
     } catch (err) {
-      setOtpError("Gửi lại OTP thất bại. Vui lòng thử lại.");
+      setOtpError(getErrorMessage(err));
     }
     setOtpLoading(false);
   }
