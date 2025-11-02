@@ -488,9 +488,9 @@ function validateForm() {
         </div>
       </div>
       {Toast}
-    </div> // Missing closing div tag was here
+    </div> {/* container end */}
   );
-}; // The stray '};' was here, now correctly closes the component
+};
 
 export default RegisterPage;
 
