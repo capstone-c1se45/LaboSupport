@@ -325,7 +325,7 @@ export default function ContractAnalysis() {
                     {selectedContract.data.analysis?.danhgia ? (
                       <div className="prose prose-slate max-w-none text-sm">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                          {selectedContract.data.analysis.summary}
+                          {selectedContract.data.analysis.danhgia}
                         </ReactMarkdown>
                       </div>
                     ) : (

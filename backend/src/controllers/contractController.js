@@ -231,19 +231,22 @@ export const contractController = {
     const fullSummary = aiResponse.data?.summary || "";
 
     // 🧩 Tách nội dung từng phần
-    const extractSection = (text, sectionTitle) => {
-      const regex = new RegExp(`###\\s*${sectionTitle}[\\s\\S]*?(?=###\\s*\\d+\\.|$)`, "i");
-      const match = text.match(regex);
-      return match ? match[0].trim() : "";
-    };
+    const extractSection = (text, titleStart) => {
+  const regex = new RegExp(
+    `###\\s*\\d+\\.\\s*${titleStart}[\\s\\S]*?(?=###\\s*\\d+\\.\\s*|$)`,
+    "i"
+  );
+  const match = text.match(regex);
+  return match ? match[0].trim() : "";
+};
 
-    const tomTat = extractSection(fullSummary, "1\\.\\s*Tóm tắt nội dung hợp đồng");
-    const danhGia = extractSection(fullSummary, "2\\.\\s*Đánh giá quyền lợi[\\s\\S]*nghĩa vụ của người lao động");
-    const phanTich = extractSection(fullSummary, "3\\.\\s*Phân tích các điều khoản[\\s\\S]*Bộ luật Lao động 2019");
-    const deXuat = extractSection(fullSummary, "4\\.\\s*Đề xuất chỉnh sửa[\\s\\S]*pháp luật hơn");
+const tomTat = extractSection(fullSummary, "1. Tóm tắt nội dung");
+const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
+const phanTich = extractSection(fullSummary, "Phân tích các điều khoản ");
+const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
 
     // 6. Lưu kết quả
-    await contractOcrModel.saveOcrResult(contractId, "", fullSummary);
+    await contractOcrModel.saveOcrResult(contractId, "", fullSummary, tomTat, danhGia, phanTich, deXuat);
     await contractModel.updateContractStatus(contractId, "ANALYZED");
 
     // 7. Trả kết quả chi tiết cho client
