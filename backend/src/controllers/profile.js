@@ -20,7 +20,16 @@ export const profileController = {
   async updateProfile(req, res) {
     try {
       const userId = req.user.user_id;
-      const { full_name, phone, dob, gender, address, occupation, email } = req.body;
+      let { full_name, phone, dob, gender, address, occupation, email } = req.body;
+
+      // Normalize DOB: accept dd-mm-yyyy or dd/mm/yyyy and convert to yyyy-mm-dd
+      if (typeof dob === 'string') {
+        const m = dob.match(/^(\d{2})[-\/.](\d{2})[-\/.](\d{4})$/);
+        if (m) {
+          const [_, dd, mm, yyyy] = m;
+          dob = `${yyyy}-${mm}-${dd}`; // yyyy-mm-dd
+        }
+      }
 
       // ✅ Validate input
       if (!validator.isValidName(full_name)) {
