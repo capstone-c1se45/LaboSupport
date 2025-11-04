@@ -14,6 +14,16 @@ dotenvFlow.config();
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'contracts'); // Thư mục lưu trữ file tạm
 
+
+const extractSection = (text, titleStart) => {
+  const regex = new RegExp(
+    `###\\s*\\d+\\.\\s*${titleStart}[\\s\\S]*?(?=###\\s*\\d+\\.\\s*|$)`,
+    "i"
+  );
+  const match = text.match(regex);
+  return match ? match[0].trim() : "";
+};
+
 // Đảm bảo thư mục upload tồn tại
 const ensureUploadDirExists = async () => {
   try {
@@ -230,15 +240,7 @@ export const contractController = {
     // 5. Xử lý dữ liệu phân tích
     const fullSummary = aiResponse.data?.summary || "";
 
-    // 🧩 Tách nội dung từng phần
-    const extractSection = (text, titleStart) => {
-  const regex = new RegExp(
-    `###\\s*\\d+\\.\\s*${titleStart}[\\s\\S]*?(?=###\\s*\\d+\\.\\s*|$)`,
-    "i"
-  );
-  const match = text.match(regex);
-  return match ? match[0].trim() : "";
-};
+ 
 
 const tomTat = extractSection(fullSummary, "1. Tóm tắt nội dung");
 const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
@@ -341,8 +343,16 @@ const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
         // Cập nhật trạng thái là đã phân tích ngay lập tức
         await contractModel.updateContractStatus(newContractId, 'ANALYZED');
 
+        // tach 
+
+        const tomTat = extractSection(analysis, "1. Tóm tắt nội dung");
+        const danhGia = extractSection(analysis, "Đánh giá Quyền lợi");
+        const phanTich = extractSection(analysis, "Phân tích các điều khoản ");
+        const deXuat = extractSection(analysis, "Đề xuất chỉnh sửa");
+
+
         // Lưu kết quả OCR/Analysis vào bảng riêng
-        await contractOcrModel.saveOcrResult(newContractId, ocr_text, analysis);
+        await contractOcrModel.saveOcrResult(newContractId, ocr_text, analysis, tomTat, danhGia, phanTich, deXuat);
 
         // 7. Trả kết quả về client
         return responseHandler.created(res, "Phân tích ảnh thành công.", {
