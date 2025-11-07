@@ -81,6 +81,10 @@ CREATE TABLE IF NOT EXISTS Contract_OCR (
   contract_id CHAR(36) NOT NULL,
   extracted_text LONGTEXT,
   summary TEXT,
+  tomtat TEXT,
+  danhgia TEXT,
+  phantich TEXT,
+  dexuat TEXT,
   processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (contract_id) REFERENCES Contract(contract_id)
 );

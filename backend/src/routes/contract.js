@@ -10,6 +10,10 @@ router.use(authMiddleware.verifyToken);
 // POST /api/contracts/upload - Upload file hợp đồng
 router.post("/upload", contractController.uploadContract);
 
+// POST /api/contracts/analyze-images - Upload và phân tích ảnh hợp đồng
+router.post("/analyze-images", contractController.analyzeContractImages);
+
+
 // GET /api/contracts - Lấy danh sách hợp đồng của người dùng
 router.get("/", contractController.listContracts);
 

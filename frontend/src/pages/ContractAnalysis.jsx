@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { api } from '../lib/api-client.js';
-import { useNavigate } from 'react-router-dom';
+import { api } from '../lib/api-client.js'; // Đã kích hoạt import thật
+import { useNavigate } from 'react-router-dom'; // Đã kích hoạt import thật
+
 
 const UploadIcon = () => <svg className="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
 const DocIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
@@ -21,7 +22,7 @@ export default function ContractAnalysis() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Dùng useNavigate thật
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function ContractAnalysis() {
       setError(null);
       try {
         const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-        if (!token) {
+        if (!token) { // Bỏ điều kiện `!api`
           navigate('/login');
           return;
         }
@@ -53,7 +54,7 @@ export default function ContractAnalysis() {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
         setError("File quá lớn (tối đa 10MB).");
         setSelectedFile(null);
       } else if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
@@ -77,14 +78,21 @@ export default function ContractAnalysis() {
     try {
       const response = await api.post('/contracts/upload', formData, {
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
+          // Giữ logic mới của bạn
+          if (progressEvent.lengthComputable) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          } else if (progressEvent.loaded && progressEvent.total) { 
+            // Fallback cho trường hợp lengthComputable là false nhưng vẫn có dữ liệu
+             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+             setUploadProgress(percentCompleted);
+          }
         },
       });
       setContracts([response.data.data, ...contracts]);
-      setSelectedFile(null); 
-      if (fileInputRef.current) fileInputRef.current.value = ""; 
-      setError(null); 
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setError(null);
     } catch (err) {
       console.error("Upload failed:", err);
       setError(err.response?.data?.message || "Upload thất bại. Vui lòng thử lại.");
@@ -95,84 +103,91 @@ export default function ContractAnalysis() {
   };
 
   const fetchContractDetails = async (contractId) => {
-      setSelectedContract({ id: contractId, loading: true });
-      try {
-          const response = await api.get(`/contracts/${contractId}`);
-          setSelectedContract({ id: contractId, data: response.data.data, loading: false });
-      } catch (err) {
-          console.error("Error fetching contract details:", err);
-          setSelectedContract({ id: contractId, loading: false }); // Stop loading
-          setError("Không thể tải chi tiết hợp đồng.");
-          if (err.response?.status === 401) navigate('/login');
-      }
+    setSelectedContract({ id: contractId, loading: true });
+    setError(null);
+    try {
+      const response = await api.get(`/contracts/${contractId}`);
+      setSelectedContract({ id: contractId, data: response.data.data, loading: false });
+    } catch (err) {
+      console.error("Error fetching contract details:", err);
+      setSelectedContract({ id: contractId, loading: false }); // Stop loading
+      setError("Không thể tải chi tiết hợp đồng.");
+      if (err.response?.status === 401) navigate('/login');
+    }
   };
 
 
   const handleAnalyze = async (contractId) => {
-    setIsLoadingAnalysis(contractId); 
+    setIsLoadingAnalysis(contractId);
     setError(null);
     try {
       const response = await api.post(`/contracts/${contractId}/analyze`);
+      // Giữ logic mới của bạn: response.data.data là đối tượng analysis
+      const analysisResult = {
+        ...response.data.data,
+        processed_at: new Date().toISOString()
+      };
+
+      // Update contract in the main list
       setContracts(prevContracts =>
-        prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ANALYZED' } : c)
+        prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ANALYZED', analysis: analysisResult } : c)
       );
-       if (selectedContract?.id === contractId) {
-            setSelectedContract(prev => ({
-                ...prev,
-                data: {
-                    ...(prev.data || {}),
-                    status: 'ANALYZED',
-                    analysis: { 
-                        summary: response.data.data.summary,
-                         processed_at: new Date().toISOString()
-                    }
-                }
-            }));
-       }
-
-
+      
+      // Update selected contract details if it's the one being viewed
+      if (selectedContract?.id === contractId) {
+        setSelectedContract(prev => ({
+          ...prev,
+          data: {
+            ...(prev.data || {}),
+            status: 'ANALYZED',
+            analysis: analysisResult
+          }
+        }));
+      }
     } catch (err) {
       console.error("Analysis failed:", err);
-       setError(err.response?.data?.message || "Phân tích thất bại. Vui lòng thử lại.");
-       setContracts(prevContracts =>
-         prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ERROR' } : c)
-       );
-       if (selectedContract?.id === contractId) {
-           setSelectedContract(prev => ({
-               ...prev,
-               data: { ...(prev.data || {}), status: 'ERROR' } 
-           }));
-       }
-        if (err.response?.status === 401) navigate('/login');
+      setError(err.response?.data?.message || "Phân tích thất bại. Vui lòng thử lại.");
+      // Update status to ERROR in list
+      setContracts(prevContracts =>
+        prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ERROR' } : c)
+      );
+      // Update status to ERROR in details
+      if (selectedContract?.id === contractId) {
+        setSelectedContract(prev => ({
+          ...prev,
+          data: { ...(prev.data || {}), status: 'ERROR' }
+        }));
+      }
+      if (err.response?.status === 401) navigate('/login');
     } finally {
-      setIsLoadingAnalysis(null); 
+      setIsLoadingAnalysis(null);
     }
   };
 
   const getStatusComponent = (status) => {
-      switch (status) {
-          case 'PENDING': return <span className="text-xs inline-flex items-center gap-1 text-gray-500"><ClockIcon /> Chờ xử lý</span>;
-          case 'ANALYZING': return <span className="text-xs inline-flex items-center gap-1 text-blue-500"><ProcessingIcon /> Đang phân tích</span>;
-          case 'ANALYZED': return <span className="text-xs inline-flex items-center gap-1 text-green-500"><CheckCircleIcon /> Đã phân tích</span>;
-          case 'ERROR':
-          case 'ERROR_AI':
-          case 'ERROR_FILE': return <span className="text-xs inline-flex items-center gap-1 text-red-500"><ExclamationIcon /> Lỗi</span>;
-          default: return <span className="text-xs text-gray-400">{status}</span>;
-      }
+    switch (status) {
+      case 'PENDING': return <span className="text-xs inline-flex items-center gap-1 text-gray-500"><ClockIcon /> Chờ xử lý</span>;
+      case 'ANALYZING': return <span className="text-xs inline-flex items-center gap-1 text-blue-500"><ProcessingIcon /> Đang phân tích</span>;
+      case 'ANALYZED': return <span className="text-xs inline-flex items-center gap-1 text-green-500"><CheckCircleIcon /> Đã phân tích</span>;
+      case 'ERROR':
+      case 'ERROR_AI':
+      case 'ERROR_FILE': return <span className="text-xs inline-flex items-center gap-1 text-red-500"><ExclamationIcon /> Lỗi</span>;
+      default: return <span className="text-xs text-gray-400">{status}</span>;
+    }
   };
 
   return (
     <div className='flex h-screen bg-gray-50'>
       <aside className='fixed h-full w-64 bg-white border-r border-gray-200 flex flex-col'>
-          <nav className='flex-1 p-3 text-sm'>
-             <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'> Trang Chính</a>
-              <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>🤖 Trợ lý AI</a>
-              <a href='/contract-analysis' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium mt-1'><DocIcon/> Phân tích HĐ</a>
-              <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>👤 Hồ sơ cá nhân</a>
-         </nav>
-          <div className='border-t p-3'>
-            <a href='/logout' className='w-full inline-flex items-center justify-center gap-2 px-3 py-2 border rounded-md text-gray-700 hover:bg-gray-50'>Đăng xuất</a>
-          </div>
+        <nav className='flex-1 p-3 text-sm'>
+          <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'> Trang Chính</a>
+          <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>🤖 Trợ lý AI</a>
+          <a href='/contract-analysis' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium mt-1'><DocIcon /> Phân tích HĐ</a>
+          <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>👤 Hồ sơ cá nhân</a>
+        </nav>
+        <div className='border-t p-3'>
+          <a href='/logout' className='w-full inline-flex items-center justify-center gap-2 px-3 py-2 border rounded-md text-gray-700 hover:bg-gray-50'>Đăng xuất</a>
+        </div>
       </aside>
 
       <main className='ml-64 p-6 w-full overflow-y-auto'>
@@ -208,8 +223,11 @@ export default function ContractAnalysis() {
           )}
         </div>
 
+        {/* --- Main Content Grid (Giữ nguyên layout mới của bạn) --- */}
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <div className='md:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-sm h-fit'>
+          
+          {/* Col 1: Contract List */}
+          <div className='md:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-sm h-fit max-h-[70vh] overflow-y-auto'>
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Hợp đồng của bạn</h2>
             {isLoadingContracts ? (
               <p className="text-sm text-gray-500">Đang tải danh sách...</p>
@@ -219,75 +237,138 @@ export default function ContractAnalysis() {
               <ul className='space-y-3'>
                 {contracts.map(contract => (
                   <li key={contract.contract_id}
-                      className={`p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${selectedContract?.id === contract.contract_id ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}`}
-                      onClick={() => fetchContractDetails(contract.contract_id)}>
+                    className={`p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${selectedContract?.id === contract.contract_id ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}`}
+                    onClick={() => fetchContractDetails(contract.contract_id)}>
                     <div className="flex items-center justify-between gap-2">
-                         <span className='text-sm font-medium text-gray-800 truncate' title={contract.original_name}><DocIcon className="inline w-4 h-4 mr-1 text-gray-400"/>{contract.original_name}</span>
-                         {(contract.status === 'PENDING' || contract.status.startsWith('ERROR')) && (
-                             <button
-                                 onClick={(e) => { e.stopPropagation(); handleAnalyze(contract.contract_id); }}
-                                 disabled={isLoadingAnalysis === contract.contract_id}
-                                 className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 whitespace-nowrap"
-                             >
-                                 {isLoadingAnalysis === contract.contract_id ? '...' : 'Phân tích'}
-                             </button>
-                         )}
+                      <span className='text-sm font-medium text-gray-800 truncate' title={contract.original_name}><DocIcon className="inline w-4 h-4 mr-1 text-gray-400" />{contract.original_name}</span>
+                      {(contract.status === 'PENDING' || contract.status.startsWith('ERROR')) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleAnalyze(contract.contract_id); }}
+                          disabled={isLoadingAnalysis === contract.contract_id}
+                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isLoadingAnalysis === contract.contract_id ? '...' : 'Phân tích'}
+                        </button>
+                      )}
                     </div>
-                     <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-500">
-                             {new Date(contract.uploaded_at).toLocaleDateString('vi-VN')}
-                        </span>
-                        {getStatusComponent(contract.status)}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-500">
+                        {new Date(contract.uploaded_at).toLocaleDateString('vi-VN')}
+                      </span>
+                      {getStatusComponent(contract.status)}
                     </div>
-
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          <div className='md:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm'>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Chi tiết & Kết quả Phân tích</h2>
+          {/* --- RIGHT PANE (Details) --- */}
+          <div className='md:col-span-2'>
             {selectedContract?.loading ? (
-              <p className="text-sm text-gray-500">Đang tải chi tiết...</p>
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500">Đang tải chi tiết...</p>
+              </div>
             ) : selectedContract?.data ? (
-              <div>
-                <h3 className="text-md font-semibold text-gray-900 mb-1">{selectedContract.data.original_name}</h3>
-                 <div className="text-xs text-gray-500 mb-3">Tải lên: {new Date(selectedContract.data.uploaded_at).toLocaleString('vi-VN')} | Trạng thái: {getStatusComponent(selectedContract.data.status)}</div>
+              // New 2-Column layout for details
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {(selectedContract.data.status === 'PENDING' || selectedContract.data.status.startsWith('ERROR')) && (
-                     <button
-                        onClick={() => handleAnalyze(selectedContract.id)}
-                        disabled={isLoadingAnalysis === selectedContract.id}
-                        className="mb-4 px-3 py-1.5 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-600 disabled:opacity-50"
-                     >
-                        {isLoadingAnalysis === selectedContract.id ? 'Đang phân tích...' : 'Phân tích hợp đồng này'}
-                     </button>
-                )}
+                {/* Col 2a: Extracted Content */}
+                <div className="lg:col-span-1 bg-white p-5 rounded-xl border border-gray-200 shadow-sm max-h-[80vh] overflow-y-auto">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-1">Nội dung trích xuất</h2>
+                  <div className="text-xs text-gray-500 mb-3">Tệp: {selectedContract.data.original_name} | {getStatusComponent(selectedContract.data.status)}</div>
 
-                {isLoadingAnalysis === selectedContract.id && <p className="text-sm text-blue-500 my-4">AI đang phân tích, vui lòng chờ...</p> }
+                  {(selectedContract.data.status === 'PENDING' || selectedContract.data.status.startsWith('ERROR')) && (
+                    <button
+                      onClick={() => handleAnalyze(selectedContract.id)}
+                      disabled={isLoadingAnalysis === selectedContract.id}
+                      className="mb-4 px-3 py-1.5 bg-green-500 text-white text-sm font-semibold rounded hover:bg-green-600 disabled:opacity-50"
+                    >
+                      {isLoadingAnalysis === selectedContract.id ? 'Đang phân tích...' : 'Phân tích hợp đồng này'}
+                    </button>
+                  )}
+                  {isLoadingAnalysis === selectedContract.id && <p className="text-sm text-blue-500 my-4">AI đang phân tích, vui lòng chờ...</p>}
 
-                 {selectedContract.data.analysis ? (
-                   <div className="prose prose-slate max-w-none p-4 rounded bg-gray-50 border border-gray-200">
-                       <h4>Tóm tắt và Đánh giá từ AI:</h4>
-<ReactMarkdown
-    remarkPlugins={[remarkGfm]}
-    rehypePlugins={[rehypeRaw]}
-  >
-    {selectedContract.data.analysis.summary || "Chưa có tóm tắt."}
-  </ReactMarkdown>                   </div>
-                 ) : selectedContract.data.status === 'ANALYZED' ? (
-                    <p className="text-sm text-gray-500 mt-4">Không tìm thấy kết quả phân tích đã lưu.</p>
-                 ): selectedContract.data.status === 'PENDING' ? (
-                     <p className="text-sm text-gray-500 mt-4">Hợp đồng này chưa được phân tích. Nhấn nút "Phân tích" để bắt đầu.</p>
-                 ) : selectedContract.data.status.startsWith('ERROR') ? (
-                      <p className="text-sm text-red-500 mt-4">Quá trình phân tích trước đó đã gặp lỗi. Vui lòng thử phân tích lại.</p>
-                 ) : null }
+                  {selectedContract.data.analysis?.raw_text ? (
+                    <div className="prose prose-slate max-w-none text-sm whitespace-pre-wrap">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {selectedContract.data.analysis.raw_text}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 mt-4">
+                      {selectedContract.data.status === 'ANALYZED' ? 'Không tìm thấy nội dung trích xuất.' : 'Nội dung sẽ xuất hiện ở đây sau khi phân tích.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Col 2b: Analysis Boxes */}
+                <div className="lg:col-span-1 flex flex-col gap-6 max-h-[80vh] overflow-y-auto">
+                  
+                  {/* Box 1: Main Info */}
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3">Tóm tắt hợp đồng</h2>
+                    {selectedContract.data.analysis?.tomtat ? (
+                      <div className="prose prose-slate max-w-none text-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {selectedContract.data.analysis.tomtat}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">{selectedContract.data.status === 'ANALYZED' ? 'Không có dữ liệu.' : '... '}</p>
+                    )}
+                  </div>
+
+                  {/* Box 2: Summary */}
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3">Đánh giá quyền lợi và nghĩa vụ của người lao động</h2>
+                    {selectedContract.data.analysis?.danhgia ? (
+                      <div className="prose prose-slate max-w-none text-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {selectedContract.data.analysis.danhgia}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">{selectedContract.data.status === 'ANALYZED' ? 'Không có dữ liệu.' : '... '}</p>
+                    )}
+                  </div>
+
+                  {/* Box 3: Risks */}
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3">Phân Tích Cảnh báo & Rủi ro</h2>
+                    {selectedContract.data.analysis?.phantich ? (
+                      <div className="prose prose-slate max-w-none text-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {selectedContract.data.analysis.phantich}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">{selectedContract.data.status === 'ANALYZED' ? 'Không có dữ liệu.' : '... '}</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-3">Đề xuất chỉnh sửa</h2>
+                    {selectedContract.data.analysis?.dexuat ? (
+                      <div className="prose prose-slate max-w-none text-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {selectedContract.data.analysis.dexuat}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">{selectedContract.data.status === 'ANALYZED' ? 'Không có dữ liệu.' : '... '}</p>
+                    )}
+                  </div>
+                </div>
+
               </div>
             ) : (
-              <p className="text-sm text-gray-500">Chọn một hợp đồng từ danh sách bên trái để xem chi tiết.</p>
+              <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                <p className="text-sm text-gray-500">Chọn một hợp đồng từ danh sách bên trái để xem chi tiết.</p>
+              </div>
             )}
           </div>
+          
         </div>
       </main>
     </div>
