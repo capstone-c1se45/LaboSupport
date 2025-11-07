@@ -21,6 +21,8 @@ export const userModel = {
     return rows[0];
   },
 
+  
+
   /**
    * 🔹 Lấy tất cả người dùng (có join role)
    */
@@ -186,5 +188,7 @@ async updateUserWithProfile(user_id, data) {
       conn.release();
     }
   },
+
+
 
 };

@@ -73,4 +73,36 @@ export const profileController = {
       return responseHandler.internalServerError(res, "Internal server error");
     }
   },
+
+  async changePassword(req, res) {
+    try {
+      const userId = req.user.user_id;
+      const { old_password, new_password, confirm_password } = req.body;
+
+      // ✅ Kiểm tra dữ liệu đầu vào
+      if (!old_password || !new_password || !confirm_password) {
+        return responseHandler.badRequest(res, "Thiếu thông tin mật khẩu");
+      }
+
+      if (new_password !== confirm_password) {
+        return responseHandler.badRequest(res, "Xác nhận mật khẩu không khớp");
+      }
+
+      if (new_password.length < 6) {
+        return responseHandler.badRequest(res, "Mật khẩu mới phải có ít nhất 6 ký tự");
+      }
+
+      const result = await profileModel.changePassword(userId, old_password, new_password);
+
+      if (!result.success) {
+        return responseHandler.badRequest(res, result.message || "Đổi mật khẩu thất bại");
+      }
+
+      return responseHandler.success(res, "Đổi mật khẩu thành công");
+    } catch (err) {
+      console.error("Error changePassword:", err);
+      return responseHandler.internalServerError(res, "Lỗi hệ thống khi đổi mật khẩu");
+    }
+  },
+
 };

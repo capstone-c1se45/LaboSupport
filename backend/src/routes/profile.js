@@ -62,5 +62,6 @@ router.get("/", authMiddleware.verifyToken, profileController.getProfile);
  *         description: Updated
  */
 router.put("/", authMiddleware.verifyToken, profileController.updateProfile);
+router.put("/change-password", authMiddleware.verifyToken, profileController.changePassword);
 
 export default router;
