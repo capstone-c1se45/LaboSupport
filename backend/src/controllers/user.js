@@ -44,37 +44,60 @@ export const userController = {
 
   // 📨 Gửi mã xác nhận email
   async sendVerifyCode(req, res) {
+  try {
+    const { email } = req.body;
+    const normEmail = (email || "").trim().toLowerCase();
+    if (!normEmail) return res.status(400).json({ message: "Thiếu email" });
+
+    // Tạo mã OTP 6 chữ số
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    verifyCodes.set(normEmail, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
+
+    // HTML email template
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f9f9f9; padding: 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+          <div style="background: #0056b3; color: #fff; padding: 15px 20px; font-size: 20px; font-weight: bold;">
+            🔒 LaboSupport - Xác nhận Email
+          </div>
+          <div style="padding: 25px;">
+            <p>Xin chào <b>${email}</b>,</p>
+            <p>Bạn vừa yêu cầu xác nhận địa chỉ email của mình trên <b>LaboSupport</b>.</p>
+            <p style="margin: 20px 0; text-align: center;">
+              <span style="display: inline-block; font-size: 28px; font-weight: bold; letter-spacing: 4px; background: #e8f0fe; color: #1a73e8; padding: 10px 20px; border-radius: 8px;">
+                ${code}
+              </span>
+            </p>
+            <p>Mã này sẽ <b>hết hạn sau 5 phút</b>. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email này.</p>
+            <p style="margin-top: 25px; font-size: 13px; color: #888;">Trân trọng,<br>Đội ngũ hỗ trợ LaboSupport 💙</p>
+          </div>
+        </div>
+      </div>
+    `;
+
     try {
-      const { email } = req.body;
-      const normEmail = (email || "").trim().toLowerCase();
-      if (!normEmail) return res.status(400).json({ message: "Thiếu email" });
-
-      const code = Math.floor(100000 + Math.random() * 900000).toString(); // mã 6 số
-      verifyCodes.set(normEmail, { code, expires: Date.now() + 5 * 60 * 1000 }); // hết hạn 5 phút
-
-      try {
-        await mailer.sendMail({
-          from: `"LaboSupport" <${process.env.MAIL_USER}>`,
-          to: email,
-          subject: "Mã xác nhận đăng ký tài khoản",
-          text: `Mã xác nhận của bạn là: ${code} (hết hạn sau 5 phút)`,
-        });
-      } catch (mailErr) {
-        // Log mail error but still allow dev echo fallback below
-        console.warn("sendVerifyCode mailer error:", mailErr?.message || mailErr);
-      }
-
-      // Echo OTP in non-production to ease local testing
-      const shouldEcho = process.env.NODE_ENV !== "production" || process.env.DEV_ECHO_OTP === "1";
-      const payload = { message: "Đã gửi mã xác nhận qua email" };
-      if (shouldEcho) payload.code = code;
-
-      res.status(200).json(payload);
-    } catch (error) {
-      console.error("Error sendVerifyCode:", error);
-      res.status(500).json({ message: "Lỗi khi gửi mã xác nhận" });
+      await mailer.sendMail({
+        from: `"LaboSupport" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: "Mã xác nhận đăng ký tài khoản - LaboSupport",
+        text: `Mã xác nhận của bạn là: ${code} (hết hạn sau 5 phút)`,
+        html: htmlContent,
+      });
+    } catch (mailErr) {
+      console.warn("sendVerifyCode mailer error:", mailErr?.message || mailErr);
     }
-  },
+
+    // Echo OTP trong môi trường dev
+    const shouldEcho = process.env.NODE_ENV !== "production" || process.env.DEV_ECHO_OTP === "1";
+    const payload = { message: "Đã gửi mã xác nhận qua email" };
+    if (shouldEcho) payload.code = code;
+
+    res.status(200).json(payload);
+  } catch (error) {
+    console.error("Error sendVerifyCode:", error);
+    res.status(500).json({ message: "Lỗi khi gửi mã xác nhận" });
+  }
+},
 
 
 
