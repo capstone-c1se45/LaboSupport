@@ -5,13 +5,13 @@ export const contractOcrModel = {
   /**
    * Lưu kết quả OCR và phân tích vào DB
    */
-async saveOcrResult(contractId, extractedText, summary, tomtat, danhgia, phantich, dexuat) {
+async saveOcrResult(contractId, extractedText, summary ,tomtat, danhgia, phantich, dexuat) {
   const ocrId = createCustomNanoid('1234567890abcdef', 20); // Tạo ID duy nhất
   try {
     const [result] = await pool.query(
       `INSERT INTO Contract_OCR 
-        (ocr_id, contract_id, extracted_text, summary, tomtat, danhgia, phantich, dexuat, processed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        (ocr_id, contract_id, extracted_text, summary ,tomtat, danhgia, phantich, dexuat, processed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ? ,?, NOW())
        ON DUPLICATE KEY UPDATE 
         extracted_text = VALUES(extracted_text), 
         summary = VALUES(summary), 
@@ -20,7 +20,7 @@ async saveOcrResult(contractId, extractedText, summary, tomtat, danhgia, phantic
         phantich = VALUES(phantich),
         dexuat = VALUES(dexuat),
         processed_at = NOW()`,
-      [ocrId, contractId, extractedText, summary, tomtat, danhgia, phantich, dexuat]
+      [ocrId, contractId, extractedText, summary ,tomtat, danhgia, phantich, dexuat]
     );
     return { ocr_id: ocrId, affectedRows: result.affectedRows };
   } catch (error) {

@@ -176,7 +176,7 @@ export const contractController = {
   /**
    * Kích hoạt phân tích hợp đồng (đọc file cục bộ)
    */
- async analyzeContract(req, res) {
+async analyzeContract(req, res) { 
   const userId = req.user?.user_id;
   const { id: contractId } = req.params;
 
@@ -210,6 +210,10 @@ export const contractController = {
       return responseHandler.internalServerError(res, "Không thể đọc file hợp đồng đã upload.");
     }
 
+    // 2a. Chuyển file thành text UTF-8 (tiếng Việt)
+    // Nếu file PDF/DOCX, bạn cần dùng thư viện parse text (ví dụ pdf-parse, mammoth) 
+    // Dưới đây ví dụ file text thuần:
+
     // 3. Cập nhật trạng thái sang ANALYZING
     await contractModel.updateContractStatus(contractId, "ANALYZING");
 
@@ -239,21 +243,31 @@ export const contractController = {
 
     // 5. Xử lý dữ liệu phân tích
     const fullSummary = aiResponse.data?.summary || "";
+    const fileText = aiResponse.data?.content || "";
 
- 
+    const tomTat = extractSection(fullSummary, "Tóm tắt nội dung");
+    const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
+    const phanTich = extractSection(fullSummary, "Phân tích các điều khoản");
+    const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
 
-const tomTat = extractSection(fullSummary, "1. Tóm tắt nội dung");
-const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
-const phanTich = extractSection(fullSummary, "Phân tích các điều khoản ");
-const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
+    console.log("Extracted Sections:", { tomTat, danhGia, phanTich, deXuat });
 
-    // 6. Lưu kết quả
-    await contractOcrModel.saveOcrResult(contractId, "", fullSummary, tomTat, danhGia, phanTich, deXuat);
+    // 6. Lưu kết quả: lưu trực tiếp text tiếng Việt vào file_content
+    await contractOcrModel.saveOcrResult(
+      contractId, 
+      fileText,
+      fullSummary,
+      tomTat,
+      danhGia,
+      phanTich,
+      deXuat
+    );
     await contractModel.updateContractStatus(contractId, "ANALYZED");
 
     // 7. Trả kết quả chi tiết cho client
     return responseHandler.success(res, "Phân tích hợp đồng thành công.", {
       contract_id: contractId,
+      extracted_text: fileText,
       summary: fullSummary,
       tomtat: tomTat,
       danhgia: danhGia,
@@ -272,6 +286,7 @@ const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
     return responseHandler.internalServerError(res, "Đã có lỗi xảy ra trong quá trình phân tích.");
   }
 }
+
 ,
 
   /**

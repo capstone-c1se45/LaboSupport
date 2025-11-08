@@ -129,7 +129,9 @@ async def analyze_contract(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API: {e}")
 
-    return {"summary": answer}
+    return {"summary": answer,
+            "content": contract_text.strip()
+            }
 
 
 def call_gemini_api_sync(messages: List[Dict[str, str]]):
@@ -138,7 +140,7 @@ def call_gemini_api_sync(messages: List[Dict[str, str]]):
     
     return call_gemini_api(messages, model_url)
 
-# 💬 API chat (hỏi đáp luật)
+# API chat (hỏi đáp luật)
 @app.post("/chat")
 async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
 

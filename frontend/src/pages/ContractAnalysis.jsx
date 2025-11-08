@@ -25,6 +25,27 @@ export default function ContractAnalysis() {
   const navigate = useNavigate(); // Dùng useNavigate thật
   const fileInputRef = useRef(null);
 
+  function formatContractText(text) {
+  if (!text) return "";
+
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{2,}/g, "\n\n")
+
+    .replace(/HỢP ĐỒNG LAO ĐỘNG(.*?)\n/g, "🧾 **HỢP ĐỒNG LAO ĐỘNG$1**\n\n")
+
+    .replace(/CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM(.*?)\n/g, "**CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM$1**\n\n")
+
+    .replace(/(Điều\s+\d+\..*?)\n/g, "\n\n### $1\n\n")
+
+    .replace(/(^|\n)(\d+\.\d+\.\s+)/g, "$1• ")
+
+    .replace(/●\s*/g, "• ")
+
+    .replace(/(Ký tên|ĐẠI DIỆN.*?)\n/g, "_$1_\n");
+}
+
+
   useEffect(() => {
     const fetchContracts = async () => {
       setIsLoadingContracts(true);
@@ -289,10 +310,10 @@ export default function ContractAnalysis() {
                   )}
                   {isLoadingAnalysis === selectedContract.id && <p className="text-sm text-blue-500 my-4">AI đang phân tích, vui lòng chờ...</p>}
 
-                  {selectedContract.data.analysis?.raw_text ? (
-                    <div className="prose prose-slate max-w-none text-sm whitespace-pre-wrap">
+                  {selectedContract.data.analysis?.extracted_text ? (
+                    <div className="prose prose-slate max-w-none text-sm leading-relaxed">
                       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                        {selectedContract.data.analysis.raw_text}
+                           {formatContractText(selectedContract.data.analysis.extracted_text)}
                       </ReactMarkdown>
                     </div>
                   ) : (
