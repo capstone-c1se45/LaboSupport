@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { api, getErrorMessage } from "../lib/api-client";
 import registerBg from "../assets/registerBg.png";
 import logoImg from "../assets/logo.png";
@@ -54,11 +54,11 @@ export default function RegisterPage() {
     const errs = {};
     const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (username.trim().length < 2) errs.username = 'Tên đăng nhập phải có ít nhất 2 ký tự.';
-    if (!reEmail.test(email)) errs.email = 'Email không hợp lệ.';
-    if (!strongPw.test(password)) errs.password = 'Mật khẩu phải ≥ 8 ký tự, gồm hoa, thường, số và ký tự đặc biệt.';
-    if (password !== password2) errs.password2 = 'Mật khẩu xác nhận không khớp.';
-    if (!agreed) errs.agreed = 'Bạn phải đồng ý với Điều khoản và Chính sách.';
+    if (username.trim().length < 2) errs.username = 'T�n dang nh?p ph?i c� �t nh?t 2 k� t?.';
+    if (!reEmail.test(email)) errs.email = 'Email kh�ng h?p l?.';
+    if (!strongPw.test(password)) errs.password = 'M?t kh?u ph?i = 8 k� t?, g?m hoa, thu?ng, s? v� k� t? d?c bi?t.';
+    if (password !== password2) errs.password2 = 'M?t kh?u x�c nh?n kh�ng kh?p.';
+    if (!agreed) errs.agreed = 'B?n ph?i d?ng � v?i �i?u kho?n v� Ch�nh s�ch.';
     return errs;
   }
 
@@ -77,7 +77,7 @@ export default function RegisterPage() {
       setStep('otp');
       setOtp("");
       setOtpResendCooldown(OTP_COOLDOWN);
-      setToast({ type: 'success', message: 'OTP mới đã được gửi!' });
+      setToast({ type: 'success', message: 'OTP m?i d� du?c g?i!' });
     } catch (err) {
       setToast({ type: 'error', message: getErrorMessage(err) });
     }
@@ -87,15 +87,15 @@ export default function RegisterPage() {
   async function handleOtpSubmit(e) {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) {
-      setOtpError('OTP phải là 6 chữ số');
+      setOtpError('OTP ph?i l� 6 ch? s?');
       return;
     }
     setOtpLoading(true);
     setOtpError("");
     try {
-      await api.post('/users/register', { username, password, email, verify_code: otp });
+      await api.post('/users/register', { username, password, email: email.trim().toLowerCase(), verify_code: otp });
       localStorage.setItem('role', 'Nguoi dung da dang ky');
-      setToast({ type: 'success', message: 'Đăng ký thành công!' });
+      setToast({ type: 'success', message: '�ang k� th�nh c�ng!' });
       setTimeout(() => { window.location.href = '/home'; }, 800);
     } catch (err) {
       setOtpError(getErrorMessage(err));
@@ -111,9 +111,9 @@ export default function RegisterPage() {
       const resp = await api.post('/users/send-verify-code', { email });
       if (resp?.data?.code) setOtp(resp.data.code);
       setOtpResendCooldown(OTP_COOLDOWN);
-      setToast({ type: 'success', message: 'OTP mới đã được gửi!' });
+      setToast({ type: 'success', message: 'OTP m?i d� du?c g?i!' });
     } catch (err) {
-      setOtpError('Gửi lại OTP thất bại. Vui lòng thử lại.');
+      setOtpError('G?i l?i OTP th?t b?i. Vui l�ng th? l?i.');
     }
     setOtpLoading(false);
   }
@@ -126,16 +126,16 @@ export default function RegisterPage() {
   );
 
   const RegisterForm = (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-[360px] mx-auto px-2 py-10" aria-label="form đăng ký">
-      <h1 className="font-extrabold text-4xl text-blue-600 text-center mb-1">ĐĂNG KÝ</h1>
-      <div className="text-center text-gray-600 mb-4 text-base font-semibold uppercase tracking-wide">CHÀO MỪNG!</div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-[360px] mx-auto px-2 py-10" aria-label="form dang k�">
+      <h1 className="font-extrabold text-4xl text-blue-600 text-center mb-1">�ANG K�</h1>
+      <div className="text-center text-gray-600 mb-4 text-base font-semibold uppercase tracking-wide">CH�O M?NG!</div>
 
-      <label className="text-xs text-gray-700 font-semibold" htmlFor="username">Tên đăng nhập</label>
+      <label className="text-xs text-gray-700 font-semibold" htmlFor="username">T�n dang nh?p</label>
       <input
         id="username"
         type="text"
         className={`border rounded focus:outline-blue-400 px-3 py-2 mb-1 placeholder:text-gray-400 ${fieldErrors.username ? 'border-red-400' : 'border-gray-300'}`}
-        placeholder="Nguyễn Văn A"
+        placeholder="Nguy?n Van A"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         autoFocus
@@ -155,18 +155,18 @@ export default function RegisterPage() {
       />
       {fieldErrors.email && (<div className="text-red-500 text-xs mt-1">{fieldErrors.email}</div>)}
 
-      <label className="text-xs text-gray-700 font-semibold" htmlFor="password">Mật khẩu</label>
+      <label className="text-xs text-gray-700 font-semibold" htmlFor="password">M?t kh?u</label>
       <div className="relative">
         <input
           id="password"
           type={showPassword ? 'text' : 'password'}
           className={`border rounded focus:outline-blue-400 px-3 py-2 pr-8 w-full placeholder:text-gray-400 ${fieldErrors.password ? 'border-red-400' : 'border-gray-300'}`}
-          placeholder="Nhập mật khẩu của bạn"
+          placeholder="Nh?p m?t kh?u c?a b?n"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowPassword(v=>!v)} aria-label="Hiện/ẩn mật khẩu">
+        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowPassword(v=>!v)} aria-label="Hi?n/?n m?t kh?u">
           {showPassword ? (
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825a10.05 10.05 0 01-1.875.175C4.5 19 2 12 2 12a16.038 16.038 0 014.145-5.603M9.878 9.878A3 3 0 1114.12 14.12M17.657 17.657A16.032 16.032 0 0022 12s-2.5-7-10-7a9.956 9.956 0 00-4.62 1.146" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M1 1l22 22" /></svg>
           ) : (
@@ -176,7 +176,7 @@ export default function RegisterPage() {
       </div>
       {fieldErrors.password && (<div className="text-red-500 text-xs mt-1">{fieldErrors.password}</div>)}
 
-      <label className="text-xs text-gray-700 font-semibold" htmlFor="password2">Xác nhận mật khẩu</label>
+      <label className="text-xs text-gray-700 font-semibold" htmlFor="password2">X�c nh?n m?t kh?u</label>
       <div className="relative">
         <input
           id="password2"
@@ -187,7 +187,7 @@ export default function RegisterPage() {
           onChange={(e) => setPassword2(e.target.value)}
           required
         />
-        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowPassword2(v=>!v)} aria-label="Hiện/ẩn mật khẩu">
+        <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" onClick={() => setShowPassword2(v=>!v)} aria-label="Hi?n/?n m?t kh?u">
           {showPassword2 ? (
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825a10.05 10.05 0 01-1.875.175C4.5 19 2 12 2 12a16.038 16.038 0 014.145-5.603M9.878 9.878A3 3 0 1114.12 14.12M17.657 17.657A16.032 16.032 0 0022 12s-2.5-7-10-7a9.956 9.956 0 00-4.62 1.146" /><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M1 1l22 22" /></svg>
           ) : (
@@ -200,9 +200,9 @@ export default function RegisterPage() {
       <label className="flex items-center gap-2 mt-2 text-gray-800 text-sm cursor-pointer select-none">
         <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-blue-600" />
         <span>
-          Tôi đồng ý với{' '}
-          <a href="/terms" target="_blank" className="text-blue-600 underline hover:opacity-80">Điều khoản sử dụng</a>{' '}và{' '}
-          <a href="/privacy" target="_blank" className="text-blue-600 underline hover:opacity-80">Chính sách bảo mật</a>
+          T�i d?ng � v?i{' '}
+          <a href="/terms" target="_blank" className="text-blue-600 underline hover:opacity-80">�i?u kho?n s? d?ng</a>{' '}v�{' '}
+          <a href="/privacy" target="_blank" className="text-blue-600 underline hover:opacity-80">Ch�nh s�ch b?o m?t</a>
         </span>
       </label>
       {fieldErrors.agreed && (<div className="text-red-500 text-xs mt-1">{fieldErrors.agreed}</div>)}
@@ -211,21 +211,21 @@ export default function RegisterPage() {
         {loading ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" /><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            Đang xử lý...
+            �ang x? l�...
           </span>
         ) : (
-          'ĐĂNG KÝ'
+          '�ANG K�'
         )}
       </button>
 
       <div className="text-sm text-center text-gray-500 mt-0">
-        Bạn đã có tài khoản?{' '}
-        <a href="/login" className="text-blue-600 font-semibold hover:underline">Đăng nhập</a>
+        B?n d� c� t�i kho?n?{' '}
+        <a href="/login" className="text-blue-600 font-semibold hover:underline">�ang nh?p</a>
       </div>
 
       <div className="flex items-center gap-2 mt-5 mb-1">
         <hr className="flex-1 border-t border-gray-200" />
-        <span className="px-1 text-gray-400 text-xs tracking-wide">Hoặc tiếp tục với</span>
+        <span className="px-1 text-gray-400 text-xs tracking-wide">Ho?c ti?p t?c v?i</span>
         <hr className="flex-1 border-t border-gray-200" />
       </div>
       <SocialIcons />
@@ -233,10 +233,10 @@ export default function RegisterPage() {
   );
 
   const OtpForm = (
-    <form onSubmit={handleOtpSubmit} className="flex flex-col gap-5 w-full max-w-[370px] mx-auto px-2 animate-fade-in" aria-label="form xác minh OTP">
-      <h1 className="font-bold text-2xl text-gray-900 text-center">Xác minh OTP</h1>
+    <form onSubmit={handleOtpSubmit} className="flex flex-col gap-5 w-full max-w-[370px] mx-auto px-2 animate-fade-in" aria-label="form x�c minh OTP">
+      <h1 className="font-bold text-2xl text-gray-900 text-center">X�c minh OTP</h1>
       <div className="text-center text-gray-600 mb-2 text-base font-medium">
-        Mã xác thực đã gửi tới email:{' '}<span className="text-blue-700 font-semibold break-all">{email}</span>
+        M� x�c th?c d� g?i t?i email:{' '}<span className="text-blue-700 font-semibold break-all">{email}</span>
       </div>
       <input
         type="text"
@@ -244,10 +244,10 @@ export default function RegisterPage() {
         pattern="\\d{6}"
         maxLength={6}
         className="border border-gray-300 rounded focus:outline-blue-400 px-3 py-2 text-lg text-center tracking-widest font-mono placeholder:text-gray-400"
-        placeholder="Nhập mã OTP 6 số"
+        placeholder="Nh?p m� OTP 6 s?"
         value={otp}
         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-        aria-label="Mã OTP"
+        aria-label="M� OTP"
         autoFocus
         required
       />
@@ -257,17 +257,17 @@ export default function RegisterPage() {
         {otpLoading ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" /><path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            Đang xác nhận...
+            �ang x�c nh?n...
           </span>
-        ) : 'Xác nhận'}
+        ) : 'X�c nh?n'}
       </button>
 
       <div className="flex flex-col gap-2 items-center">
         <button type="button" className="text-sm font-medium px-3 py-1 text-blue-600 enabled:hover:underline disabled:text-gray-400 transition" onClick={handleResendOtp} disabled={otpResendCooldown > 0 || otpLoading}>
-          {otpResendCooldown > 0 ? `Gửi lại OTP (${otpResendCooldown}s)` : 'Gửi lại OTP'}
+          {otpResendCooldown > 0 ? `G?i l?i OTP (${otpResendCooldown}s)` : 'G?i l?i OTP'}
         </button>
         <button type="button" className="text-xs text-gray-400 hover:text-gray-700 underline" onClick={() => setStep('register')}>
-          Quay lại đăng ký
+          Quay l?i dang k�
         </button>
       </div>
     </form>
