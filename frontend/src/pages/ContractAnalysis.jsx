@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { api } from '../lib/api-client.js'; // Đã kích hoạt import thật
-import { useNavigate } from 'react-router-dom'; // Đã kích hoạt import thật
+import { api } from '../lib/api-client.js'; 
+import { useNavigate } from 'react-router-dom'; 
 
 
 const UploadIcon = () => <svg className="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
@@ -14,9 +14,10 @@ const ExclamationIcon = () => <svg className="w-4 h-4 text-red-500" fill="curren
 const ProcessingIcon = () => <svg className="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
 
 export default function ContractAnalysis() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [groupMode, setGroupMode] = useState(false);
   const [contracts, setContracts] = useState([]);
   const [isLoadingContracts, setIsLoadingContracts] = useState(true);
   const [selectedContract, setSelectedContract] = useState(null);
@@ -73,55 +74,101 @@ export default function ContractAnalysis() {
   }, [navigate]);
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setError("File quá lớn (tối đa 10MB).");
-        setSelectedFile(null);
-      } else if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-        setError("Chỉ chấp nhận file .pdf hoặc .docx.");
-        setSelectedFile(null);
-      } else {
-        setSelectedFile(file);
-        setError(null);
+  const files = Array.from(event.target.files);
+  const validTypes = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "image/png",
+    "image/jpeg",
+  ];
+
+  const validFiles = files.filter(
+    (file) =>
+      file.size <= 10 * 1024 * 1024 && validTypes.includes(file.type)
+  );
+
+  if (validFiles.length === 0) {
+    setError("Chỉ chấp nhận file .pdf, .docx, .png, .jpg (tối đa 10MB mỗi file).");
+    setSelectedFiles([]);
+    return;
+  }
+
+  if (validFiles.length < files.length) {
+    setError("Một số file bị loại vì định dạng hoặc dung lượng không hợp lệ.");
+  } else {
+    setError(null);
+  }
+
+  setSelectedFiles(validFiles);
+};
+
+ const handleUpload = async () => {
+  if (!selectedFiles.length) return;
+
+  setIsUploading(true);
+  setUploadProgress(0);
+  setError(null);
+
+  try {
+    // Nếu bật chế độ gộp nhóm
+    if (groupMode) {
+  const formData = new FormData();
+  selectedFiles.forEach((file) => {
+    formData.append("contractFiles", file); // backend dùng multer.array("contractFiles")
+  });
+
+  const response = await api.post("/contracts/upload-multi", formData, {
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.lengthComputable) {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        setUploadProgress(percentCompleted);
+      }
+    },
+  });
+
+  // 🧩 Nếu backend trả về danh sách file
+  const uploaded = Array.isArray(response.data.data)
+    ? response.data.data
+    : [response.data.data];
+
+  // 🧩 Gộp các file mới vào danh sách cũ
+  setContracts((prev) => [...uploaded, ...prev]);
+} else {
+      // ✅ Logic cũ: upload từng file riêng lẻ
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const formData = new FormData();
+        formData.append("contractFile", file);
+
+        const response = await api.post("/contracts/upload", formData, {
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            }
+          },
+        });
+
+        setContracts((prev) => [response.data.data, ...prev]);
       }
     }
-  };
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    setIsUploading(true);
+    // Reset sau khi upload xong
+    setSelectedFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  } catch (err) {
+    console.error("Upload failed:", err);
+    setError(err.response?.data?.message || "Upload thất bại. Vui lòng thử lại.");
+  } finally {
+    setIsUploading(false);
     setUploadProgress(0);
-    setError(null);
-    const formData = new FormData();
-    formData.append('contractFile', selectedFile);
+  }
+};
 
-    try {
-      const response = await api.post('/contracts/upload', formData, {
-        onUploadProgress: (progressEvent) => {
-          // Giữ logic mới của bạn
-          if (progressEvent.lengthComputable) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percentCompleted);
-          } else if (progressEvent.loaded && progressEvent.total) { 
-            // Fallback cho trường hợp lengthComputable là false nhưng vẫn có dữ liệu
-             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-             setUploadProgress(percentCompleted);
-          }
-        },
-      });
-      setContracts([response.data.data, ...contracts]);
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setError(null);
-    } catch (err) {
-      console.error("Upload failed:", err);
-      setError(err.response?.data?.message || "Upload thất bại. Vui lòng thử lại.");
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
 
   const fetchContractDetails = async (contractId) => {
     setSelectedContract({ id: contractId, loading: true });
@@ -139,51 +186,73 @@ export default function ContractAnalysis() {
 
 
   const handleAnalyze = async (contractId) => {
-    setIsLoadingAnalysis(contractId);
-    setError(null);
-    try {
-      const response = await api.post(`/contracts/${contractId}/analyze`);
-      // Giữ logic mới của bạn: response.data.data là đối tượng analysis
-      const analysisResult = {
-        ...response.data.data,
-        processed_at: new Date().toISOString()
-      };
+  setIsLoadingAnalysis(contractId);
+  setError(null);
+  try {
+    // Lấy hợp đồng tương ứng từ danh sách
+    const currentContract = contracts.find(c => c.contract_id === contractId);
+    if (!currentContract) throw new Error("Không tìm thấy hợp đồng để phân tích.");
 
-      // Update contract in the main list
-      setContracts(prevContracts =>
-        prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ANALYZED', analysis: analysisResult } : c)
-      );
-      
-      // Update selected contract details if it's the one being viewed
-      if (selectedContract?.id === contractId) {
-        setSelectedContract(prev => ({
-          ...prev,
-          data: {
-            ...(prev.data || {}),
-            status: 'ANALYZED',
-            analysis: analysisResult
-          }
-        }));
-      }
-    } catch (err) {
-      console.error("Analysis failed:", err);
-      setError(err.response?.data?.message || "Phân tích thất bại. Vui lòng thử lại.");
-      // Update status to ERROR in list
-      setContracts(prevContracts =>
-        prevContracts.map(c => c.contract_id === contractId ? { ...c, status: 'ERROR' } : c)
-      );
-      // Update status to ERROR in details
-      if (selectedContract?.id === contractId) {
-        setSelectedContract(prev => ({
-          ...prev,
-          data: { ...(prev.data || {}), status: 'ERROR' }
-        }));
-      }
-      if (err.response?.status === 401) navigate('/login');
-    } finally {
-      setIsLoadingAnalysis(null);
+    // Xác định API endpoint dựa theo loại file
+    const fileName = currentContract.original_name?.toLowerCase() || "";
+    let endpoint = "";
+
+    if (fileName.endsWith(".pdf") || fileName.endsWith(".docx")) {
+      endpoint = `/contracts/${contractId}/analyze`;
+      console.log("Using document analysis endpoint for file PDF", fileName);
+    } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")) {
+      endpoint = `/contracts/analyze-images`;
+      console.log("Using image analysis endpoint for image file", fileName);
+    } else {
+      throw new Error("Định dạng file không được hỗ trợ để phân tích.");
     }
-  };
+
+    // Gọi API tương ứng
+    const response = await api.post(endpoint);
+    const analysisResult = {
+      ...response.data.data,
+      processed_at: new Date().toISOString()
+    };
+
+    // Cập nhật lại danh sách và chi tiết
+    setContracts(prevContracts =>
+      prevContracts.map(c =>
+        c.contract_id === contractId
+          ? { ...c, status: 'ANALYZED', analysis: analysisResult }
+          : c
+      )
+    );
+
+    if (selectedContract?.id === contractId) {
+      setSelectedContract(prev => ({
+        ...prev,
+        data: {
+          ...(prev.data || {}),
+          status: 'ANALYZED',
+          analysis: analysisResult
+        }
+      }));
+    }
+  } catch (err) {
+    console.error("Analysis failed:", err);
+    setError(err.response?.data?.message || err.message || "Phân tích thất bại. Vui lòng thử lại.");
+    setContracts(prevContracts =>
+      prevContracts.map(c =>
+        c.contract_id === contractId ? { ...c, status: 'ERROR' } : c
+      )
+    );
+    if (selectedContract?.id === contractId) {
+      setSelectedContract(prev => ({
+        ...prev,
+        data: { ...(prev.data || {}), status: 'ERROR' }
+      }));
+    }
+    if (err.response?.status === 401) navigate('/login');
+  } finally {
+    setIsLoadingAnalysis(null);
+  }
+};
+
 
   const getStatusComponent = (status) => {
     switch (status) {
@@ -217,32 +286,59 @@ export default function ContractAnalysis() {
 
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-200 rounded text-sm">{error}</div>}
 
-        <div className='bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6'>
-          <label htmlFor="contract-upload" className="block text-sm font-medium text-gray-700 mb-2">Chọn file hợp đồng (tối đa 10MB):</label>
-          <div className="flex items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              id="contract-upload"
-              accept=".pdf,.docx"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-              disabled={isUploading}
-            />
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <UploadIcon /> {isUploading ? `Đang tải... ${uploadProgress}%` : 'Tải lên'}
-            </button>
-          </div>
-          {isUploading && (
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-              <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
-            </div>
-          )}
-        </div>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
+  <label
+    htmlFor="contract-upload"
+    className="block text-sm font-medium text-gray-700 mb-2"
+  >
+    Chọn file hợp đồng (tối đa 10MB):
+  </label>
+
+  <div className="flex items-center gap-3">
+    <input
+      ref={fileInputRef}
+      type="file"
+      id="contract-upload"
+      multiple
+      accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg"
+      onChange={handleFileChange}
+      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+      disabled={isUploading}
+    />
+
+    <button
+      onClick={handleUpload}
+      disabled={!selectedFiles || isUploading}
+      className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+    >
+      <UploadIcon />{" "}
+      {isUploading ? `Đang tải... ${uploadProgress}%` : "Tải lên"}
+    </button>
+  </div>
+
+  {/* Thêm checkbox gộp nhóm ngay dưới input */}
+  <div className="flex items-center mt-3">
+    <input
+      type="checkbox"
+      id="groupMode"
+      checked={groupMode}
+      onChange={(e) => setGroupMode(e.target.checked)}
+      className="mr-2"
+    />
+    <label htmlFor="groupMode" className="text-sm text-gray-700">
+      Gộp nhiều file thành 1 nhóm (1 hợp đồng duy nhất)
+    </label>
+  </div>
+
+  {isUploading && (
+    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+      <div
+        className="bg-blue-600 h-1.5 rounded-full"
+        style={{ width: `${uploadProgress}%` }}
+      ></div>
+    </div>
+  )}
+</div>
 
         {/* --- Main Content Grid (Giữ nguyên layout mới của bạn) --- */}
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
@@ -262,7 +358,7 @@ export default function ContractAnalysis() {
                     onClick={() => fetchContractDetails(contract.contract_id)}>
                     <div className="flex items-center justify-between gap-2">
                       <span className='text-sm font-medium text-gray-800 truncate' title={contract.original_name}><DocIcon className="inline w-4 h-4 mr-1 text-gray-400" />{contract.original_name}</span>
-                      {(contract.status === 'PENDING' || contract.status.startsWith('ERROR')) && (
+                      {(contract.status === 'PENDING' || contract.status?.startsWith?.('ERROR')) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAnalyze(contract.contract_id); }}
                           disabled={isLoadingAnalysis === contract.contract_id}
@@ -299,7 +395,7 @@ export default function ContractAnalysis() {
                   <h2 className="text-lg font-semibold text-gray-800 mb-1">Nội dung trích xuất</h2>
                   <div className="text-xs text-gray-500 mb-3">Tệp: {selectedContract.data.original_name} | {getStatusComponent(selectedContract.data.status)}</div>
 
-                  {(selectedContract.data.status === 'PENDING' || selectedContract.data.status.startsWith('ERROR')) && (
+                  {(selectedContract.data.status === 'PENDING' || selectedContract.data.status?.startsWith?.('ERROR')) && (
                     <button
                       onClick={() => handleAnalyze(selectedContract.id)}
                       disabled={isLoadingAnalysis === selectedContract.id}
@@ -313,7 +409,7 @@ export default function ContractAnalysis() {
                   {selectedContract.data.analysis?.extracted_text ? (
                     <div className="prose prose-slate max-w-none text-sm leading-relaxed">
                       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                           {formatContractText(selectedContract.data.analysis.extracted_text)}
+                          {formatContractText(selectedContract.data.analysis.extracted_text)}
                       </ReactMarkdown>
                     </div>
                   ) : (

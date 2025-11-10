@@ -50,13 +50,23 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Chỉ chấp nhận file pdf và docx
-  if (file.mimetype === 'application/pdf' || file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+  // Chấp nhận file pdf, docx và các định dạng ảnh
+  const allowedMimeTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif'
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Chỉ chấp nhận file .pdf hoặc .docx'), false);
+    cb(new Error('Chỉ chấp nhận file .pdf, .docx hoặc ảnh (jpg, png, gif)'), false);
   }
 };
+
 
 const upload = multer({
   storage: storage, // Sử dụng diskStorage
@@ -127,6 +137,64 @@ export const contractController = {
         return responseHandler.internalServerError(res, "Lỗi khi lưu thông tin hợp đồng.");
       }
     });
+  },
+
+  async uploadMultiContracts(req, res) {
+    try {
+      const userId = req.user?.user_id;
+      if (!userId) {
+        return responseHandler.unauthorized(res, "Yêu cầu đăng nhập để upload.");
+      }
+
+      // Dùng multer để nhận nhiều file
+      const multiUpload = multer({
+        storage: multer.diskStorage({
+          destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+          filename: (req, file, cb) => {
+            const userId = req.user?.user_id || "guest";
+            const uniqueSuffix = `${userId}_${Date.now()}_${Math.round(Math.random() * 1E9)}`;
+            cb(null, `${uniqueSuffix}_${file.originalname}`);
+          },
+        }),
+        fileFilter,
+        limits: { fileSize: 10 * 1024 * 1024, files: 20 }, // Tối đa 20 file
+      }).array("contractFiles", 20); // tên field frontend gửi
+
+      multiUpload(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+          console.error("Multer error:", err);
+          return responseHandler.badRequest(res, `Lỗi upload: ${err.message}`);
+        } else if (err) {
+          console.error("Upload error:", err);
+          return responseHandler.badRequest(res, err.message || "Lỗi không xác định khi upload.");
+        }
+
+        if (!req.files || req.files.length === 0) {
+          return responseHandler.badRequest(res, "Không có file nào được upload.");
+        }
+
+        // Tạo 1 contract duy nhất đại diện cho nhóm file
+        const firstFile = req.files[0];
+        const groupName = `Nhóm hợp đồng: ${firstFile.originalname} (+${req.files.length - 1} files)`;
+
+        // Ghép danh sách đường dẫn (có thể lưu vào bảng phụ nếu bạn muốn)
+        const fileList = req.files.map(f => f.path);
+
+        // Lưu bản ghi contract chính
+        const result = await contractModel.createContract(userId, fileList.join(";"), groupName);
+        console.log(`User ${userId} uploaded ${req.files.length} files -> Contract ${result.contract_id}`);
+
+        return responseHandler.created(res, "Upload nhóm hợp đồng thành công.", {
+          contract_id: result.contract_id,
+          file_count: req.files.length,
+          file_names: req.files.map(f => f.originalname),
+        });
+      });
+
+    } catch (error) {
+      console.error("Error in uploadMultiContracts:", error);
+      return responseHandler.internalServerError(res, "Lỗi khi upload nhóm hợp đồng.");
+    }
   },
 
   /**
@@ -360,10 +428,10 @@ async analyzeContract(req, res) {
 
         // tach 
 
-        const tomTat = extractSection(analysis, "1. Tóm tắt nội dung");
-        const danhGia = extractSection(analysis, "Đánh giá Quyền lợi");
-        const phanTich = extractSection(analysis, "Phân tích các điều khoản ");
-        const deXuat = extractSection(analysis, "Đề xuất chỉnh sửa");
+        const tomTat = extractSection(fullSummary, "Tóm tắt nội dung");
+        const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
+        const phanTich = extractSection(fullSummary, "Phân tích các điều khoản");
+        const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
 
 
         // Lưu kết quả OCR/Analysis vào bảng riêng
@@ -372,9 +440,12 @@ async analyzeContract(req, res) {
         // 7. Trả kết quả về client
         return responseHandler.created(res, "Phân tích ảnh thành công.", {
           contract_id: newContractId,
-          ocr_text: ocr_text,
-          analysis: analysis,
-          pdf_path: pdf_path // Trả về pdf_path (nếu có)
+          extracted_text: ocr_text,
+          summary: analysis,
+          tomtat: tomTat,
+          danhgia: danhGia,
+          phantich: phanTich,
+          dexuat: deXuat,
         });
 
       } catch (error) {
