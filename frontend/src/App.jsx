@@ -8,6 +8,7 @@ import Logout from "./pages/Logout";
 import SalaryTool from "./pages/SalaryTool";
 // import Login from "./pages/Login";
  import RegisterPage from "./pages/RegisterPage";
+import ForgotPassword from "./pages/ForgotPassword";
 // import Dashboard from "./pages/Dashboard";
 // import Laws from "./pages/Laws";
 // import OCR from "./pages/OCR";
@@ -30,6 +31,7 @@ function App() {
         <Route path="/salary" element={<SalaryTool />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/logout" element={<Logout />} />
         {/* Auth
