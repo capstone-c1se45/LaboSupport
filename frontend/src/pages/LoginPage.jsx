@@ -46,8 +46,8 @@ export default function LoginPage() {
     setError('');
 
     const errs = {};
-    if (!username.trim()) errs.username = 'Vui long nhap ten dang nhap hoac email';
-    if (!password) errs.password = 'Vui long nhap mat khau';
+    if (!username.trim()) errs.username = 'Vui lòng nhập tên đăng nhập hoặc email';
+    if (!password) errs.password = 'Vui lòng nhập mật khẩu';
     setFieldErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -57,12 +57,12 @@ export default function LoginPage() {
       const token = resp?.data?.token;
       if (!token) throw new Error('NO_TOKEN');
       storeToken(token);
-      setToast({ type: 'success', message: 'Dang nhap thanh cong!' });
+      setToast({ type: 'success', message: 'Đăng nhập thành công!' });
       setTimeout(() => {
         window.location.href = '/home';
       }, 500);
     } catch (err) {
-      const msg = getErrorMessage(err, 'Ten dang nhap hoac mat khau khong dung');
+      const msg = getErrorMessage(err, 'Tên đăng nhập hoặc mật khẩu không đúng');
       setError(msg);
     }
     setLoading(false);
@@ -123,7 +123,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => setShowPassword((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              aria-label="Hien/an mat khau"
+              aria-label="Hiện/ẩn mật khẩu"
             >
               {showPassword ? (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l22 22"/><path d="M17.94 17.94A10.94 10.94 0 0112 20c-5 0-9.27-3-11-8a11.72 11.72 0 013.06-4.36"/><path d="M9.9 4.24A10.94 10.94 0 0112 4c5 0 9.27 3 11 8a11.72 11.72 0 01-2.16 3.19"/></svg>
@@ -141,7 +141,7 @@ export default function LoginPage() {
               <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
               <span>Lưu mật khẩu</span>
             </label>
-            <a className="text-blue-600 hover:text-blue-800" href="#">Quên mật khẩu?</a>
+            <a className="text-blue-600 hover:text-blue-800" href="/forgot-password">Quên mật khẩu?</a>
           </div>
 
           <button
@@ -162,13 +162,15 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <button className="border border-gray-300 rounded-md h-10 hover:bg-blue-50">G</button>
-            <button className="border border-gray-300 rounded-md h-10 hover:bg-gray-50">FB</button>
-            <button className="border border-gray-300 rounded-md h-10 hover:bg-gray-100">tw</button>
+          <div className="flex items-center justify-center gap-4 text-2xl select-none">
+            <span title="Google" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#DB4437]">G</span></span>
+            <span title="Facebook" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1877F2]">f</span></span>
+            <span title="Instagram" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#E4405F]">◎</span></span>
+            <span title="Twitter" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1DA1F2]">t</span></span>
           </div>
         </form>
       </div>
     </div>
   );
 }
+
