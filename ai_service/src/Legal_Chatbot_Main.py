@@ -8,7 +8,6 @@ import json
 from untils.internal_analysis import generate_internal_report
 from untils.compliance import run_compliance_check 
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
-from vector_store import query_law 
 from ocr.ocr_utils import process_images
 
 GEMINI_API_KEY = "AIzaSyB0GGFyJLAytwEUGQk8ztw4nXjQQeAwEFU" 

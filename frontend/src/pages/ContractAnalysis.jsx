@@ -128,12 +128,12 @@ export default function ContractAnalysis() {
     },
   });
 
-  // 🧩 Nếu backend trả về danh sách file
+  // =Nếu backend trả về danh sách file
   const uploaded = Array.isArray(response.data.data)
     ? response.data.data
     : [response.data.data];
 
-  // 🧩 Gộp các file mới vào danh sách cũ
+  // Gộp các file mới vào danh sách cũ
   setContracts((prev) => [...uploaded, ...prev]);
 } else {
       // ✅ Logic cũ: upload từng file riêng lẻ
@@ -195,16 +195,26 @@ export default function ContractAnalysis() {
 
     // Xác định API endpoint dựa theo loại file
     const fileName = currentContract.original_name?.toLowerCase() || "";
+    console.log("Xác định endpoint phân tích cho file:", fileName);
     let endpoint = "";
 
-    if (fileName.endsWith(".pdf") || fileName.endsWith(".docx")) {
-      endpoint = `/contracts/${contractId}/analyze`;
-      console.log("Using document analysis endpoint for file PDF", fileName);
-    } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")) {
+        if (currentContract.is_group || fileName.includes("group") || fileName.endsWith(".zip")) {
       endpoint = `/contracts/analyze-images`;
-      console.log("Using image analysis endpoint for image file", fileName);
-    } else {
-      throw new Error("Định dạng file không được hỗ trợ để phân tích.");
+      console.log("Sử dụng api phân tích hình ảnh nhóm cho hợp đồng được nhóm lại", fileName);
+    }
+    // Nếu là file PDF hoặc DOCX
+    else if (fileName.endsWith(".pdf") || fileName.endsWith(".docx")) {
+      endpoint = `/contracts/${contractId}/analyze`;
+      console.log("Sử dụng api phân tích tài liệu cho tệp PDF/DOCX", fileName);
+    }
+    // Nếu là ảnh đơn lẻ
+    else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")) {
+      endpoint = `/contracts/analyze-images`;
+      console.log("Sử dụng api phân tích hình ảnh đơn cho tệp hình ảnh", fileName);
+    }
+    // Nếu không xác định được
+    else {
+      throw new Error(`Định dạng file không được hỗ trợ (${fileName})`);
     }
 
     // Gọi API tương ứng
