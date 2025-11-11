@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { api } from '../lib/api-client.js'; 
+import { api } from '../lib/api-client.js';
+import logoImg from '../assets/logo.png'; 
 
 const BotIcon = ({ className = 'w-8 h-8 text-blue-600' }) => (
   <svg className={className} viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>
@@ -115,8 +116,7 @@ export default function GuestChat() {
       <header className='border-b bg-white'>
         <div className='max-w-6xl mx-auto px-4 h-14 flex items-center justify-between'>
           <div className='flex items-center gap-2 select-none'>
-            <div className='bg-blue-600 text-white rounded px-2 py-[2px] text-sm font-bold'>LRS</div>
-            <span className='font-semibold text-gray-800'>LaboSupport</span>
+            <img src={logoImg} alt='LaboSupport' className='h-8 w-auto' />
           </div>
           <nav className='hidden sm:flex items-center gap-6 text-sm text-gray-600'>
             <a href='/' className='hover:text-gray-900'>Trang chủ</a>
@@ -294,4 +294,7 @@ export default function GuestChat() {
     </div>
   );
 }
+
+
+
 

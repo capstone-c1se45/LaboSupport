@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, getErrorMessage } from '../lib/api-client';
+import NavbarLogged from '../components/NavbarLogged';
 
 const fmtVND = (n) =>
   (isNaN(n) ? 0 : Math.round(n))
@@ -150,8 +151,9 @@ export default function SalaryTool() {
   );
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <header className='border-b bg-white'>
+    <div className='min-h-screen bg-[#F5F8FB]'>
+      <NavbarLogged />
+      <header className='hidden'>
         <div className='max-w-6xl mx-auto px-4 h-14 flex items-center justify-between'>
           <div className='flex items-center gap-2 select-none'>
             <div className='bg-blue-600 text-white rounded px-2 py-[2px] text-sm font-bold'>LRS</div>
