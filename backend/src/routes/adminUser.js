@@ -14,5 +14,6 @@ router.get("/", adminUserController.getAll);
 router.post("/", adminUserController.create);
 router.put("/:id", adminUserController.update);
 router.delete("/:id", adminUserController.delete);
+router.get("/search", adminUserController.search); 
 
 export default router;
