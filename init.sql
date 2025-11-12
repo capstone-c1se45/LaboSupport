@@ -151,3 +151,21 @@ CREATE TABLE IF NOT EXISTS ForgotPassword (
   expire_at DATETIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS Conversation (
+  conversation_id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  title VARCHAR(255) NOT NULL, -- Tiêu đề cuộc trò chuyện (VD: "Hỏi về lương tối thiểu")
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Để sắp xếp theo hoạt động gần nhất
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS Message (
+  message_id CHAR(36) PRIMARY KEY,
+  conversation_id CHAR(36) NOT NULL,
+  role VARCHAR(10) NOT NULL, 
+  content TEXT NOT NULL,
+  source VARCHAR(50), 
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES Conversation(conversation_id) ON DELETE CASCADE
+);

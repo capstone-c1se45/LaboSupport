@@ -304,7 +304,7 @@ async analyzeContract(req, res) {
       return responseHandler.internalServerError(res, "Không thể đọc file hợp đồng đã upload.");
     }
 
-    // 2a. Chuyển file thành text UTF-8 (tiếng Việt)
+    // 2a. Chuyển file thành text UTF-8
     // Nếu file PDF/DOCX, bạn cần dùng thư viện parse text (ví dụ pdf-parse, mammoth) 
     // Dưới đây ví dụ file text thuần:
 
@@ -461,8 +461,11 @@ async analyzeContract(req, res) {
       const phanTich = extractSection(analysis, "Phân tích các điều khoản");
       const deXuat = extractSection(analysis, "Đề xuất chỉnh sửa");
 
+      console.log("Extracted Sections:", { tomTat, danhGia, phanTich, deXuat });
+
       await contractOcrModel.saveOcrResult(contractId, ocr_text, analysis, tomTat, danhGia, phanTich, deXuat);
       await contractModel.updateContractStatus(contractId, "ANALYZED");
+      
 
       // 7. TRẢ KẾT QUẢ VỀ CLIENT
       return responseHandler.success(res, "Phân tích ảnh thành công.", {

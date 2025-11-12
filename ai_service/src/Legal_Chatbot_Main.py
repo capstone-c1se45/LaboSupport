@@ -10,7 +10,7 @@ from untils.compliance import run_compliance_check
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
 
-GEMINI_API_KEY = "AIzaSyB0GGFyJLAytwEUGQk8ztw4nXjQQeAwEFU" 
+GEMINI_API_KEY = "" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
@@ -248,7 +248,7 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
     2. Đánh giá quyền lợi và nghĩa vụ của người lao động.
     3. Xác định xem có điều khoản nào có dấu hiệu vi phạm Bộ luật Lao động 2019 không.
     4. Đề xuất chỉnh sửa để hợp đồng hợp pháp hơn.
-    Trình bày bằng **Markdown**, ngắn gọn, rõ ràng, dễ hiểu.
+    Trình bày bằng tiếng Việt dễ hiểu và sử dụng format Markdown.
     """
 
     messages = [
