@@ -6,6 +6,7 @@ import adminUserRoutes from "./adminUser.js";
 import salaryRoutes from "./salaryRoutes.js"; 
 import aiRoutes from "./ai.js";
 import contractRoutes from "./contract.js";
+import adminReportRoutes from "./adminReport.js";   
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/admin/users", adminUserRoutes);//route quản lý user bởi admin
 router.use("/salary", salaryRoutes); // route công cụ tính lương Gross, Net
 router.use("/ai", aiRoutes); // route AI chat
 router.use("/contracts", contractRoutes); // route hợp đồng
+router.use("/admin/reports", adminReportRoutes); // route báo cáo admin
 
 export default router;

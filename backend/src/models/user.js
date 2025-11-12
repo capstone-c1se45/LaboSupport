@@ -189,6 +189,30 @@ async updateUserWithProfile(user_id, data) {
     }
   },
 
-
+  async searchUsers(keyword) {
+  const search = `%${keyword}%`;
+  const [rows] = await pool.query(
+    `
+    SELECT 
+      u.user_id,
+      u.username,
+      u.full_name,
+      u.email,
+      u.phone,
+      u.role_id,
+      r.role_name,
+      p.address,
+      p.gender,
+      p.dob,
+      p.occupation
+    FROM User u
+    LEFT JOIN Role r ON u.role_id = r.role_id
+    LEFT JOIN User_Profile p ON u.user_id = p.user_id
+    WHERE u.user_id LIKE ? OR u.full_name LIKE ? OR u.username LIKE ?
+    `,
+    [search, search, search]
+  );
+  return rows;
+},
 
 };

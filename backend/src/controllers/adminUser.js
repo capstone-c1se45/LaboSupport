@@ -16,6 +16,26 @@ export const adminUserController = {
     }
   },
 
+    // 🔍 Tìm kiếm người dùng theo tên hoặc ID
+  async search(req, res) {
+    try {
+      const { q } = req.query;
+      if (!q || q.trim() === "") {
+        return res.status(400).json({ message: "Vui lòng nhập từ khóa tìm kiếm." });
+      }
+
+      const users = await userModel.searchUsers(q.trim());
+      if (!users.length) {
+        return res.status(404).json({ message: "Không tìm thấy người dùng phù hợp." });
+      }
+
+      res.status(200).json(users);
+    } catch (error) {
+      console.error("Error search user:", error);
+      res.status(500).json({ message: "Lỗi khi tìm kiếm người dùng." });
+    }
+  },
+
   // ➕ Thêm người dùng mới
   async create(req, res) {
     try {
