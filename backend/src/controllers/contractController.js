@@ -139,63 +139,91 @@ export const contractController = {
     });
   },
 
-  async uploadMultiContracts(req, res) {
-    try {
-      const userId = req.user?.user_id;
-      if (!userId) {
-        return responseHandler.unauthorized(res, "Yêu cầu đăng nhập để upload.");
+ // Dán code này vào file backend/src/controllers/contractController.js
+// Hãy XÓA hàm uploadMultiContracts cũ và thay bằng hàm này
+
+async uploadMultiContracts(req, res) {
+  try {
+    const userId = req.user?.user_id;
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập để upload.");
+    }
+
+    // 1. Dùng memoryStorage để xử lý file sau khi có contractId
+    const multiUpload = multer({
+      storage: multer.memoryStorage(), // <-- Giữ file trong RAM
+      fileFilter, // (Giữ nguyên fileFilter của bạn)
+      limits: { fileSize: 10 * 1024 * 1024, files: 20 },
+    }).array("contractFiles", 20);
+
+    multiUpload(req, res, async (err) => {
+      if (err instanceof multer.MulterError) {
+        console.error("Multer error:", err);
+        return responseHandler.badRequest(res, `Lỗi upload: ${err.message}`);
+      } else if (err) {
+        console.error("Upload error:", err);
+        return responseHandler.badRequest(res, err.message || "Lỗi không xác định khi upload.");
       }
 
-      // Dùng multer để nhận nhiều file
-      const multiUpload = multer({
-        storage: multer.diskStorage({
-          destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-          filename: (req, file, cb) => {
-            const userId = req.user?.user_id || "guest";
-            const uniqueSuffix = `${userId}_${Date.now()}_${Math.round(Math.random() * 1E9)}`;
-            cb(null, `${uniqueSuffix}_${file.originalname}`);
-          },
-        }),
-        fileFilter,
-        limits: { fileSize: 10 * 1024 * 1024, files: 20 }, // Tối đa 20 file
-      }).array("contractFiles", 20); // tên field frontend gửi
+      if (!req.files || req.files.length === 0) {
+        return responseHandler.badRequest(res, "Không có file nào được upload.");
+      }
 
-      multiUpload(req, res, async (err) => {
-        if (err instanceof multer.MulterError) {
-          console.error("Multer error:", err);
-          return responseHandler.badRequest(res, `Lỗi upload: ${err.message}`);
-        } else if (err) {
-          console.error("Upload error:", err);
-          return responseHandler.badRequest(res, err.message || "Lỗi không xác định khi upload.");
+      let contractId;
+      try {
+        // 2. TẠO CONTRACT TẠM ĐỂ LẤY ID
+        const placeholderName = `Nhóm hợp đồng tạm - ${Date.now()}`;
+        const tempRecord = await contractModel.createContract(userId, "", placeholderName);
+        contractId = tempRecord.contract_id;
+
+        // 3. TẠO THƯ MỤC RIÊNG CHO CONTRACT NÀY
+        const contractDir = path.join(UPLOAD_DIR, contractId.toString());
+        await fs.mkdir(contractDir, { recursive: true });
+
+        // 4. LƯU TỪNG FILE VÀO THƯ MỤC RIÊNG
+        const savedPaths = [];
+        for (const file of req.files) {
+          const safeName = `${Date.now()}_${Math.round(Math.random() * 1E6)}_${Buffer.from(file.originalname, 'latin1').toString('utf8')}`;
+          const dest = path.join(contractDir, safeName);
+          
+          await fs.writeFile(dest, file.buffer);
+          savedPaths.push(dest);
         }
 
-        if (!req.files || req.files.length === 0) {
-          return responseHandler.badRequest(res, "Không có file nào được upload.");
-        }
+        // 5. CẬP NHẬT LẠI CONTRACT VỚI THÔNG TIN ĐÚNG
+        const filePathJson = JSON.stringify(savedPaths); // Lưu dạng JSON
+        const groupName = `Nhóm hợp đồng: ${req.files[0].originalname} (+${req.files.length - 1} files)`;
 
-        // Tạo 1 contract duy nhất đại diện cho nhóm file
-        const firstFile = req.files[0];
-        const groupName = `Nhóm hợp đồng: ${firstFile.originalname} (+${req.files.length - 1} files)`;
-
-        // Ghép danh sách đường dẫn (có thể lưu vào bảng phụ nếu bạn muốn)
-        const fileList = req.files.map(f => f.path);
-
-        // Lưu bản ghi contract chính
-        const result = await contractModel.createContract(userId, fileList.join(";"), groupName);
-        console.log(`User ${userId} uploaded ${req.files.length} files -> Contract ${result.contract_id}`);
+        // --- ĐÂY LÀ PHẦN THAY ĐỔI ---
+        // Gọi hàm mới mà bạn vừa thêm vào model
+        await contractModel.updateContractDetails(contractId, {
+          filePath: filePathJson,
+          originalName: groupName,
+          status: 'PENDING' // Đặt trạng thái PENDING
+        });
+        // --- KẾT THÚC THAY ĐỔI ---
 
         return responseHandler.created(res, "Upload nhóm hợp đồng thành công.", {
-          contract_id: result.contract_id,
+          contract_id: contractId,
           file_count: req.files.length,
           file_names: req.files.map(f => f.originalname),
         });
-      });
 
-    } catch (error) {
-      console.error("Error in uploadMultiContracts:", error);
-      return responseHandler.internalServerError(res, "Lỗi khi upload nhóm hợp đồng.");
-    }
-  },
+      } catch (dbError) {
+        console.error("Error processing files after upload:", dbError);
+        if (contractId) {
+          // (Tùy chọn: Xóa contract tạm nếu lỗi)
+          // await contractModel.deleteContract(contractId).catch(delErr => console.error("Failed to delete temp contract", delErr));
+        }
+        return responseHandler.internalServerError(res, "Lỗi khi xử lý file sau khi upload.");
+      }
+    });
+
+  } catch (error) {
+    console.error("Error in uploadMultiContracts setup:", error);
+    return responseHandler.internalServerError(res, "Lỗi khi upload nhóm hợp đồng.");
+  }
+},
 
   /**
    * Lấy danh sách hợp đồng của người dùng
@@ -265,7 +293,7 @@ async analyzeContract(req, res) {
     if (!contract.file_path) {
       await contractModel.updateContractStatus(contractId, "ERROR_FILE");
       return responseHandler.internalServerError(res, "Không tìm thấy đường dẫn file hợp đồng.");
-    }
+    }  
 
     // 2. Đọc file
     let fileBuffer;
@@ -360,108 +388,140 @@ async analyzeContract(req, res) {
   /**
    * Xử lý upload ảnh, OCR và phân tích
    */
-  async analyzeContractImages(req, res) {
-    // 1. Dùng middleware 'uploadImages' để xử lý file
-    uploadImages(req, res, async (err) => {
-      // Xử lý lỗi Multer
-      if (err instanceof multer.MulterError) {
-        console.error("Multer (image) error:", err);
-        return responseHandler.badRequest(res, `Lỗi upload ảnh: ${err.message}. Giới hạn 10 file, 10MB/file.`);
-      } else if (err) {
-        console.error("Image fileFilter error:", err);
-        return responseHandler.badRequest(res, err.message || "Lỗi không xác định khi upload ảnh.");
-      }
-      
-      // Kiểm tra có file không
-      if (!req.files || req.files.length === 0) {
-        return responseHandler.badRequest(res, 'Vui lòng chọn ít nhất một file ảnh.');
+ async analyzeContractImages(req, res) {
+    const userId = req.user?.user_id;
+    const { id: contractId } = req.params;
+
+    if (!userId) return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+
+    let contract;
+    try {
+      // 1. LẤY HỢP ĐỒNG
+      contract = await contractModel.getContractById(contractId, userId);
+      if (!contract) return responseHandler.notFound(res, "Không tìm thấy hợp đồng hoặc bạn không có quyền truy cập.");
+      if (contract.status === "ANALYZING") {
+        return responseHandler.badRequest(res, "Hợp đồng đang được phân tích.");
       }
 
-      // 2. Kiểm tra xác thực user
-      const userId = req.user?.user_id;
-      if (!userId) {
-        return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+      // 2. ĐỌC VÀ PARSE FILE_PATH TỪ JSON
+      let imagePaths = [];
+      if (!contract.file_path) {
+        await contractModel.updateContractStatus(contractId, "ERROR_FILE");
+        return responseHandler.badRequest(res, "Không có file lưu trữ cho hợp đồng này.");
       }
-
-      let newContractId = null; // Biến để lưu ID hợp đồng mới
 
       try {
-        // 3. Chuẩn bị FormData để gửi đến AI Service
-        const formData = new FormData();
-        for (const file of req.files) {
-          formData.append('files', file.buffer, { // 'files' phải khớp với tên FastAPI mong đợi
-            filename: file.originalname,
-            contentType: file.mimetype
-          });
+        imagePaths = JSON.parse(contract.file_path);
+        if (!Array.isArray(imagePaths) || imagePaths.length === 0) {
+          throw new Error("File path is not a valid list.");
         }
-
-        // 4. Gọi AI Service (endpoint /ocr)
-        console.log(`Sending ${req.files.length} images to AI service (/ocr) for user ${userId}...`);
-        const aiResponse = await axios.post(`${AI_SERVICE_URL}/ocr`, formData, {
-          headers: {
-            ...formData.getHeaders()
-          },
-          timeout: 300000 // 5 phút (cho phép OCR nhiều ảnh)
-        });
-
-        // 5. Nhận kết quả từ AI Service
-        const { ocr_text, analysis, pdf_path } = aiResponse.data;
-        
-        if (!analysis || !ocr_text) {
-           return responseHandler.internalServerError(res, "Dịch vụ AI không trả về kết quả phân tích hoặc văn bản.");
+      } catch (e) {
+        console.error("Error parsing file_path JSON:", e);
+        // Có thể kiểm tra nếu nó là file đơn lẻ (logic cũ)
+        if (typeof contract.file_path === 'string' && /\.(png|jpg|jpeg)$/i.test(contract.file_path)) {
+            imagePaths = [contract.file_path];
+        } else {
+            await contractModel.updateContractStatus(contractId, "ERROR_FILE");
+            return responseHandler.badRequest(res, "Đường dẫn file hợp đồng không hợp lệ (không phải JSON list).");
         }
-
-        // 6. Lưu kết quả vào DB
-        // Tạo một bản ghi Contract mới cho lần phân tích ảnh này
-        const originalName = `Phân tích từ ảnh: ${req.files[0].originalname}` + (req.files.length > 1 ? ` (+${req.files.length - 1} ảnh)` : '');
-        
-        // Sử dụng pdf_path (nếu AI service trả về) hoặc 1 placeholder
-        // Giả sử pdf_path là đường dẫn file (cục bộ hoặc cloud) mà AI service tạo ra
-        // Nếu không, ta lưu 1 đường dẫn giả lập vì cột file_path là NOT NULL
-        const filePath = pdf_path || `ocr_generated/${userId}/${Date.now()}_ocr_result.pdf`; 
-
-        const contractRecord = await contractModel.createContract(userId, filePath, originalName);
-        newContractId = contractRecord.contract_id;
-
-        // Cập nhật trạng thái là đã phân tích ngay lập tức
-        await contractModel.updateContractStatus(newContractId, 'ANALYZED');
-
-        // tach 
-
-        const tomTat = extractSection(fullSummary, "Tóm tắt nội dung");
-        const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
-        const phanTich = extractSection(fullSummary, "Phân tích các điều khoản");
-        const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
-
-
-        // Lưu kết quả OCR/Analysis vào bảng riêng
-        await contractOcrModel.saveOcrResult(newContractId, ocr_text, analysis, tomTat, danhGia, phanTich, deXuat);
-
-        // 7. Trả kết quả về client
-        return responseHandler.created(res, "Phân tích ảnh thành công.", {
-          contract_id: newContractId,
-          extracted_text: ocr_text,
-          summary: analysis,
-          tomtat: tomTat,
-          danhgia: danhGia,
-          phantich: phanTich,
-          dexuat: deXuat,
-        });
-
-      } catch (error) {
-        console.error("Error in analyzeContractImages:", error?.response?.data || error.message);
-        
-        // Nếu đã tạo contract record nhưng bước sau lỗi (vd: lưu OCR), cập nhật status lỗi
-        if (newContractId) {
-           try {
-              await contractModel.updateContractStatus(newContractId, 'ERROR_AI');
-           } catch (e) { console.error("Failed to update status to ERROR after fail:", e); }
-        }
-        
-        const aiErrorMessage = error?.response?.data?.detail || "Lỗi khi gọi dịch vụ AI (OCR).";
-        return responseHandler.internalServerError(res, aiErrorMessage);
       }
-    });
+      
+      console.log(`Found ${imagePaths.length} image(s) for contract ${contractId}:`, imagePaths);
+      
+      // 3. CẬP NHẬT TRẠNG THÁI
+      await contractModel.updateContractStatus(contractId, "ANALYZING");
+
+      // 4. TẠO FORMDATA (CHỈ TỪ CÁC FILE TRONG JSON)
+      const formData = new FormData();
+      for (const imgPath of imagePaths) {
+        let imgBuffer;
+        try {
+          // Đọc từng file từ đường dẫn chính xác
+          imgBuffer = await fs.readFile(imgPath);
+          formData.append("files", imgBuffer, { filename: path.basename(imgPath) });
+        } catch (readError) {
+          console.warn(`Could not read file: ${imgPath}. Skipping...`, readError);
+          // (Tùy chọn: bỏ qua file này hoặc báo lỗi)
+        }
+      }
+
+      // 5. GỌI AI SERVICE
+      const aiResponse = await axios.post(`${AI_SERVICE_URL}/ocr`, formData, {
+        headers: formData.getHeaders(),
+        timeout: 300000, // 5 phút
+      });
+
+      const { ocr_text, analysis } = aiResponse.data;
+      if (!ocr_text || !analysis) {
+        await contractModel.updateContractStatus(contractId, "ERROR_AI");
+        return responseHandler.internalServerError(res, "Không nhận được kết quả từ AI Service.");
+      }
+
+      // 6. TÁCH NỘI DUNG VÀ LƯU DB
+      const tomTat = extractSection(analysis, "Tóm tắt nội dung");
+      const danhGia = extractSection(analysis, "Đánh giá Quyền lợi");
+      const phanTich = extractSection(analysis, "Phân tích các điều khoản");
+      const deXuat = extractSection(analysis, "Đề xuất chỉnh sửa");
+
+      await contractOcrModel.saveOcrResult(contractId, ocr_text, analysis, tomTat, danhGia, phanTich, deXuat);
+      await contractModel.updateContractStatus(contractId, "ANALYZED");
+
+      // 7. TRẢ KẾT QUẢ VỀ CLIENT
+      return responseHandler.success(res, "Phân tích ảnh thành công.", {
+        contract_id: contractId,
+        extracted_text: ocr_text,
+        summary: analysis,
+        tomtat: tomTat,
+        danhgia: danhGia,
+        phantich: phanTich,
+        dexuat: deXuat,
+      });
+
+    } catch (error) {
+      console.error("Error in analyzeContractImages:", error?.response?.data || error.message);
+      if (contractId) {
+        try {
+          await contractModel.updateContractStatus(contractId, "ERROR");
+        } catch (e) {
+          console.error("Failed to update status to ERROR:", e);
+        }
+      }
+      const msg = error?.response?.data?.detail || "Lỗi trong quá trình phân tích ảnh.";
+      return responseHandler.internalServerError(res, msg);
+    }
   }
 };
 
+  // // 5. Xử lý dữ liệu phân tích
+  //   const fullSummary = aiResponse.data?.summary || "";
+  //   const fileText = aiResponse.data?.content || "";
+
+  //   const tomTat = extractSection(fullSummary, "Tóm tắt nội dung");
+  //   const danhGia = extractSection(fullSummary, "Đánh giá Quyền lợi");
+  //   const phanTich = extractSection(fullSummary, "Phân tích các điều khoản");
+  //   const deXuat = extractSection(fullSummary, "Đề xuất chỉnh sửa");
+
+  //   console.log("Extracted Sections:", { tomTat, danhGia, phanTich, deXuat });
+
+  //   // 6. Lưu kết quả: lưu trực tiếp text tiếng Việt vào file_content
+  //   await contractOcrModel.saveOcrResult(
+  //     contractId, 
+  //     fileText,
+  //     fullSummary,
+  //     tomTat,
+  //     danhGia,
+  //     phanTich,
+  //     deXuat
+  //   );
+  //   await contractModel.updateContractStatus(contractId, "ANALYZED");
+
+  //   // 7. Trả kết quả chi tiết cho client
+  //   return responseHandler.success(res, "Phân tích hợp đồng thành công.", {
+  //     contract_id: contractId,
+  //     extracted_text: fileText,
+  //     summary: fullSummary,
+  //     tomtat: tomTat,
+  //     danhgia: danhGia,
+  //     phantich: phanTich,
+  //     dexuat: deXuat,
+  //   });

@@ -14,7 +14,7 @@ router.post("/upload-multi", contractController.uploadMultiContracts);
 
 
 // POST /api/contracts/analyze-images - Upload và phân tích ảnh hợp đồng
-router.post("/analyze-images", contractController.analyzeContractImages);
+router.post("/:id/analyze-images", contractController.analyzeContractImages);
 
 
 // GET /api/contracts - Lấy danh sách hợp đồng của người dùng

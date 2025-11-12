@@ -71,5 +71,25 @@ export const contractModel = {
        console.error("Error updating contract status:", error);
        throw error;
      }
+  },
+  async updateContractDetails(contractId, details) {
+    try {
+      const { filePath, originalName, status } = details;
+      
+      const [result] = await pool.query(
+        `UPDATE Contract SET 
+           file_path = ?, 
+           original_name = ?, 
+           status = ?, 
+           updated_at = NOW() 
+         WHERE contract_id = ?`,
+        [filePath, originalName, status, contractId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating contract details:", error);
+      throw error;
+    }
   }
 };

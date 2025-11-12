@@ -185,83 +185,91 @@ export default function ContractAnalysis() {
   };
 
 
-  const handleAnalyze = async (contractId) => {
+const handleAnalyze = async (contractId) => {
   setIsLoadingAnalysis(contractId);
   setError(null);
+
   try {
-    // Lấy hợp đồng tương ứng từ danh sách
     const currentContract = contracts.find(c => c.contract_id === contractId);
     if (!currentContract) throw new Error("Không tìm thấy hợp đồng để phân tích.");
 
-    // Xác định API endpoint dựa theo loại file
     const fileName = currentContract.original_name?.toLowerCase() || "";
-    console.log("Xác định endpoint phân tích cho file:", fileName);
+    console.log("🔍 Đang xác định endpoint cho file:", fileName);
+
     let endpoint = "";
 
-        if (currentContract.is_group || fileName.includes("group") || fileName.endsWith(".zip")) {
-      endpoint = `/contracts/analyze-images`;
-      console.log("Sử dụng api phân tích hình ảnh nhóm cho hợp đồng được nhóm lại", fileName);
-    }
-    // Nếu là file PDF hoặc DOCX
+    // Gọi API backend tự lấy file từ thư mục uploads
+    if (
+      currentContract.is_group ||
+      fileName.endsWith(".jpg") ||
+      fileName.endsWith(".jpeg") ||
+      fileName.endsWith(".png")
+    ) {
+      endpoint = `/contracts/${contractId}/analyze-images`;
+      console.log("📸 Dùng endpoint phân tích hình ảnh:", endpoint);
+    } 
     else if (fileName.endsWith(".pdf") || fileName.endsWith(".docx")) {
       endpoint = `/contracts/${contractId}/analyze`;
-      console.log("Sử dụng api phân tích tài liệu cho tệp PDF/DOCX", fileName);
-    }
-    // Nếu là ảnh đơn lẻ
-    else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")) {
-      endpoint = `/contracts/analyze-images`;
-      console.log("Sử dụng api phân tích hình ảnh đơn cho tệp hình ảnh", fileName);
-    }
-    // Nếu không xác định được
+      console.log("📄 Dùng endpoint phân tích tài liệu:", endpoint);
+    } 
     else {
       throw new Error(`Định dạng file không được hỗ trợ (${fileName})`);
     }
 
-    // Gọi API tương ứng
+    //Gửi request (backend sẽ tự xử lý file)
     const response = await api.post(endpoint);
+
+    //Tạo kết quả phân tích để lưu lại
     const analysisResult = {
       ...response.data.data,
-      processed_at: new Date().toISOString()
+      processed_at: new Date().toISOString(),
     };
 
-    // Cập nhật lại danh sách và chi tiết
-    setContracts(prevContracts =>
-      prevContracts.map(c =>
+    // Cập nhật danh sách hợp đồng
+    setContracts(prev =>
+      prev.map(c =>
         c.contract_id === contractId
-          ? { ...c, status: 'ANALYZED', analysis: analysisResult }
+          ? { ...c, status: "ANALYZED", analysis: analysisResult }
           : c
       )
     );
 
+    // Nếu đang xem hợp đồng này thì cập nhật luôn
     if (selectedContract?.id === contractId) {
       setSelectedContract(prev => ({
         ...prev,
         data: {
           ...(prev.data || {}),
-          status: 'ANALYZED',
-          analysis: analysisResult
-        }
+          status: "ANALYZED",
+          analysis: analysisResult,
+        },
       }));
     }
+
   } catch (err) {
-    console.error("Analysis failed:", err);
+    console.error("❌ Analysis failed:", err);
     setError(err.response?.data?.message || err.message || "Phân tích thất bại. Vui lòng thử lại.");
-    setContracts(prevContracts =>
-      prevContracts.map(c =>
-        c.contract_id === contractId ? { ...c, status: 'ERROR' } : c
+
+    setContracts(prev =>
+      prev.map(c =>
+        c.contract_id === contractId ? { ...c, status: "ERROR" } : c
       )
     );
+
     if (selectedContract?.id === contractId) {
       setSelectedContract(prev => ({
         ...prev,
-        data: { ...(prev.data || {}), status: 'ERROR' }
+        data: { ...(prev.data || {}), status: "ERROR" },
       }));
     }
-    if (err.response?.status === 401) navigate('/login');
+
   } finally {
     setIsLoadingAnalysis(null);
   }
 };
+
+
+
 
 
   const getStatusComponent = (status) => {

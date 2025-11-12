@@ -10,7 +10,6 @@
   "scripts": {
     "start": "node -r dotenv-flow/config ./src/app.js",
     "seed": "node -r dotenv-flow/config ./scripts/seed.js",
-    "dev": "nodemon -r app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
