@@ -197,7 +197,8 @@ async uploadMultiContracts(req, res) {
         await contractModel.updateContractDetails(contractId, {
           filePath: filePathJson,
           originalName: groupName,
-          status: 'PENDING' // Đặt trạng thái PENDING
+          status: 'PENDING', // Đặt trạng thái PENDING
+          is_group: true
         });
 
         return responseHandler.created(res, "Upload nhóm hợp đồng thành công.", {

@@ -75,20 +75,31 @@ export default function ContractAnalysis() {
 
   const handleFileChange = (event) => {
   const files = Array.from(event.target.files);
-  const validTypes = [
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "image/png",
-    "image/jpeg",
-  ];
+  
+  let validTypes;
+  let errorMsg;
+
+  // Tùy chỉnh loại file hợp lệ dựa trên groupMode
+  if (groupMode) {
+    validTypes = ["image/png", "image/jpeg"];
+    errorMsg = "Chế độ gộp nhóm chỉ chấp nhận .png, .jpg (tối đa 10MB).";
+  } else {
+    validTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/png",
+      "image/jpeg",
+    ];
+    errorMsg = "Chỉ chấp nhận file .pdf, .docx, .png, .jpg (tối đa 10MB mỗi file).";
+  }
 
   const validFiles = files.filter(
     (file) =>
       file.size <= 10 * 1024 * 1024 && validTypes.includes(file.type)
   );
 
-  if (validFiles.length === 0) {
-    setError("Chỉ chấp nhận file .pdf, .docx, .png, .jpg (tối đa 10MB mỗi file).");
+  if (validFiles.length === 0 && files.length > 0) {
+    setError(errorMsg);
     setSelectedFiles([]);
     return;
   }
@@ -112,31 +123,41 @@ export default function ContractAnalysis() {
   try {
     // Nếu bật chế độ gộp nhóm
     if (groupMode) {
-  const formData = new FormData();
-  selectedFiles.forEach((file) => {
-    formData.append("contractFiles", file); // backend dùng multer.array("contractFiles")
-  });
+      const formData = new FormData();
+      selectedFiles.forEach((file) => {
+        formData.append("contractFiles", file); // backend dùng multer.array("contractFiles")
+      });
 
-  const response = await api.post("/contracts/upload-multi", formData, {
-    onUploadProgress: (progressEvent) => {
-      if (progressEvent.lengthComputable) {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
-        setUploadProgress(percentCompleted);
-      }
-    },
-  });
+      const response = await api.post("/contracts/upload-multi", formData, {
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.lengthComputable) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          }
+        },
+      });
 
-  // =Nếu backend trả về danh sách file
-  const uploaded = Array.isArray(response.data.data)
-    ? response.data.data
-    : [response.data.data];
+      // --- PHẦN SỬA LỖI (BẮT ĐẦU) ---
+      // Backend trả về: { contract_id, file_count, file_names }
+      const newContractData = response.data.data;
 
-  // Gộp các file mới vào danh sách cũ
-  setContracts((prev) => [...uploaded, ...prev]);
-} else {
-      // ✅ Logic cũ: upload từng file riêng lẻ
+      // Tạo một đối tượng đầy đủ cho state React
+      // Tái tạo lại tên nhóm và thêm 'is_group'
+      const newContractForState = {
+        contract_id: newContractData.contract_id,
+        original_name: `Nhóm hợp đồng: ${selectedFiles[0].name} (+${selectedFiles.length - 1} files)`,
+        status: 'PENDING',
+        is_group: true, // <-- Đây là trường bị thiếu!
+        uploaded_at: new Date().toISOString()
+      };
+
+      setContracts((prev) => [newContractForState, ...prev]);
+      // --- PHẦN SỬA LỖI (KẾT THÚC) ---
+
+    } else {
+      // Logic cũ: upload từng file riêng lẻ
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
         const formData = new FormData();
@@ -144,16 +165,31 @@ export default function ContractAnalysis() {
 
         const response = await api.post("/contracts/upload", formData, {
           onUploadProgress: (progressEvent) => {
+            // ... (giữ nguyên progress logic)
             if (progressEvent.lengthComputable) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(percentCompleted);
-            }
+               const percentCompleted = Math.round(
+                 (progressEvent.loaded * 100) / progressEvent.total
+               );
+               setUploadProgress(percentCompleted);
+             }
           },
         });
 
-        setContracts((prev) => [response.data.data, ...prev]);
+        // --- PHẦN SỬA LỖI (BẮT ĐẦU) ---
+        // Backend trả về: { contract_id, fileName, status }
+        const newContractData = response.data.data;
+
+        // Chuẩn hóa đối tượng để state nhất quán
+        const newContractForState = {
+            contract_id: newContractData.contract_id,
+            original_name: newContractData.fileName, // Backend trả về 'fileName'
+            status: newContractData.status,
+            is_group: false, // <-- Thêm để cho rõ ràng
+            uploaded_at: new Date().toISOString()
+        };
+
+        setContracts((prev) => [newContractForState, ...prev]);
+        // --- PHẦN SỬA LỖI (KẾT THÚC) ---
       }
     }
 

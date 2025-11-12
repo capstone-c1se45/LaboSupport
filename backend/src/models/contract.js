@@ -9,9 +9,9 @@ export const contractModel = {
     const contractId = createCustomNanoid('1234567890abcdef', 20); // Tạo ID duy nhất
     try {
       const [result] = await pool.query(
-        `INSERT INTO Contract (contract_id, user_id, file_path, original_name, uploaded_at, status)
-         VALUES (?, ?, ?, ?, NOW(), 'PENDING')`,
-        [contractId, userId, filePath, originalName]
+        `INSERT INTO Contract (contract_id, user_id, file_path, original_name,is_group, uploaded_at, status)
+         VALUES (?, ?, ?, ?, ?, NOW(), 'PENDING')`,
+        [contractId, userId, filePath, originalName, false]
       );
       return { contract_id: contractId, affectedRows: result.affectedRows };
     } catch (error) {
@@ -26,7 +26,7 @@ export const contractModel = {
   async getContractsByUserId(userId) {
     try {
       const [rows] = await pool.query(
-        `SELECT contract_id, user_id, original_name, uploaded_at, status
+        `SELECT contract_id, user_id, original_name, is_group ,uploaded_at, status
          FROM Contract
          WHERE user_id = ?
          ORDER BY uploaded_at DESC`,
@@ -45,7 +45,7 @@ export const contractModel = {
   async getContractById(contractId, userId) {
     try {
       const [rows] = await pool.query(
-        `SELECT contract_id, user_id, file_path, original_name, uploaded_at, status
+        `SELECT contract_id, user_id, file_path, original_name, uploaded_at,is_group, status
          FROM Contract
          WHERE contract_id = ? AND user_id = ?`,
         [contractId, userId]
@@ -74,16 +74,17 @@ export const contractModel = {
   },
   async updateContractDetails(contractId, details) {
     try {
-      const { filePath, originalName, status } = details;
+      const { filePath, originalName, status, is_group } = details;
       
       const [result] = await pool.query(
         `UPDATE Contract SET 
            file_path = ?, 
            original_name = ?, 
            status = ?, 
+           is_group = ?,
            updated_at = NOW() 
          WHERE contract_id = ?`,
-        [filePath, originalName, status, contractId]
+        [filePath, originalName, status, is_group ,contractId]
       );
       
       return result.affectedRows > 0;
