@@ -12,7 +12,7 @@ import dotenvFlow from "dotenv-flow";
 dotenvFlow.config();
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'contracts'); // Thư mục lưu trữ file tạm
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'contracts');
 
 
 const extractSection = (text, titleStart) => {
@@ -152,7 +152,7 @@ async uploadMultiContracts(req, res) {
     // 1. Dùng memoryStorage để xử lý file sau khi có contractId
     const multiUpload = multer({
       storage: multer.memoryStorage(), // <-- Giữ file trong RAM
-      fileFilter, // (Giữ nguyên fileFilter của bạn)
+      fileFilter: imageFileFilter, // (Giữ nguyên fileFilter của bạn)
       limits: { fileSize: 10 * 1024 * 1024, files: 20 },
     }).array("contractFiles", 20);
 
@@ -194,14 +194,11 @@ async uploadMultiContracts(req, res) {
         const filePathJson = JSON.stringify(savedPaths); // Lưu dạng JSON
         const groupName = `Nhóm hợp đồng: ${req.files[0].originalname} (+${req.files.length - 1} files)`;
 
-        // --- ĐÂY LÀ PHẦN THAY ĐỔI ---
-        // Gọi hàm mới mà bạn vừa thêm vào model
         await contractModel.updateContractDetails(contractId, {
           filePath: filePathJson,
           originalName: groupName,
           status: 'PENDING' // Đặt trạng thái PENDING
         });
-        // --- KẾT THÚC THAY ĐỔI ---
 
         return responseHandler.created(res, "Upload nhóm hợp đồng thành công.", {
           contract_id: contractId,
