@@ -1,6 +1,6 @@
 import { conversationModel } from '../models/conversation.js';
 import { messageModel } from '../models/message.js';
-import { verifyToken } from '../config/jwt.js';
+import { jwtService } from '../config/jwt.js';
 import axios from 'axios';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
@@ -20,7 +20,7 @@ export const initializeSocket = (io) => {
       return next(new Error('Xác thực thất bại: Không có token.'));
     }
     try {
-      const user = verifyToken(token);
+      const user = jwtService.verifyToken(token);
       socket.user = user; // Gắn thông tin user vào socket
       next();
     } catch (err) {

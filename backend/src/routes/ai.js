@@ -1,15 +1,17 @@
-// backend/src/routes/aiRoutes.js
 import { Router } from "express";
 import { aiController } from "../controllers/aiController.js";
 import { authMiddleware } from "../middlewares/auth.js"; // Import middleware xác thực
 
 const router = Router();
 
-router.post("/chat", authMiddleware.verifyToken, aiController.handleUserChat);
-router
-router.get("/chat/history", authMiddleware.verifyToken, aiController.getChatHistory);
+router.use(authMiddleware.verifyToken);
 
-// không cần xác thực
-router.post("/guest-chat", aiController.handleGuestChat);
+router.get('/chat/conversations',aiController.listConversations);
+
+router.get('/chat/conversations/:id',aiController.getMessagesForConversation);
+
+router.post('/chat',aiController.chatWithAI);
+
+router.delete('/chat/conversations/:id', aiController.deleteConversation);
 
 export default router;
