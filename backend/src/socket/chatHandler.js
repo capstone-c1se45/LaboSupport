@@ -8,6 +8,8 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const generateTitle = (prompt) => {
   return prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
 };
+
+
 const formatHistory = (messages) => {
     return messages.map(msg => ({ role: msg.role, content: msg.content }));
 };
@@ -51,36 +53,49 @@ export const initializeSocket = (io) => {
           const newConv = await conversationModel.create(userId, title);
           convId = newConv.conversation_id;
           newTitle = title;
+          console.log(`Tạo cuộc trò chuyện mới: ${convId}`);
         }
 
-        // 2. Lấy lịch sử và lưu tin nhắn user
-        const historyMessages = await messageModel.getByConversationId(convId);
-        const formattedHistory = formatHistory(historyMessages);
+        // 2. Lưu tin nhắn user vào DB
         await messageModel.create(convId, 'user', prompt);
+        
+        
+        const formData = new URLSearchParams();
+        formData.append('message', prompt);
+        formData.append('session_id', convId);
 
-        // 3. Gọi AI Service (đây là lúc chờ lâu)
-        const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, {
-          prompt: prompt,
-          history: formattedHistory
-        });
+        let aiResponse;
+        try {
+          console.log(`Đang gọi AI Service: ${AI_SERVICE_URL}/chat với session_id: ${convId}`);
+          aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, formData, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          });
+        } catch (aiError) {
+          console.error("Lỗi khi gọi AI service:", aiError?.response?.data || aiError.message);
+          const detail = aiError?.response?.data?.detail || aiError.message;
+          return socket.emit('chat:error', { message: `Lỗi từ dịch vụ AI: ${detail}` });
+        }
+
 
         const aiResult = aiResponse.data;
-        if (!aiResult.answer) {
-          throw new Error("Dịch vụ AI không trả về câu trả lời.");
+        if (!aiResult.ai_reply) {
+          throw new Error("Dịch vụ AI không trả về câu trả lời (ai_reply).");
         }
-
-        // 4. Lưu tin nhắn của AI
-        await messageModel.create(convId, 'ai', aiResult.answer);
+        
+        // 4. Lưu tin nhắn của AI vào DB
+        await messageModel.create(convId, 'ai', aiResult.ai_reply);
 
         // 5. Cập nhật timestamp
         await conversationModel.updateTimestamp(convId);
 
-        // 6. Gửi trả kết quả về *chỉ* client này
+        // 6. Gửi trả kết quả về  client này
         socket.emit('chat:receive', {
-          answer: aiResult.answer,
-          source: aiResult.source || null,
+          answer: aiResult.ai_reply,
+          source: aiResult.source || null, 
           conversation_id: convId,
-          title: newTitle // Gửi title nếu là chat mới
+          title: newTitle 
         });
 
       } catch (error) {

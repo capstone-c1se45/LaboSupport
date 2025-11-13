@@ -7,7 +7,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-// --- Icons ---
 const BotIcon = ({ className = 'w-6 h-6' }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M15 17h.01M6.343 15.343A8 8 0 1117.657 8.343 8 8 0 016.343 15.343z" />
@@ -27,9 +26,7 @@ const MenuIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor
 const NewChatIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
 const ChatIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
-// --- End Icons ---
 
-// Biến socket bên ngoài component
 let socket = null;
 
 export default function UserChat() {
@@ -131,7 +128,6 @@ export default function UserChat() {
       socket.off('chat:error', handleError);
       socket.disconnect();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // --- 2. Lấy tin nhắn khi chọn 1 hội thoại ---
@@ -208,13 +204,11 @@ export default function UserChat() {
   };
 
   return (
-    // Layout 2 cột, h-screen
     <div className='flex h-screen w-full flex-col bg-white'>
       <NavbarLogged />
       
       <div className="flex flex-1 overflow-hidden" style={{ height: 'calc(100vh - 4rem)' }}> {/* 4rem là chiều cao Navbar */}
 
-        {/* Sidebar Lịch sử Chat (Có thể ẩn) */}
         <nav 
           className={`
             flex h-full flex-col bg-white
@@ -259,9 +253,7 @@ export default function UserChat() {
           </div>
         </nav>
 
-        {/* Khung Chat Chính */}
         <main className="flex-1 h-full flex flex-col bg-white">
-          {/* Header của Chat (Nơi có nút ẩn hiện sidebar) */}
           <div className="flex h-14 items-center justify-between border-b px-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -275,10 +267,8 @@ export default function UserChat() {
             <div className="w-8"></div> {/* Placeholder cho cân bằng */}
           </div>
 
-          {/* Vùng hiển thị tin nhắn */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             
-            {/* Hiển thị chào mừng nếu không có tin nhắn */}
             {messages.length === 0 && !isLoading && !isLoadingHistory && (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <h2 className="text-3xl font-bold text-gray-800">LaboSupport,</h2>
@@ -336,7 +326,6 @@ export default function UserChat() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Vùng nhập liệu (Giống trong ảnh) */}
           <div className="border-t p-4 bg-white">
             <form onSubmit={handleSendMessage} className="relative max-w-3xl mx-auto">
               <textarea

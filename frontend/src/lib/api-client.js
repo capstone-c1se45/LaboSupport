@@ -1,8 +1,5 @@
 import axios from "axios";
 
-// Minimal Axios client for the app
-
-// Uses Vite env var VITE_API_BASE_URL (e.g. http://localhost:3000/api)
 const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
 
 export const api = axios.create({
