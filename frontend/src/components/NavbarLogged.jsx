@@ -2,11 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoImg from '../assets/logo.png';
 
-// CSS-only hover dropdowns for reliable pointer behavior
+// Navbar logged-in: sticky top, shadow, dropdowns via group-hover
 export default function NavbarLogged() {
   const { pathname } = useLocation();
   const isActive = (path) => pathname === path;
 
+  // Class presets
   const triggerCls = 'text-[15px] text-gray-700 hover:text-gray-900';
   const menuCls = 'absolute left-1/2 -translate-x-1/2 top-12 opacity-0 invisible pointer-events-none group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto transition-opacity';
   const cardCls = 'relative bg-white border border-gray-200 rounded-xl shadow-lg min-w-[220px]';
@@ -14,7 +15,7 @@ export default function NavbarLogged() {
   return (
     <header className="bg-white border-b shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto h-16 px-4 flex items-center justify-between">
-        {/* Logo */}
+        {/* Left: logo + brand */}
         <Link to="/home" className="flex items-center gap-3 select-none">
           <img src={logoImg} alt="LaboSupport" className="h-8 w-auto" />
           <div className="leading-4 hidden sm:block">
@@ -23,13 +24,15 @@ export default function NavbarLogged() {
           </div>
         </Link>
 
-        {/* Center nav */}
+        {/* Center: nav */}
         <nav className="flex items-center gap-10 text-[15px]">
           <Link to="/home" className={`hover:text-gray-900 ${isActive('/home') ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>Trang chủ</Link>
 
           {/* Trợ lý AI */}
           <div className="relative group">
             <button className={triggerCls} type="button">Trợ lý AI</button>
+            {/* Hover buffer to bridge gap between trigger and menu */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-12 w-36 h-3 z-40"></div>
             <div className={menuCls} style={{ zIndex: 60 }}>
               <div className={cardCls}>
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-gray-200 rotate-45"></div>
@@ -48,6 +51,8 @@ export default function NavbarLogged() {
           {/* Công cụ */}
           <div className="relative group">
             <button className={triggerCls} type="button">Công cụ</button>
+            {/* Hover buffer to bridge gap between trigger and menu */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-12 w-36 h-3 z-40"></div>
             <div className={menuCls} style={{ zIndex: 60 }}>
               <div className={cardCls}>
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-gray-200 rotate-45"></div>
@@ -66,11 +71,13 @@ export default function NavbarLogged() {
           <a href="/#about" className="text-gray-700 hover:text-gray-900">Giới thiệu</a>
         </nav>
 
-        {/* User avatar */}
+        {/* Right: Avatar dropdown */}
         <div className="relative group">
           <button className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-50" type="button">
             <svg className="w-5 h-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/></svg>
           </button>
+          {/* Hover buffer to bridge gap between trigger and menu */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-12 w-32 h-3 z-40"></div>
           <div className={menuCls} style={{ zIndex: 60 }}>
             <div className={cardCls}>
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-l border-t border-gray-200 rotate-45"></div>
@@ -92,4 +99,3 @@ export default function NavbarLogged() {
     </header>
   );
 }
-
