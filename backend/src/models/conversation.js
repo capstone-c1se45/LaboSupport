@@ -3,6 +3,8 @@ import { nanoidNumbersOnly, nanoid } from "../utils/nanoid.js";
 
 
 export const conversationModel = {
+
+    // Tạo cuộc trò chuyện mới
     async create(userId, title) {
     const conversationId = nanoid(); // Tạo ID mới
     try {
@@ -17,6 +19,7 @@ export const conversationModel = {
     }
   },
 
+  // Lấy tất cả cuộc trò chuyện của người dùng
   async getByUserId(userId) {
     try {
       const [rows] = await pool.query(
@@ -30,6 +33,7 @@ export const conversationModel = {
     }
   },
 
+  // Cập nhật thời gian cập nhật của cuộc trò chuyện(sau khi có tin nhắn mới)
   async updateTimestamp(conversationId) {
     try {
       await pool.query(
@@ -42,6 +46,7 @@ export const conversationModel = {
     }
   },
 
+  // Xóa cuộc trò chuyện
   async deleteById(conversationId, userId) {
     try {
       const [result] = await pool.query(
@@ -54,7 +59,7 @@ export const conversationModel = {
       throw error;
     }
   },
-
+  // Lấy cuộc trò chuyện theo ID và user ID
   async getById(conversationId, userId) {
      try {
       const [rows] = await pool.query(
