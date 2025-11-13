@@ -1,6 +1,6 @@
-// backend/src/controllers/aiController.js
 import axios from 'axios';
-import { chatLogModel } from '../models/chatLog.js';
+import { conversationModel } from '../models/conversation.js';
+import { messageModel } from '../models/message.js';
 import responseHandler from "../utils/response.js"; 
 import dotenvFlow from "dotenv-flow";
 
@@ -8,98 +8,138 @@ dotenvFlow.config();
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
+const generateTitle = (prompt) => {
+  return prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+};
+
+const formatHistory = (messages) => {
+    return messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+    }));
+};
+
 export const aiController = {
 
-    // Xử lý chat từ người dùng đã đăng nhập
-  async handleUserChat(req, res) {
-    const userId = req.user?.user_id; 
-    const { message, session_id = `user_${userId}` } = req.body;
-
+  async chatWithAI(req, res) {
+    const userId = req.user?.user_id;
+    const { prompt, conversation_id } = req.body; // Frontend sẽ gửi conversation_id (có thể null)
+    
     if (!userId) {
-      return responseHandler.unauthorized(res, "Yêu cầu xác thực người dùng.");
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
     }
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return responseHandler.badRequest(res, "Nội dung tin nhắn không được để trống.");
+    if (!prompt) {
+      return responseHandler.badRequest(res, "Vui lòng nhập câu hỏi.");
     }
+
+    let convId = conversation_id;
+    let newTitle = null;
 
     try {
-      const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, {
-        message: message.trim(),
-        session_id: session_id
-      }, {
-         headers: { 'Content-Type': 'application/x-www-form-urlencoded' } // xử lý form data bên ai sẻvice
-      });
+      // 1. Tìm hoặc Tạo cuộc trò chuyện
+      if (!convId) {
+        const title = generateTitle(prompt);
+        const newConv = await conversationModel.create(userId, title);
+        convId = newConv.conversation_id;
+        newTitle = title;
+      }
 
-      const aiReply = aiResponse.data?.ai_reply || "Xin lỗi, tôi không thể xử lý yêu cầu này.";
+      // 2. Lấy lịch sử chat
+      const historyMessages = await messageModel.getByConversationId(convId);
+      const formattedHistory = formatHistory(historyMessages);
 
-      // trả lời truocsws khi lưu vào db
-      chatLogModel.createLog(userId, message.trim(), aiReply, 'AI_CHAT_LOGGED_IN')
-        .catch(dbError => {
-          console.error("Failed to save chat log:", dbError);
+      // 3. Lưu tin nhắn của người dùng
+      await messageModel.create(convId, 'user', prompt);
+
+      // 4. Gọi AI Service (Python)
+      let aiResponse;
+      try {
+        aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, {
+          prompt: prompt,
+          history: formattedHistory // Gửi lịch sử chat
         });
+      } catch (aiError) {
+        console.error("Error calling AI service:", aiError?.response?.data || aiError.message);
+        return responseHandler.internalServerError(res, "Lỗi từ dịch vụ AI.");
+      }
 
+      const aiResult = aiResponse.data;
+      if (!aiResult.answer) {
+         return responseHandler.internalServerError(res, "Dịch vụ AI không trả về câu trả lời.");
+      }
+      
+      // 5. Lưu tin nhắn của AI
+      await messageModel.create(convId, 'ai', aiResult.answer);
+
+      // 6. Cập nhật timestamp (để đưa lên đầu sidebar)
+      await conversationModel.updateTimestamp(convId);
+
+      // 7. Trả lời frontend
       return responseHandler.success(res, "AI đã trả lời.", {
-        reply: aiReply,
-        session_id: aiResponse.data?.session_id || session_id,
+        answer: aiResult.answer,
+        source: aiResult.source || null,
+        conversation_id: convId, 
+        title: newTitle 
       });
 
     } catch (error) {
-      console.error("Error calling AI service or processing chat:", error?.response?.data || error.message);
-      return responseHandler.internalServerError(res, "Đã có lỗi xảy ra khi xử lý yêu cầu chat.");
+      console.error("Error in chatWithAI:", error);
+      return responseHandler.internalServerError(res, "Lỗi máy chủ khi xử lý chat.");
     }
   },
-  async handleGuestChat(req, res) {
-    //const userId = req.user?.user_id; 
-    const userId = 'guest_user_0000'; // userId mặc định cho guest
-    const { message, session_id = `${userId}` } = req.body;
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return responseHandler.badRequest(res, "Nội dung tin nhắn không được để trống.");
+  // sidebar: Lấy danh sách hội thoại của người dùng
+  async listConversations(req, res) {
+    const userId = req.user?.user_id;
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
     }
-
     try {
-      const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, {
-        message: message.trim(),
-        session_id: session_id
-      }, {
-         headers: { 'Content-Type': 'application/x-www-form-urlencoded' } // xử lý form data bên ai sẻvice
-      });
-
-      const aiReply = aiResponse.data?.ai_reply || "Xin lỗi, tôi không thể xử lý yêu cầu này.";
-
-      // // trả lời truocsws khi lưu vào db
-      // chatLogModel.createLog(userId, message.trim(), aiReply, 'AI_CHAT_LOGGED_IN')
-      //   .catch(dbError => {
-      //     console.error("Failed to save chat log:", dbError);
-      //   });
-
-      return responseHandler.success(res, "AI đã trả lời.", {
-        reply: aiReply,
-        session_id: aiResponse.data?.session_id || session_id,
-      });
-
+      const conversations = await conversationModel.getByUserId(userId);
+      return responseHandler.success(res, "Lấy danh sách hội thoại thành công.", conversations);
     } catch (error) {
-      console.error("Error calling AI service or processing chat:", error?.response?.data || error.message);
-      return responseHandler.internalServerError(res, "Đã có lỗi xảy ra khi xử lý yêu cầu chat.");
+      return responseHandler.internalServerError(res, "Lỗi khi lấy danh sách hội thoại.");
     }
   },
-    // Lấy lịch sử chat của người dùng đã đăng nhập
-  async getChatHistory(req, res) {
-     const userId = req.user?.user_id;
-     if (!userId) {
-       return responseHandler.unauthorized(res, "Yêu cầu xác thực người dùng.");
-     }
-
-     try {
-       const history = await chatLogModel.getHistoryByUserId(userId);
-       const formattedHistory = history.map(log => ([
-         { role: 'user', content: log.question, timestamp: log.created_at },
-         { role: 'assistant', content: log.answer, timestamp: log.created_at } 
-       ])).flat();
-
-       return responseHandler.success(res, "Lấy lịch sử chat thành công.", formattedHistory);
-     } catch (error) {
-       console.error("Error fetching chat history:", error);
-       return responseHandler.internalServerError(res, "Lỗi khi lấy lịch sử chat.");
-     }
-  }
+ 
+  async getMessagesForConversation(req, res) {
+    const userId = req.user?.user_id;
+    const { id: conversationId } = req.params;
+    
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+    }
+    
+    try {
+      // Kiểm tra xem user có sở hữu conversation này không
+      const conversation = await conversationModel.getById(conversationId, userId);
+      if (!conversation) {
+        return responseHandler.notFound(res, "Không tìm thấy cuộc trò chuyện.");
+      }
+      
+      const messages = await messageModel.getByConversationId(conversationId);
+      return responseHandler.success(res, "Lấy tin nhắn thành công.", messages);
+      
+    } catch (error) {
+       return responseHandler.internalServerError(res, "Lỗi khi lấy tin nhắn.");
+    }
+  },
+  async deleteConversation(req, res) {
+    const userId = req.user?.user_id;
+    const { id: conversationId } = req.params;
+    
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+    }
+    
+    try {
+      const deleted = await conversationModel.deleteById(conversationId, userId);
+      if (!deleted) {
+         return responseHandler.notFound(res, "Không tìm thấy cuộc trò chuyện để xóa.");
+      }
+      return responseHandler.success(res, "Xóa cuộc trò chuyện thành công.");
+    } catch (error) {
+      return responseHandler.internalServerError(res, "Lỗi khi xóa cuộc trò chuyện.");
+    }
+  },
+ 
 };

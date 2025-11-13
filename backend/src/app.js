@@ -1,5 +1,4 @@
 import express from "express";
-
 import cors from "cors";
 import dotenvFlow from "dotenv-flow"; 
 import logger from "./config/logger.js";
@@ -9,6 +8,8 @@ import { createServer } from "http";
 import cookieParser from "cookie-parser"
 import { pool } from "./config/mysql.js";
 import main from "./utils/init_handbook.js";
+import { Server } from 'socket.io';
+import { initializeSocket } from './socket/chatHandler.js';
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
@@ -40,6 +41,17 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Khởi tạo Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
+
+initializeSocket(io);
+
 
 app.get("/", async (req, res) => {
   res.send("Hello World! this is backend server c1se45");
