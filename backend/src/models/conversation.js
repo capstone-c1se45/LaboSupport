@@ -1,0 +1,70 @@
+import { pool } from "../config/mysql.js";
+import { nanoidNumbersOnly, nanoid } from "../utils/nanoid.js";
+
+
+export const conversationModel = {
+    async create(userId, title) {
+    const conversationId = nanoid(); // Tạo ID mới
+    try {
+      await pool.query(
+        'INSERT INTO Conversation (conversation_id, user_id, title) VALUES (?, ?, ?)',
+        [conversationId, userId, title]
+      );
+      return { conversation_id: conversationId, title: title };
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      throw error;
+    }
+  },
+
+  async getByUserId(userId) {
+    try {
+      const [rows] = await pool.query(
+        'SELECT conversation_id, title, updated_at FROM Conversation WHERE user_id = ? ORDER BY updated_at DESC',
+        [userId]
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error getting conversations by user:", error);
+      throw error;
+    }
+  },
+
+  async updateTimestamp(conversationId) {
+    try {
+      await pool.query(
+        'UPDATE Conversation SET updated_at = NOW() WHERE conversation_id = ?',
+        [conversationId]
+      );
+    } catch (error) {
+      console.error("Error updating conversation timestamp:", error);
+      throw error;
+    }
+  },
+
+  async deleteById(conversationId, userId) {
+    try {
+      const [result] = await pool.query(
+        'DELETE FROM Conversation WHERE conversation_id = ? AND user_id = ?',
+        [conversationId, userId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      throw error;
+    }
+  },
+
+  async getById(conversationId, userId) {
+     try {
+      const [rows] = await pool.query(
+        'SELECT * FROM Conversation WHERE conversation_id = ? AND user_id = ?',
+        [conversationId, userId]
+      );
+      return rows[0];
+    } catch (error) {
+      console.error("Error getting conversation by id:", error);
+      throw error;
+    }
+  }
+}

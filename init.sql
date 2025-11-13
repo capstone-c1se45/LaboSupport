@@ -51,6 +51,25 @@ CREATE TABLE IF NOT EXISTS Handbook_Section (
   FOREIGN KEY (created_by) REFERENCES User(user_id)
 );
 
+CREATE TABLE IF NOT EXISTS Conversation (
+  conversation_id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  title VARCHAR(255) NOT NULL, -- Tiêu đề cuộc trò chuyện (VD: "Hỏi về lương tối thiểu")
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Để sắp xếp theo hoạt động gần nhất
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS Message (
+  message_id CHAR(36) PRIMARY KEY,
+  conversation_id CHAR(36) NOT NULL,
+  role VARCHAR(10) NOT NULL, 
+  content TEXT NOT NULL,
+  source VARCHAR(50), 
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES Conversation(conversation_id) ON DELETE CASCADE
+);
+
 
 -- tập hợp câu hỏi thường gặp để cải thiện chatbot.
 CREATE TABLE IF NOT EXISTS FAQ (
@@ -90,16 +109,6 @@ CREATE TABLE IF NOT EXISTS Contract_OCR (
   FOREIGN KEY (contract_id) REFERENCES Contract(contract_id)
 );
 
--- lưu lịch sử chat giữa người dùng và chatbot
-CREATE TABLE IF NOT EXISTS Chat_Log (
-  chat_id CHAR(36) PRIMARY KEY,
-  user_id CHAR(36),
-  question TEXT NOT NULL,
-  answer TEXT,
-  source VARCHAR(50),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES User(user_id)
-);
 
 -- lưu báo cáo vi phạm từ người dùng
 CREATE TABLE IF NOT EXISTS Report (
@@ -149,23 +158,4 @@ CREATE TABLE IF NOT EXISTS ForgotPassword (
   username VARCHAR(100) PRIMARY KEY,
   otp_code VARCHAR(10) NOT NULL,
   expire_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS Conversation (
-  conversation_id CHAR(36) PRIMARY KEY,
-  user_id CHAR(36) NOT NULL,
-  title VARCHAR(255) NOT NULL, -- Tiêu đề cuộc trò chuyện (VD: "Hỏi về lương tối thiểu")
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Để sắp xếp theo hoạt động gần nhất
-  FOREIGN KEY (user_id) REFERENCES User(user_id)
-);
-
-CREATE TABLE IF NOT EXISTS Message (
-  message_id CHAR(36) PRIMARY KEY,
-  conversation_id CHAR(36) NOT NULL,
-  role VARCHAR(10) NOT NULL, 
-  content TEXT NOT NULL,
-  source VARCHAR(50), 
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (conversation_id) REFERENCES Conversation(conversation_id) ON DELETE CASCADE
 );
