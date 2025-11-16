@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { conversationModel } from '../models/conversation.js';
 import { messageModel } from '../models/message.js';
+import { faqModel } from '../models/faq.js';
 import responseHandler from "../utils/response.js"; 
 import dotenvFlow from "dotenv-flow";
 
@@ -141,5 +142,12 @@ export const aiController = {
       return responseHandler.internalServerError(res, "Lỗi khi xóa cuộc trò chuyện.");
     }
   },
- 
+  async getFaqs(req, res) {
+    try {
+      const faqs = await faqModel.getAll();
+      return responseHandler.success(res, "Lấy danh sách FAQ thành công.", faqs);
+    } catch (error) {
+      return responseHandler.internalServerError(res, "Lỗi khi lấy danh sách câu hỏi thường gặp.");
+    }
+  }
 };

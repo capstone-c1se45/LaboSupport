@@ -14,4 +14,7 @@ router.post('/chat',aiController.chatWithAI);
 
 router.delete('/chat/conversations/:id', aiController.deleteConversation);
 
+router.get('/faq', aiController.getFaqs);
+
+
 export default router;

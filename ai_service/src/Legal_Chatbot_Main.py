@@ -10,7 +10,7 @@ from untils.compliance import run_compliance_check
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
 
-GEMINI_API_KEY = "" 
+GEMINI_API_KEY = "AIzaSyADJoSMiyPD4BAcBrgcG9mGhnkAGNNKC48" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
@@ -155,7 +155,8 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
                     "Bạn là chuyên gia pháp lý Việt Nam, am hiểu **duy nhất về Bộ luật Lao động 2019**. "
                     "Nhiệm vụ của bạn chỉ là trả lời các câu hỏi liên quan đến Luật Lao động. "
                     "Nếu người dùng hỏi về bất kỳ chủ đề nào khác (ví dụ: công thức nấu ăn, tin tức, lịch sử, toán học, luật dân sự, luật hình sự, v.v.), "
-                    "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động.' " # THAY ĐỔI LỚN
+                    "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động. "
+                    "'.Nếu mà người dùng nhắn là hi, chào thì trả lời **chính xác** câu sau: 'Chào, tôi có thể giúp gì cho bạn về luật Lao Động không ?' " # THAY ĐỔI LỚN
                     
                     "Hãy chú ý phân tích các thông tin được cung cấp trong phần 'PHÂN TÍCH NỘI BỘ' và 'Điều luật liên quan' để trả lời. "
                     "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "

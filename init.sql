@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS Handbook_Section (
 );
 
 CREATE TABLE IF NOT EXISTS Conversation (
-  conversation_id CHAR(36) PRIMARY KEY,
+  conversation_id CHAR(36) PRIMARY KEY, 
   user_id CHAR(36) NOT NULL,
   title VARCHAR(255) NOT NULL, -- Tiêu đề cuộc trò chuyện (VD: "Hỏi về lương tối thiểu")
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
