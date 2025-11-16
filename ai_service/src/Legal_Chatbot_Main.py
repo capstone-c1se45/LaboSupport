@@ -10,7 +10,7 @@ from untils.compliance import run_compliance_check
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
 
-GEMINI_API_KEY = "AIzaSyADJoSMiyPD4BAcBrgcG9mGhnkAGNNKC48" 
+GEMINI_API_KEY = "" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
