@@ -9,6 +9,9 @@ dotenvFlow.config();
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
+const guestUsage = new Map();
+
+
 const generateTitle = (prompt) => {
   return prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
 };
@@ -148,6 +151,49 @@ export const aiController = {
       return responseHandler.success(res, "Lấy danh sách FAQ thành công.", faqs);
     } catch (error) {
       return responseHandler.internalServerError(res, "Lỗi khi lấy danh sách câu hỏi thường gặp.");
+    }
+  },
+  // xử lý chat cho khách (không cần đăng nhập)
+  async guestChat(req, res) {
+    try {
+      const { message, session_id } = req.body;
+
+      if (!message || !session_id) {
+        return responseHandler.badRequest(res, "Thiếu thông tin message hoặc session_id");
+      }
+
+      // 1. Kiểm tra giới hạn (Rate Limit)
+      const currentCount = guestUsage.get(session_id) || 0;
+      if (currentCount >= 5) {
+        return res.status(403).json({
+          status: 'error',
+          code: 403,
+          message: "Bạn đã hết lượt hỏi miễn phí (5 câu). Vui lòng đăng ký tài khoản để tiếp tục!",
+          limit_reached: true
+        });
+      }
+
+      const formData = new URLSearchParams();
+      formData.append('message', message);
+      formData.append('session_id', session_id);
+
+      const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const aiData = aiResponse.data;
+
+      guestUsage.set(session_id, currentCount + 1);
+
+      return responseHandler.success(res, "AI trả lời thành công", {
+        reply: aiData.ai_reply,
+        session_id: aiData.session_id,
+        remaining_turns: 5 - (currentCount + 1)
+      });
+
+    } catch (error) {
+      console.error("Guest chat error:", error?.response?.data || error.message);
+      return responseHandler.internalServerError(res, "Lỗi khi xử lý chat khách.");
     }
   }
 };
