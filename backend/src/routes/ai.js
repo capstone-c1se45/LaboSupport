@@ -21,6 +21,9 @@ router.post('/chat',aiController.chatWithAI);
 
 router.delete('/chat/conversations/:id', aiController.deleteConversation);
 
+router.post('/contract-chat', aiController.contractChat);
+
+
 
 
 export default router;

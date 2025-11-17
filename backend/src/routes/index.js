@@ -19,4 +19,5 @@ router.use("/ai", aiRoutes); // route AI chat
 router.use("/contracts", contractRoutes); // route hợp đồng
 router.use("/admin/reports", adminReportRoutes); // route báo cáo admin
 
+
 export default router;

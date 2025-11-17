@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS Contract_OCR (
   danhgia TEXT,
   phantich TEXT,
   dexuat TEXT,
+  chat_history JSON DEFAULT (JSON_ARRAY()),
   processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (contract_id) REFERENCES Contract(contract_id)
 );

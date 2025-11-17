@@ -96,7 +96,7 @@ export const aiController = {
 
   async contractChat(req, res) {
     const userId = req.user?.user_id;
-    const { prompt, contract_id, chat_history } = req.body;
+    const { prompt, contract_id, chat_history } = req.body; 
 
     if (!userId) {
       return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
@@ -113,23 +113,18 @@ export const aiController = {
 
       const analysis = await contractOcrModel.getOcrResultByContractId(contract_id);
       if (!analysis) {
-        return responseHandler.notFound(res, "Hợp đồng này chưa được phân tích. Vui lòng nhấn 'Phân tích' trước.");
+        return responseHandler.notFound(res, "Hợp đồng này chưa được phân tích.");
       }
 
-     
       const context = `
         NỘI DUNG HỢP ĐỒNG GỐC (TRÍCH XUẤT):
         ${analysis.extracted_text || "Không có"}
-
         TÓM TẮT HỢP ĐỒNG:
         ${analysis.tomtat || "Không có"}
-
         ĐÁNH GIÁ QUYỀN LỢI/NGHĨA VỤ:
         ${analysis.danhgia || "Không có"}
-
         PHÂN TÍCH CẢNH BÁO/RỦI RO:
         ${analysis.phantich || "Không có"}
-
         ĐỀ XUẤT CHỈNH SỬA:
         ${analysis.dexuat || "Không có"}
       `;
@@ -137,7 +132,7 @@ export const aiController = {
       const aiPayload = {
         prompt: prompt,
         context: context.trim(),
-        chat_history: chat_history || []
+        chat_history: chat_history || [] 
       };
       
       const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat_with_context`, aiPayload);
@@ -146,6 +141,13 @@ export const aiController = {
       if (!aiAnswer) {
         return responseHandler.internalServerError(res, "AI không đưa ra câu trả lời.");
       }
+
+      const userMessage = { role: 'user', content: prompt };
+      const aiMessage = { role: 'ai', content: aiAnswer };
+      const oldHistory = Array.isArray(chat_history) ? chat_history : [];
+      const newHistory = [...oldHistory, userMessage, aiMessage];
+      
+      await contractOcrModel.updateContractChatHistory(contract_id, newHistory);
 
       return responseHandler.success(res, "AI đã trả lời dựa trên ngữ cảnh.", {
         answer: aiAnswer
