@@ -2,6 +2,8 @@ import axios from 'axios';
 import { conversationModel } from '../models/conversation.js';
 import { messageModel } from '../models/message.js';
 import { faqModel } from '../models/faq.js';
+import { contractModel } from '../models/contract.js';
+import { contractOcrModel } from '../models/contractOcr.js';
 import responseHandler from "../utils/response.js"; 
 import dotenvFlow from "dotenv-flow";
 
@@ -89,6 +91,69 @@ export const aiController = {
     } catch (error) {
       console.error("Error in chatWithAI:", error);
       return responseHandler.internalServerError(res, "Lỗi máy chủ khi xử lý chat.");
+    }
+  },
+
+  async contractChat(req, res) {
+    const userId = req.user?.user_id;
+    const { prompt, contract_id, chat_history } = req.body;
+
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+    }
+    if (!prompt || !contract_id) {
+      return responseHandler.badRequest(res, "Thiếu câu hỏi (prompt) hoặc ID hợp đồng (contract_id).");
+    }
+
+    try {
+      const contract = await contractModel.getContractById(contract_id, userId);
+      if (!contract) {
+        return responseHandler.notFound(res, "Không tìm thấy hợp đồng hoặc bạn không có quyền truy cập.");
+      }
+
+      const analysis = await contractOcrModel.getOcrResultByContractId(contract_id);
+      if (!analysis) {
+        return responseHandler.notFound(res, "Hợp đồng này chưa được phân tích. Vui lòng nhấn 'Phân tích' trước.");
+      }
+
+     
+      const context = `
+        NỘI DUNG HỢP ĐỒNG GỐC (TRÍCH XUẤT):
+        ${analysis.extracted_text || "Không có"}
+
+        TÓM TẮT HỢP ĐỒNG:
+        ${analysis.tomtat || "Không có"}
+
+        ĐÁNH GIÁ QUYỀN LỢI/NGHĨA VỤ:
+        ${analysis.danhgia || "Không có"}
+
+        PHÂN TÍCH CẢNH BÁO/RỦI RO:
+        ${analysis.phantich || "Không có"}
+
+        ĐỀ XUẤT CHỈNH SỬA:
+        ${analysis.dexuat || "Không có"}
+      `;
+
+      const aiPayload = {
+        prompt: prompt,
+        context: context.trim(),
+        chat_history: chat_history || []
+      };
+      
+      const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat_with_context`, aiPayload);
+
+      const aiAnswer = aiResponse.data?.answer;
+      if (!aiAnswer) {
+        return responseHandler.internalServerError(res, "AI không đưa ra câu trả lời.");
+      }
+
+      return responseHandler.success(res, "AI đã trả lời dựa trên ngữ cảnh.", {
+        answer: aiAnswer
+      });
+
+    } catch (error) {
+      console.error("Error in contractChat:", error?.response?.data || error.message);
+      return responseHandler.internalServerError(res, "Lỗi máy chủ khi chat về hợp đồng.");
     }
   },
   // sidebar: Lấy danh sách hội thoại của người dùng
