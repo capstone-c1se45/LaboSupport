@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 import requests, os
-from typing import List, Dict
+from typing import List, Dict, Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -269,3 +269,49 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
         "ocr_text": ocr_text,
         "analysis": analysis_result
     }
+
+class ContractChatRequest(BaseModel):
+    """
+    Định nghĩa Pydantic model cho JSON payload
+    """
+    prompt: str
+    context: str
+    chat_history: Optional[List[Dict[str, str]]] = []
+
+@app.post("/chat_with_context")
+async def chat_with_contract_context(request: ContractChatRequest):
+    """
+    Nhận câu hỏi (prompt) và ngữ cảnh (context) từ backend Node.js
+    và trả lời dựa trên ngữ cảnh đó.
+    """
+    
+    system_prompt = f"""
+    Bạn là trợ lý pháp lý AI. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng
+    CHỈ DỰA TRÊN ngữ cảnh hợp đồng đã được phân tích dưới đây.
+    
+    --- NGỮ CẢNH HỢP ĐỒNG ĐÃ PHÂN TÍCH ---
+    {request.context}
+    --- KẾT THÚC NGỮ CẢNH ---
+
+    Quy tắc trả lời:
+    - Chỉ trả lời dựa vào thông tin trong "NGỮ CẢNH HỢP ĐỒNG".
+    - Nếu câu hỏi không thể trả lời bằng ngữ cảnh, hãy nói: "Tôi không tìm thấy thông tin này trong hợp đồng đã phân tích."
+    - Trả lời ngắn gọn, tập trung, dễ hiểu.
+    """
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    if request.chat_history:
+        for msg in request.chat_history:
+            role = 'assistant' if msg['role'] == 'ai' else msg['role']
+            messages.append({"role": role, "content": msg['content']})
+            
+    messages.append({"role": "user", "content": request.prompt})
+
+    try:
+        loop = asyncio.get_event_loop()
+        answer = await loop.run_in_executor(executor, call_gemini_api_sync, messages)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API (Context Chat): {e}")
+
+    return {"answer": answer.strip()}

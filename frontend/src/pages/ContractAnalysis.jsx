@@ -166,17 +166,16 @@ export default function ContractAnalysis() {
 
         const response = await api.post("/contracts/upload", formData, {
           onUploadProgress: (progressEvent) => {
-            // ... (giữ nguyên progress logic)
             if (progressEvent.lengthComputable) {
-               const percentCompleted = Math.round(
-                 (progressEvent.loaded * 100) / progressEvent.total
-               );
-               setUploadProgress(percentCompleted);
-             }
+              const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            }
           },
         });
 
-        // --- PHẦN SỬA LỖI (BẮT ĐẦU) ---
+     
         // Backend trả về: { contract_id, fileName, status }
         const newContractData = response.data.data;
 
@@ -190,7 +189,6 @@ export default function ContractAnalysis() {
         };
 
         setContracts((prev) => [newContractForState, ...prev]);
-        // --- PHẦN SỬA LỖI (KẾT THÚC) ---
       }
     }
 
@@ -325,7 +323,7 @@ const handleAnalyze = async (contractId) => {
     <div className='flex h-screen w-full flex-col bg-white'>
      <NavbarLogged />
 
-      <main className='ml-64 p-6  overflow-y-auto'>
+      <main className='p-6  overflow-y-auto'>
         <h1 className='text-2xl font-extrabold text-gray-900'>Phân tích Hợp đồng</h1>
         <p className='text-sm text-gray-600 mb-5'>Tải lên hợp đồng lao động (.pdf, .docx) để AI phân tích.</p>
 
@@ -530,6 +528,8 @@ const handleAnalyze = async (contractId) => {
               </div>
             )}
           </div>
+
+          
           
         </div>
       </main>
