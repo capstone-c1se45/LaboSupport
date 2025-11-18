@@ -142,6 +142,8 @@ router.delete(
 // ✅ validate login trước khi gọi controller
 router.post("/login", validateLogin, userController.login);
 
+router.get("/me", authMiddleware.verifyToken, userController.getUserByToken);
+
 export default router;
 
 

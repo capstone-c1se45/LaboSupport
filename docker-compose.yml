@@ -15,5 +15,52 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  ai-service:
+    build: ./ai_service
+    container_name: ai_service_container
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai_service:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+  backend:
+    build: ./backend
+    container_name: backend_container
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      ai-service:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql           
+      - DB_USER=${MYSQL_USER}
+      - DB_PASS=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_PORT=3306
+  frontend:
+    build: ./frontend
+    container_name: frontend_container
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
 volumes:
   mysql_data:

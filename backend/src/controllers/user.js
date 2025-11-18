@@ -3,6 +3,7 @@ import { userModel } from "../models/user.js";
 import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import { jwtService } from "../config/jwt.js";
 import { mailer } from "../config/nodemailer.js";
+import responseHandler from "../utils/response.js";
 
 // Bộ nhớ tạm lưu mã xác thực
 const verifyCodes = new Map();
@@ -243,10 +244,20 @@ async register(req, res) {
     LEFT JOIN Role r ON u.role_id = r.role_id
   `);
     return rows;
-  } 
-
-
-
+  } ,
+  async getUserByToken(req, res) { 
+    try {
+      const userId = req.user.user_id;
+      const user = await userModel.getUserById(userId);
+      if (!user) {
+        return responseHandler.badRequest(res, "Người dùng không tồn tại");
+      }
+      return responseHandler.success(res, "Lấy thông tin người dùng thành công", user);
+    } catch (error) {
+      console.error("Error getUserByToken:", error);
+      res.status(500).json({ message: "Lỗi khi lấy thông tin người dùng" });
+    }
+  }
   
 };
 

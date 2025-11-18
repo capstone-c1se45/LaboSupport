@@ -26,5 +26,5 @@ export const jwtService = {
     } catch (err) {
       return null;
     }
-  },
+  },    
 };

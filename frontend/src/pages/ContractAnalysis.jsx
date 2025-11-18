@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { api } from '../lib/api-client.js'; 
 import { useNavigate } from 'react-router-dom'; 
+import NavbarLogged from '../components/NavbarLogged.jsx';
 
 const UploadIcon = () => <svg className="w-6 h-6 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
 const DocIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
@@ -371,18 +372,7 @@ export default function ContractAnalysis() {
   };
   return (
     <div className='flex h-screen bg-gray-50'>
-      <aside className='fixed h-full w-64 bg-white border-r border-gray-200 flex flex-col'>
-        <nav className='flex-1 p-3 text-sm'>
-          <a href='/home' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'> Trang Chính</a>
-          <a href='/user-chat' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>🤖 Trợ lý AI</a>
-          <a href='/contract-analysis' className='flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium mt-1'><DocIcon /> Phân tích HĐ</a>
-          <a href='/profile' className='flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 mt-1'>👤 Hồ sơ cá nhân</a>
-        </nav>
-        <div className='border-t p-3'>
-          <a href='/logout' className='w-full inline-flex items-center justify-center gap-2 px-3 py-2 border rounded-md text-gray-700 hover:bg-gray-50'>Đăng xuất</a>
-        </div>
-      </aside>
-
+       <NavbarLogged />
       <main className='ml-64 p-6 w-full overflow-y-auto'>
         <h1 className='text-2xl font-extrabold text-gray-900'>Phân tích Hợp đồng</h1>
         <p className='text-sm text-gray-600 mb-5'>Tải lên hợp đồng, AI sẽ phân tích và chat với bạn về hợp đồng đó.</p>
