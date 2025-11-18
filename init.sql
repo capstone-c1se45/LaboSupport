@@ -160,3 +160,13 @@ CREATE TABLE IF NOT EXISTS ForgotPassword (
   otp_code VARCHAR(10) NOT NULL,
   expire_at DATETIME NOT NULL
 );
+
+CREATE TABLE salary_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(20) NOT NULL, -- 'grossToNet' hoặc 'netToGross'
+  salary DECIMAL(15, 2) NOT NULL, -- Lương đầu vào
+  dependents INT DEFAULT 0,
+  region VARCHAR(5) DEFAULT 'I',
+  result JSON NOT NULL, -- Lưu kết quả tính toán dưới dạng JSON
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
