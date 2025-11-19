@@ -1,123 +1,230 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import NavbarLogged from '../components/NavbarLogged';
-import logoImg from '../assets/logo.png';
+import { api } from '../lib/api-client';
 
-const StatCard = ({ color = 'from-blue-500 to-indigo-600', icon, label, value }) => (
-  <div className="rounded-xl p-5 text-white shadow-sm border border-blue-300/20" style={{background: `linear-gradient(135deg, var(--tw-gradient-stops))`}}>
-    <div className={`bg-white/15 w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>{icon}</div>
-    <div className="text-sm/5 opacity-95">{label}</div>
-    <div className="text-2xl font-semibold mt-1">{value}</div>
-    <style>{`.from-blue-500{--tw-gradient-from:#3b82f6}.to-indigo-600{--tw-gradient-to:#4f46e5}.from-sky-500{--tw-gradient-from:#0ea5e9}.to-blue-600{--tw-gradient-to:#2563eb}.from-cyan-500{--tw-gradient-from:#06b6d4}.to-sky-600{--tw-gradient-to:#0284c7}.from-blue-600{--tw-gradient-from:#2563eb}.to-sky-700{--tw-gradient-to:#0369a1}.`}</style>
-  </div>
-);
+// Helper format thời gian
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = (now - date) / 1000; // seconds
 
-const QuickCard = ({ title, desc, href }) => (
-  <div className="bg-white rounded-2xl border border-blue-200/40 shadow-sm p-5">
-    <div className="w-11 h-11 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center mb-3">
-      <svg className="w-6 h-6 text-sky-600" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
-    </div>
-    <div className="font-semibold text-gray-900">{title}</div>
-    <div className="text-sm text-gray-600 mt-1 mb-4">{desc}</div>
-    <a href={href} className="inline-flex items-center justify-center rounded-lg bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 font-medium">
-      Sử dụng ngay
-    </a>
-  </div>
-);
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
+  return date.toLocaleDateString('vi-VN');
+}
 
 export default function HomeLogged() {
-  const stats = [
-    { label: 'Hợp đồng đã phân tích', value: '24', icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 2h8a2 2 0 012 2v16l-6-3-6 3V4a2 2 0 012-2z"/></svg>, color: 'from-blue-500 to-indigo-600' },
-    { label: 'Câu hỏi đã tư vấn', value: '24', icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm1 14h-2v-2h2v2zm1.07-7.75a2.5 2.5 0 00-4.15 1.85h2a.5.5 0 01.5-.5c.28 0 .5.22.5.5 0 .5-.5.75-.86 1.02-.5.38-1.14.86-1.14 1.98V14h2v-.4c0-.5.5-.75.86-1.02.5-.38 1.14-.86 1.14-1.98 0-1.16-.71-2.18-1.85-2.35z"/></svg>, color: 'from-sky-500 to-blue-600' },
-    { label: 'Lương đã tính', value: '24', icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1l9 4v6c0 5-4 9-9 12C7 20 3 16 3 11V5l9-4zm0 5l-6 3v2c0 3.31 2.69 6.31 6 8.88 3.31-2.57 6-5.57 6-8.88V9l-6-3z"/></svg>, color: 'from-cyan-500 to-sky-600' },
-    { label: 'Rủi ro phát hiện', value: '24', icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>, color: 'from-blue-600 to-sky-700' },
-  ];
+  const [user, setUser] = useState({ full_name: 'Người dùng' });
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    contractCount: 0,
+    questionCount: 0,
+    recentContracts: [],
+    recentConvos: []
+  });
 
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // 1. Lấy thông tin user cơ bản
+        const profileRes = await api.get('/profile');
+        if (profileRes?.data?.data) {
+          setUser(profileRes.data.data);
+        }
+
+        // 2. Lấy số liệu thống kê
+        const statsRes = await api.get('/profile/stats');
+        if (statsRes?.data?.data) {
+          setStats(statsRes.data.data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch home data", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Gộp hợp đồng và chat thành danh sách hoạt động chung
   const activities = [
-    { id: 1, title: 'Đã phân tích hợp đồng: HD_KyThuatVien_2024.pdf', time: '2 giờ trước' },
-    { id: 2, title: 'Đã tư vấn: Thời gian thử việc cho kỹ sư', time: '5 giờ trước' },
-    { id: 3, title: 'Đã tính lương gross sang net: 18.245.000 VND', time: '1 ngày trước' },
-    { id: 4, title: 'Phát hiện rủi ro trong hợp đồng: Thiếu điều khoản về OT', time: '2 ngày trước' },
-  ];
+    ...stats.recentContracts.map(c => ({
+      type: 'contract',
+      title: 'Phân tích hợp đồng',
+      subtitle: c.original_name,
+      date: c.uploaded_at,
+      link: '/contracts' // Có thể dẫn tới trang chi tiết nếu có
+    })),
+    ...stats.recentConvos.map(c => ({
+      type: 'chat',
+      title: 'Hỏi đáp AI',
+      subtitle: c.title || 'Cuộc trò chuyện mới',
+      date: c.updated_at,
+      link: '/chat'
+    }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
   return (
     <div className="min-h-screen bg-[#F5F8FB]">
       <NavbarLogged />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Heading */}
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Chào mừng đến với Hệ thống Quản lý Hợp đồng Lao động</h1>
-        <p className="text-gray-600 mt-1">Nền tảng AI hỗ trợ phân tích hợp đồng, tư vấn luật lao động và tính toán lương</p>
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Xin chào, {user.full_name || 'bạn'}! 👋
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Đây là tổng quan tình hình hỗ trợ pháp lý của bạn hôm nay.
+          </p>
+        </div>
 
-        {/* Stats */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-          {stats.map((s, i) => (
-            <div key={i} className={`${s.color}`}>
-              <StatCard color={s.color} label={s.label} value={s.value} icon={s.icon} />
-            </div>
-          ))}
-        </section>
-
-        {/* Quick actions */}
-        <h2 className="text-lg font-semibold text-gray-900 mt-10 mb-4">Thao tác nhanh</h2>
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <QuickCard
-            title="Trợ lý AI"
-            desc="Tải lên & phân tích hợp đồng lao động bằng AI. Phát hiện rủi ro và nêu ra khuyến nghị quan trọng."
-            href="/user-chat"
-          />
-          <QuickCard
-            title="Tính Lương & Thuế"
-            desc="Chat với AI để tìm hiểu về các quy định pháp luật lao động Việt Nam."
-            href="/salary"
-          />
-          <QuickCard
-            title="Tính bảo hiểm xã hội"
-            desc="Tính toán lương thực nhận, bảo hiểm và thuế."
-            href="/salary?calc=bhxh"
-          />
-        </section>
-
-        {/* Recent activity */}
-        <h2 className="text-lg font-semibold text-gray-900 mt-10 mb-4">Hoạt động gần đây</h2>
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm">
-          <ul className="divide-y">
-            {activities.map((a) => (
-              <li key={a.id} className="p-4 flex items-start gap-3">
-                <span className="mt-0.5 p-1.5 bg-gray-100 rounded-full border">
-                  <svg className="w-4 h-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
-                </span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-800">{a.title}</div>
-                  <div className="text-xs text-gray-500">{a.time}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Footer */}
-        <footer className="mt-14 border-t pt-8 text-sm text-gray-600">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <img src={logoImg} alt="LaboSupport" className="h-7 w-auto" />
-              </div>
-              <p>Trợ lý pháp lý AI thông minh cho người lao động Việt Nam</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Card 1: Hợp đồng */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+              📄
             </div>
             <div>
-              <div className="font-semibold text-gray-800 mb-2">Liên hệ</div>
-              <p>Email: support@gmail.com</p>
-              <p>Hotline: 1900 xxxx</p>
-            </div>
-            <div>
-              <div className="font-semibold text-gray-800 mb-2">Pháp lý</div>
-              <p>Điều khoản sử dụng</p>
-              <p>Chính sách bảo mật</p>
+              <div className="text-2xl font-bold text-gray-900">{stats.contractCount}</div>
+              <div className="text-sm text-gray-500">Hợp đồng đã phân tích</div>
             </div>
           </div>
-        </footer>
+
+          {/* Card 2: Câu hỏi */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+              💬
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{stats.questionCount}</div>
+              <div className="text-sm text-gray-500">Câu hỏi đã trao đổi</div>
+            </div>
+          </div>
+
+          {/* Card 3: Quick Action (Upload) */}
+          <Link to="/contracts" className="bg-blue-600 p-6 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center justify-between group">
+            <div className="text-white">
+              <div className="font-semibold text-lg">Tải lên hợp đồng mới</div>
+              <div className="text-blue-100 text-sm">Nhận phân tích ngay lập tức</div>
+            </div>
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white group-hover:scale-110 transition">
+              +
+            </div>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Recent Activity */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-gray-900">Hoạt động gần đây</h2>
+                <Link to="/profile" className="text-sm text-blue-600 hover:underline">Xem tất cả</Link>
+              </div>
+
+              {loading ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-50 rounded-lg animate-pulse"></div>)}
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Chưa có hoạt động nào. Hãy bắt đầu bằng cách tải lên hợp đồng hoặc chat với AI.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${
+                        item.type === 'contract' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                      }`}>
+                        {item.type === 'contract' ? '📝' : '🤖'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-gray-900">{item.title}</h3>
+                          <span className="text-xs text-gray-400 whitespace-nowrap ml-2">{timeAgo(item.date)}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 truncate">{item.subtitle}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Suggested Actions / Education */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100 p-6">
+              <h3 className="font-semibold text-indigo-900 mb-2">💡 Bạn có biết?</h3>
+              <p className="text-sm text-indigo-800 mb-4">
+                Luật Lao động 2019 quy định về thời gian thử việc tối đa là 180 ngày đối với công việc của người quản lý doanh nghiệp.
+              </p>
+              <Link to="/chat" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                Hỏi thêm về quy định thử việc &rarr;
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Tools & Shortcuts */}
+          <div className="space-y-6">
+             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Công cụ hỗ trợ</h2>
+                <div className="space-y-3">
+                  <Link to="/user-chat" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">💬</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Chatbot AI</div>
+                        <div className="text-xs text-gray-500">Tư vấn pháp luật 24/7</div>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  <Link to="/contract-analysis" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">⚖️</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Rà soát hợp đồng</div>
+                        <div className="text-xs text-gray-500">Phát hiện rủi ro pháp lý</div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link to="/salary" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">💰</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Tính lương Gross/Net</div>
+                        <div className="text-xs text-gray-500">Chuyển đổi chính xác</div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+             </div>
+
+             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Hồ sơ của bạn</h2>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
+                     {user.full_name?.split(' ').pop()?.[0] || 'U'}
+                  </div>
+                  <div>
+                    <div className="font-medium">{user.full_name}</div>
+                    <div className="text-xs text-gray-500">{user.email}</div>
+                  </div>
+                </div>
+                <Link to="/profile" className="block w-full py-2 text-center text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+                  Quản lý hồ sơ
+                </Link>
+             </div>
+          </div>
+        </div>
       </main>
     </div>
   );
 }
-
