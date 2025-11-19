@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import NavbarLogged from '../components/NavbarLogged';
 import { api, getErrorMessage } from '../lib/api-client';
+import { Link } from 'react-router-dom';
 
 const Label = ({ children }) => <div className="text-xs text-gray-500 mb-1">{children}</div>;
 const Field = ({ value }) => <div className="text-sm text-gray-800">{value || '—'}</div>;
@@ -195,27 +196,42 @@ export default function Profile() {
 
               {/* Recent Activity */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <div className="font-semibold text-gray-800 mb-3">Hoạt động gần đây</div>
-                {activities.length === 0 ? (
-                   <div className="text-sm text-gray-500 italic">Chưa có hoạt động nào</div>
-                ) : (
-                  <ul className="space-y-2 text-sm">
-                    {activities.map((r,idx)=> (
-                      <li key={idx} className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                        <div className="font-medium text-gray-800">{r.t}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{r.sub}</div>
-                        <div className="text-xs text-gray-400">{timeAgo(r.date)}</div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <div className="text-lg font-bold text-gray-900 mb-4">Hoạt động gần đây</div>
+                 {loading ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-50 rounded-lg animate-pulse"></div>)}
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Chưa có hoạt động nào. Hãy bắt đầu bằng cách tải lên hợp đồng hoặc chat với AI.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${
+                        item.type === 'contract' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                      }`}>
+                        {item.type === 'contract' ? '📝' : '🤖'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-gray-900">{item.t}</h3>
+                          <span className="text-xs text-gray-400 whitespace-nowrap ml-2">{timeAgo(item.date)}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 truncate">{item.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
               {/* Saved Documents */}
               <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <div className="font-semibold text-gray-800 mb-3">Tài liệu đã lưu</div>
+                <div className="text-lg font-bold text-gray-900 mb-4">Tài liệu đã lưu</div>
                 {docs.length === 0 ? (
                    <div className="text-sm text-gray-500 text-center py-4">Chưa có tài liệu nào</div>
                 ) : (
@@ -234,14 +250,45 @@ export default function Profile() {
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <div className="font-semibold text-gray-800 mb-3">Thao tác nhanh</div>
-                <div className="space-y-2 text-sm">
-                  {['Tải lên hợp đồng mới', 'Chat với chuyên gia AI', 'Cập nhật hồ sơ'].map((x,i)=>(
-                    <button key={i} className="w-full px-3 py-2 rounded-lg border hover:bg-gray-50 text-left text-gray-700">{x}</button>
-                  ))}
+              <div className="space-y-6">
+             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Thao tác nhanh</h2>
+                <div className="space-y-3">
+                  <Link to="/user-chat" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">💬</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Chatbot AI</div>
+                        <div className="text-xs text-gray-500">Tư vấn pháp luật 24/7</div>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  <Link to="/contract-analysis" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">⚖️</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Rà soát hợp đồng</div>
+                        <div className="text-xs text-gray-500">Phát hiện rủi ro pháp lý</div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link to="/salary" className="block w-full p-3 rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-md transition text-left group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl group-hover:scale-110 transition">💰</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Tính lương Gross/Net</div>
+                        <div className="text-xs text-gray-500">Chuyển đổi chính xác</div>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
-              </div>
+             </div>
+
+            
+          </div>
+
             </div>
           </>
         )}

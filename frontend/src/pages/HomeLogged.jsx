@@ -164,8 +164,8 @@ export default function HomeLogged() {
               <p className="text-sm text-indigo-800 mb-4">
                 Luật Lao động 2019 quy định về thời gian thử việc tối đa là 180 ngày đối với công việc của người quản lý doanh nghiệp.
               </p>
-              <Link to="/chat" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                Hỏi thêm về quy định thử việc &rarr;
+              <Link to="/user-chat" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                Hỏi thêm  &rarr;
               </Link>
             </div>
           </div>
