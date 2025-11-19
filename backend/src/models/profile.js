@@ -146,6 +146,56 @@ export const profileModel = {
       return { success: false, message: "Internal error" };
     }
   },
+  async getDashboardStats(userId) {
+    try {
+      // Đếm số hợp đồng đã phân tích
+      const [contractCountRows] = await pool.query(
+        "SELECT COUNT(*) as count FROM Contract WHERE user_id = ? AND status = 'ANALYZED'",
+        [userId]
+      );
+      const contractCount = contractCountRows[0]?.count || 0;
+
+      //Đếm số câu hỏi AI
+      const [msgCountRows] = await pool.query(
+        `SELECT COUNT(*) as count 
+         FROM Message m 
+         JOIN Conversation c ON m.conversation_id = c.conversation_id 
+         WHERE c.user_id = ? AND m.role = 'user'`,
+        [userId]
+      );
+      const questionCount = msgCountRows[0]?.count || 0;
+
+      // Lấy danh sách hợp đồng gần đây
+      const [recentContracts] = await pool.query(
+        `SELECT contract_id, original_name, uploaded_at 
+         FROM Contract 
+         WHERE user_id = ? 
+         ORDER BY uploaded_at DESC 
+         LIMIT 10`,
+        [userId]
+      );
+
+      //Lấy danh sách hội thoại gần đây (cho phần Hoạt động)
+      const [recentConvos] = await pool.query(
+        `SELECT conversation_id, title, updated_at 
+         FROM Conversation 
+         WHERE user_id = ? 
+         ORDER BY updated_at DESC 
+         LIMIT 5`,
+        [userId]
+      );
+
+      return {
+        contractCount,
+        questionCount,
+        recentContracts,
+        recentConvos
+      };
+    } catch (error) {
+      console.error("Error getting dashboard stats:", error);
+      throw error;
+    }
+  }
 
 };
 

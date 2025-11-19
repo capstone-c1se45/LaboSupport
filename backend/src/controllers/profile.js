@@ -104,5 +104,14 @@ export const profileController = {
       return responseHandler.internalServerError(res, "Lỗi hệ thống khi đổi mật khẩu");
     }
   },
-
+  async getStats(req, res) {
+    try {
+      const userId = req.user.user_id;
+      const stats = await profileModel.getDashboardStats(userId);
+      return responseHandler.success(res, "Dashboard stats fetched", stats);
+    } catch (err) {
+      console.error("Error getStats:", err);
+      return responseHandler.internalServerError(res, "Internal server error");
+    }
+  }
 };

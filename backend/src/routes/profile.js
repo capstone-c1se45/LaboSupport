@@ -63,5 +63,6 @@ router.get("/", authMiddleware.verifyToken, profileController.getProfile);
  */
 router.put("/", authMiddleware.verifyToken, profileController.updateProfile);
 router.put("/change-password", authMiddleware.verifyToken, profileController.changePassword);
+router.get("/stats", authMiddleware.verifyToken, profileController.getStats);
 
 export default router;

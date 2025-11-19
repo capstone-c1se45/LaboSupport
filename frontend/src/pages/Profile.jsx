@@ -5,27 +5,49 @@ import { api, getErrorMessage } from '../lib/api-client';
 const Label = ({ children }) => <div className="text-xs text-gray-500 mb-1">{children}</div>;
 const Field = ({ value }) => <div className="text-sm text-gray-800">{value || '—'}</div>;
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = (now - date) / 1000; // seconds
+
+  if (diff < 60) return 'Vừa xong';
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
+  return date.toLocaleDateString('vi-VN');
+}
+
 export default function Profile() {
-  const [tab, setTab] = useState('overview'); // overview | info | settings
-  const [mode, setMode] = useState('view'); // view | edit
+  const [tab, setTab] = useState('overview'); 
+  const [mode, setMode] = useState('view'); 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
+  // Profile Info State
   const [profile, setProfile] = useState({
-    full_name: 'Nguyễn Văn An',
-    email: 'anguyen@gmail.com',
-    phone: '0912345678',
-    position: 'Trưởng phòng Nhân sự',
-    company: 'Công ty TNHH Công Nghệ ABC',
-    department: 'Phòng Hành chính – Nhân sự',
-    industry: 'Công nghệ thông tin',
-    address: 'Hà Nội, Việt Nam',
-    joined_at: '2025-09-15',
+    full_name: '',
+    email: '',
+    phone: '',
+    position: '',
+    company: '',
+    department: '',
+    industry: '',
+    address: '',
+    joined_at: '',
+  });
+
+  const [dashboardData, setDashboardData] = useState({
+    contractCount: 0,
+    questionCount: 0,
+    recentContracts: [], 
+    recentConvos: []  
   });
 
   const isAuthed = Boolean(localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token'));
 
+  // Fetch Profile
   useEffect(() => {
     async function fetchProfile() {
       if (!isAuthed) return;
@@ -38,6 +60,26 @@ export default function Profile() {
     fetchProfile();
   }, [isAuthed]);
 
+  // Fetch Stats
+  useEffect(() => {
+    async function fetchStats() {
+      if (!isAuthed) return;
+      try {
+        const res = await api.get('/profile/stats');
+        const data = res?.data?.data || {};
+        setDashboardData({
+          contractCount: data.contractCount || 0,
+          questionCount: data.questionCount || 0,
+          recentContracts: data.recentContracts || [],
+          recentConvos: data.recentConvos || []
+        });
+      } catch (e) {
+        console.error("Failed to fetch stats", e);
+      }
+    }
+    fetchStats();
+  }, [isAuthed]);
+
   async function saveProfile() {
     setLoading(true);
     try {
@@ -45,24 +87,22 @@ export default function Profile() {
       const phone = (profile.phone || '').trim();
       const email = (profile.email || '').trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneRegex = /^0\d{9,10}$/; // 10–11 digits
+      const phoneRegex = /^0\d{9,10}$/; 
       if (name.length < 2) throw new Error('Họ và tên phải có ít nhất 2 ký tự');
-      if (!phoneRegex.test(phone)) throw new Error('Số điện thoại không hợp lệ (10–11 số, bắt đầu bằng 0)');
+      if (phone && !phoneRegex.test(phone)) throw new Error('Số điện thoại không hợp lệ');
       if (email && !emailRegex.test(email)) throw new Error('Email không hợp lệ');
 
-      if (isAuthed) {
-        await api.put('/profile', {
-          full_name: name,
-          phone,
-          address: profile.address,
-          email,
-          department: profile.department,
-          industry: profile.industry,
-          position: profile.position,
-        });
-      } else {
-        localStorage.setItem('mock_profile', JSON.stringify(profile));
-      }
+      await api.put('/profile', {
+        full_name: name,
+        phone,
+        address: profile.address,
+        email,
+        department: profile.department,
+        industry: profile.industry,
+        position: profile.position, // Lưu ý: Backend cần hỗ trợ field này nếu muốn lưu
+        occupation: profile.position // Mapping position -> occupation ở backend nếu cần
+      });
+      
       setErr('');
       setMsg('Đã lưu thay đổi');
       setMode('view');
@@ -74,22 +114,40 @@ export default function Profile() {
     setLoading(false);
   }
 
+
+  // 1. Stats Items
   const statItems = [
-    { label: 'Hợp đồng đã phân tích', value: '12/50', pct: 24 },
-    { label: 'Câu hỏi AI', value: '82/500', pct: 16 },
-    { label: 'Câu hỏi AI', value: '8', pct: 40 },
-    { label: 'Dung lượng lưu trữ', value: '245 MB / 1000 MB', pct: 24 },
+    { label: 'Hợp đồng đã phân tích', value: `${dashboardData.contractCount}/50`, pct: Math.min((dashboardData.contractCount/50)*100, 100) },
+    { label: 'Câu hỏi AI', value: `${dashboardData.questionCount}/500`, pct: Math.min((dashboardData.questionCount/500)*100, 100) },
+    // Giả lập dung lượng vì DB chưa có trường size
+    { label: 'Dung lượng lưu trữ', value: `${(dashboardData.contractCount * 0.5).toFixed(1)} MB / 1000 MB`, pct: Math.min(((dashboardData.contractCount * 0.5)/1000)*100, 100) },
   ];
-  const recent = [
-    { t: 'Phân tích hợp đồng', sub: 'HĐ Lao động - Nguyễn Văn An.pdf', when: '2 giờ trước' },
-    { t: 'Hỏi đáp AI', sub: 'Quy định về nghỉ phép năm 2024', when: '5 giờ trước' },
-    { t: 'Tính lương', sub: 'Lương tháng 10/2024', when: 'Hôm qua' },
-  ];
-  const docs = [
-    { id: 1, title: 'Hợp đồng lao động - Nguyễn Văn An', date: '29/10/2024', size: '2.3 MB' },
-    { id: 2, title: 'Phụ lục hợp đồng - Trần Thị Bình', date: '25/10/2024', size: '1.8 MB' },
-    { id: 3, title: 'HĐLD thử việc - Lê Hoàng Cường', date: '20/10/2024', size: '1.5 MB' },
-  ];
+
+  // 2. Recent Activities (Merge Contracts & Conversations)
+  const activities = [
+    ...dashboardData.recentContracts.map(c => ({
+      type: 'contract',
+      t: 'Phân tích hợp đồng',
+      sub: c.original_name,
+      date: c.uploaded_at,
+      rawDate: new Date(c.uploaded_at)
+    })),
+    ...dashboardData.recentConvos.map(c => ({
+      type: 'chat',
+      t: 'Hỏi đáp AI',
+      sub: c.title || 'Cuộc trò chuyện mới',
+      date: c.updated_at,
+      rawDate: new Date(c.updated_at)
+    }))
+  ].sort((a, b) => b.rawDate - a.rawDate).slice(0, 6); // Lấy 6 hoạt động mới nhất
+
+  // 3. Saved Docs (From Contracts)
+  const docs = dashboardData.recentContracts.slice(0, 5).map(c => ({
+    id: c.contract_id,
+    title: c.original_name,
+    date: new Date(c.uploaded_at).toLocaleDateString('vi-VN'),
+    size: '—' // DB chưa có size
+  }));
 
   return (
     <div className="min-h-screen bg-[#F5F8FB]">
@@ -99,12 +157,12 @@ export default function Profile() {
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">
-            {profile.full_name?.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase() || 'A'}
+            {profile.full_name?.trim().split(/\s+/).map(w=>w[0]).slice(-2).join('').toUpperCase() || 'U'}
           </div>
           <div className="flex-1">
-            <div className="text-xl font-semibold text-gray-900">{profile.full_name}</div>
-            <div className="text-sm text-gray-600">{profile.position}</div>
-            <div className="text-sm text-gray-500">{profile.company}</div>
+            <div className="text-xl font-semibold text-gray-900">{profile.full_name || 'Người dùng'}</div>
+            <div className="text-sm text-gray-600">{profile.occupation || profile.position || 'Chưa cập nhật chức vụ'}</div>
+            <div className="text-sm text-gray-500">{profile.company || 'Chưa cập nhật công ty'}</div>
             <div className="mt-3 flex items-center gap-2 text-sm">
               <button className={`px-3 py-1.5 rounded-full border ${tab==='overview'?'border-blue-300 text-blue-700 bg-blue-50':'border-gray-300 text-gray-700'}`} onClick={()=>setTab('overview')}>Tổng quan</button>
               <button className={`px-3 py-1.5 rounded-full border ${tab==='info'?'border-blue-300 text-blue-700 bg-blue-50':'border-gray-300 text-gray-700'}`} onClick={()=>setTab('info')}>Thông tin</button>
@@ -117,6 +175,7 @@ export default function Profile() {
         {tab === 'overview' && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              {/* Statistics */}
               <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="font-semibold text-gray-800 mb-4">Thống kê sử dụng tháng</div>
                 <div className="space-y-4">
@@ -133,40 +192,53 @@ export default function Profile() {
                   ))}
                 </div>
               </div>
+
+              {/* Recent Activity */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="font-semibold text-gray-800 mb-3">Hoạt động gần đây</div>
-                <ul className="space-y-2 text-sm">
-                  {recent.map((r,idx)=> (
-                    <li key={idx} className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer">
-                      <div className="font-medium text-gray-800">{r.t}</div>
-                      <div className="text-xs text-gray-500">{r.sub}</div>
-                      <div className="text-xs text-gray-400">{r.when}</div>
-                    </li>
-                  ))}
-                </ul>
+                {activities.length === 0 ? (
+                   <div className="text-sm text-gray-500 italic">Chưa có hoạt động nào</div>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {activities.map((r,idx)=> (
+                      <li key={idx} className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                        <div className="font-medium text-gray-800">{r.t}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{r.sub}</div>
+                        <div className="text-xs text-gray-400">{timeAgo(r.date)}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              {/* Saved Documents */}
               <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="font-semibold text-gray-800 mb-3">Tài liệu đã lưu</div>
-                <ul className="space-y-3">
-                  {docs.map(d => (
-                    <li key={d.id} className="p-3 rounded-lg border flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-800">{d.title}</div>
-                        <div className="text-xs text-gray-500">{d.size} • {d.date}</div>
-                      </div>
-                      <button className="text-sm px-3 py-1 rounded border hover:bg-gray-50">Xem</button>
-                    </li>
-                  ))}
-                </ul>
+                {docs.length === 0 ? (
+                   <div className="text-sm text-gray-500 text-center py-4">Chưa có tài liệu nào</div>
+                ) : (
+                  <ul className="space-y-3">
+                    {docs.map(d => (
+                      <li key={d.id} className="p-3 rounded-lg border flex items-center justify-between">
+                        <div className="overflow-hidden">
+                          <div className="font-medium text-gray-800 truncate">{d.title}</div>
+                          <div className="text-xs text-gray-500">{d.size} • {d.date}</div>
+                        </div>
+                        <button className="text-sm px-3 py-1 rounded border hover:bg-gray-50 shrink-0 ml-2">Xem</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
+
+              {/* Quick Actions */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="font-semibold text-gray-800 mb-3">Thao tác nhanh</div>
                 <div className="space-y-2 text-sm">
-                  {['Hợp đồng gần đây','Hoạt động gần đây','Hồ sơ gần đây'].map((x,i)=>(
-                    <button key={i} className="w-full px-3 py-2 rounded-lg border hover:bg-gray-50 text-left">{x}</button>
+                  {['Tải lên hợp đồng mới', 'Chat với chuyên gia AI', 'Cập nhật hồ sơ'].map((x,i)=>(
+                    <button key={i} className="w-full px-3 py-2 rounded-lg border hover:bg-gray-50 text-left text-gray-700">{x}</button>
                   ))}
                 </div>
               </div>
@@ -174,15 +246,18 @@ export default function Profile() {
           </>
         )}
 
-        {/* INFO */}
+        {/* INFO - Giữ nguyên logic hiển thị form */}
         {tab === 'info' && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
             <div className="px-5 py-4 border-b flex items-center justify-between">
               <div className="font-semibold text-gray-800">Thông tin cá nhân</div>
               {mode === 'view' ? (
-                <button className="text-sm px-3 py-1.5 rounded-md border" onClick={()=>setMode('edit')}>Chỉnh sửa</button>
+                <button className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50" onClick={()=>setMode('edit')}>Chỉnh sửa</button>
               ) : (
-                <button className="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white disabled:opacity-60" disabled={loading} onClick={saveProfile}>Lưu thay đổi</button>
+                <div className="flex gap-2">
+                   <button className="text-sm px-3 py-1.5 rounded-md border hover:bg-gray-50" onClick={()=>setMode('view')}>Hủy</button>
+                   <button className="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60" disabled={loading} onClick={saveProfile}>Lưu thay đổi</button>
+                </div>
               )}
             </div>
             <div className="p-5">
@@ -192,110 +267,63 @@ export default function Profile() {
                 <div>
                   <Label>Họ và tên</Label>
                   {mode==='view'? <Field value={profile.full_name}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.full_name} onChange={(e)=>setProfile({...profile, full_name: e.target.value})} />
+                    <input className="w-full border border-gray-300 rounded px-3 py-2 text-sm" value={profile.full_name} onChange={(e)=>setProfile({...profile, full_name: e.target.value})} />
                   )}
                 </div>
                 <div>
                   <Label>Email</Label>
                   {mode==='view'? <Field value={profile.email}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.email} onChange={(e)=>setProfile({...profile, email: e.target.value})} />
+                    <input className="w-full border border-gray-300 rounded px-3 py-2 text-sm" value={profile.email} onChange={(e)=>setProfile({...profile, email: e.target.value})} />
                   )}
                 </div>
                 <div>
                   <Label>Số điện thoại</Label>
                   {mode==='view'? <Field value={profile.phone}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.phone} onChange={(e)=>setProfile({...profile, phone: e.target.value})} placeholder="VD: 0912345678" />
+                    <input className="w-full border border-gray-300 rounded px-3 py-2 text-sm" value={profile.phone} onChange={(e)=>setProfile({...profile, phone: e.target.value})} placeholder="VD: 0912345678" />
                   )}
                 </div>
                 <div>
-                  <Label>Chức vụ</Label>
-                  {mode==='view'? <Field value={profile.position}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.position} onChange={(e)=>setProfile({...profile, position: e.target.value})} />
+                  <Label>Chức vụ (Occupation)</Label>
+                  {mode==='view'? <Field value={profile.occupation || profile.position}/> : (
+                    <input className="w-full border border-gray-300 rounded px-3 py-2 text-sm" value={profile.position} onChange={(e)=>setProfile({...profile, position: e.target.value})} />
                   )}
                 </div>
               </div>
 
               <hr className="my-5" />
-              <div className="font-semibold text-gray-800 mb-3">Thông tin công ty</div>
+              <div className="font-semibold text-gray-800 mb-3">Thông tin bổ sung</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <Label>Tên công ty</Label>
-                  {mode==='view'? <Field value={profile.company}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.company} onChange={(e)=>setProfile({...profile, company: e.target.value})} />
-                  )}
-                </div>
-                <div>
-                  <Label>Phòng ban</Label>
-                  {mode==='view'? <Field value={profile.department}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.department} onChange={(e)=>setProfile({...profile, department: e.target.value})} />
-                  )}
-                </div>
-                <div>
-                  <Label>Ngành nghề</Label>
-                  {mode==='view'? <Field value={profile.industry}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.industry} onChange={(e)=>setProfile({...profile, industry: e.target.value})} />
-                  )}
-                </div>
+                 {/* Các trường này đang giả lập ở frontend, nếu DB có trường Company/Dept thì map vào tương tự */}
                 <div>
                   <Label>Địa chỉ</Label>
                   {mode==='view'? <Field value={profile.address}/> : (
-                    <input className="w-full border border-gray-300 rounded px-3 py-2" value={profile.address} onChange={(e)=>setProfile({...profile, address: e.target.value})} />
+                    <input className="w-full border border-gray-300 rounded px-3 py-2 text-sm" value={profile.address} onChange={(e)=>setProfile({...profile, address: e.target.value})} />
                   )}
                 </div>
-                <div className="md:col-span-2">
+                 <div className="md:col-span-2">
                   <Label>Tham gia từ</Label>
-                  <Field value={profile.joined_at && new Date(profile.joined_at).toLocaleDateString('vi-VN')} />
+                  {/* user.created_at thường không có trong /profile response hiện tại, nếu cần thì thêm vào query backend */}
+                  <Field value="—" />
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* SETTINGS */}
+        {/* SETTINGS - Giữ nguyên */}
         {tab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-              <div className="font-semibold text-gray-800 mb-3">Tài liệu đã lưu</div>
-              {['Cập nhật qua email','Phân tích hợp đồng hoàn tất','Thay đổi pháp luật','Báo cáo tuần','Gợi ý từ AI','Cảnh báo bảo mật'].map((label, i)=> (
+              <div className="font-semibold text-gray-800 mb-3">Cài đặt thông báo</div>
+              {['Cập nhật qua email','Phân tích hợp đồng hoàn tất','Thay đổi pháp luật'].map((label, i)=> (
                 <div key={i} className="flex items-center justify-between py-3 border-b last:border-b-0 text-sm">
                   <span>{label}</span>
                   <label className="inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked={i<3} />
+                    <input type="checkbox" className="sr-only peer" defaultChecked={true} />
                     <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-blue-600 relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:w-4 after:h-4 after:bg-white after:rounded-full peer-checked:after:translate-x-5 transition"></div>
                   </label>
                 </div>
               ))}
-            </div>
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <div className="font-semibold text-gray-800 mb-3">Tùy chọn AI</div>
-                <div className="text-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span>Mức độ chi tiết phân tích</span>
-                    <select className="border rounded px-2 py-1 text-sm">
-                      <option>Chi tiết (khuyến nghị)</option>
-                      <option>Cân bằng</option>
-                      <option>Nhanh</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Tự động phân tích</span>
-                    <input type="checkbox" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Lưu lịch sử chat</span>
-                    <input type="checkbox" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                <div className="font-semibold text-gray-800 mb-3">Bảo mật & Quyền riêng tư</div>
-                <div className="text-sm space-y-2">
-                  {['Hoạt động gần đây','Hoạt động gần đây','Hoạt động gần đây','Hoạt động gần đây'].map((x,i)=> (
-                    <button key={i} className={`w-full px-3 py-2 rounded-lg border text-left ${i===3?'bg-red-600 text-white border-red-600':'hover:bg-gray-50'}`}>{x}</button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -303,4 +331,3 @@ export default function Profile() {
     </div>
   );
 }
-

@@ -371,9 +371,9 @@ export default function ContractAnalysis() {
     }
   };
   return (
-    <div className='flex h-screen bg-gray-50'>
+    <div className='flex h-screen w-full flex-col bg-white'>
        <NavbarLogged />
-      <main className='ml-64 p-6 w-full overflow-y-auto'>
+      <main className='p-6 w-full overflow-y-auto'>
         <h1 className='text-2xl font-extrabold text-gray-900'>Phân tích Hợp đồng</h1>
         <p className='text-sm text-gray-600 mb-5'>Tải lên hợp đồng, AI sẽ phân tích và chat với bạn về hợp đồng đó.</p>
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-200 rounded text-sm">{error}</div>}

@@ -6,14 +6,8 @@ import Profile from "./pages/Profile";
 import LoginPage from "./pages/LoginPage";
 import Logout from "./pages/Logout";
 import SalaryTool from "./pages/SalaryTool";
-// import Login from "./pages/Login";
- import RegisterPage from "./pages/RegisterPage";
+import RegisterPage from "./pages/RegisterPage";
 import ForgotPassword from "./pages/ForgotPassword";
-// import Dashboard from "./pages/Dashboard";
-// import Laws from "./pages/Laws";
-// import OCR from "./pages/OCR";
-// import Chat from "./pages/Chat";
-// import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
 import UserChat from "./pages/UserChat";
 import ContractAnalysis from "./pages/ContractAnalysis";
@@ -22,7 +16,7 @@ import { ProtectedAdmin } from "./components/ui/protected-admin";
 
 const PageLoader = () => <div className="flex justify-center items-center h-screen">Đang tải...</div>;
 
-const AdminLayout = React.lazy(() => import("./components/layouts/AdminLayout")); // Bạn cần tạo file này
+const AdminLayout = React.lazy(() => import("./components/layouts/AdminLayout"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
 const AdminUsers = React.lazy(() => import("./pages/admin/UserManagement"));
 

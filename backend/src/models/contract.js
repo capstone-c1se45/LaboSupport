@@ -1,3 +1,4 @@
+import { count } from "console";
 import { pool } from "../config/mysql.js";
 import { createCustomNanoid } from "../utils/nanoid.js"; 
 
@@ -90,6 +91,20 @@ export const contractModel = {
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating contract details:", error);
+      throw error;
+    }
+  },
+  async countContractsByUserId(userId) {
+    try {
+      const [rows] = await pool.query(
+        `SELECT COUNT(*) AS contractCount
+         FROM Contract
+         WHERE user_id = ? AND status = 'ANALYZED'`,
+        [userId]
+      );
+      return rows[0].contractCount;
+    } catch (error) {
+      console.error("Error counting user contracts:", error);
       throw error;
     }
   }
