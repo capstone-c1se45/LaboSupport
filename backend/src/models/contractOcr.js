@@ -61,5 +61,17 @@ async saveOcrResult(contractId, extractedText, summary ,tomtat, danhgia, phantic
       console.error("Error updating contract chat history:", error);
       throw error;
     }
+  },
+  async deleteOcrResult(contractId) {
+    try {
+      const [result] = await pool.query(
+        `DELETE FROM Contract_OCR WHERE contract_id = ?`,
+        [contractId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error deleting OCR result:", error);
+      throw error;
+    }
   }
 };

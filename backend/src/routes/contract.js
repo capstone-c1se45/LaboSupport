@@ -26,4 +26,8 @@ router.get("/:id", contractController.getContractDetails);
 // POST /api/contracts/:id/analyze - Kích hoạt phân tích hợp đồng
 router.post("/:id/analyze", contractController.analyzeContract);
 
+// DELETE /api/contracts/:id - Xoá hợp đồng
+router.delete("/:id", contractController.deleteContract);
+
+
 export default router;

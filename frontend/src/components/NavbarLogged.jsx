@@ -13,7 +13,7 @@ export default function NavbarLogged() {
   const cardCls = 'relative bg-white border border-gray-200 rounded-xl shadow-lg min-w-[220px]';
 
   return (
-    <header className="bg-white border-b shadow-sm sticky top-0 z-50">
+    <header className="bg-white border-b shadow-sm sticky top-0 z-50 ">
       <div className="max-w-7xl mx-auto h-16 px-4 flex items-center justify-between">
         {/* Left: logo + brand */}
         <Link to="/home" className="flex items-center gap-3 select-none">

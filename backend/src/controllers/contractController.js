@@ -490,6 +490,72 @@ async analyzeContract(req, res) {
       const msg = error?.response?.data?.detail || "Lỗi trong quá trình phân tích ảnh.";
       return responseHandler.internalServerError(res, msg);
     }
+  },
+  async deleteContract(req, res) {
+    const userId = req.user?.user_id;
+    const { id: contractId } = req.params;
+
+    if (!userId) {
+      return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
+    }
+
+    try {
+      // 1. Kiểm tra quyền sở hữu & lấy thông tin file
+      const contract = await contractModel.getContractById(contractId, userId);
+      if (!contract) {
+        return responseHandler.notFound(res, "Không tìm thấy hợp đồng hoặc bạn không có quyền xóa.");
+      }
+
+      // 2. Xóa file vật lý
+      if (contract.file_path) {
+        try {
+           let paths = [];
+           try {
+              // Thử parse nếu là mảng JSON (cho upload gộp)
+              const parsed = JSON.parse(contract.file_path);
+              if (Array.isArray(parsed)) paths = parsed;
+              else paths = [contract.file_path];
+           } catch {
+              // Nếu lỗi parse thì coi như là chuỗi đường dẫn đơn
+              paths = [contract.file_path];
+           }
+
+           // Xóa từng file
+           for (const p of paths) {
+              await fs.unlink(p).catch(err => console.warn(`Failed to delete file ${p}:`, err.message));
+           }
+           
+           // Nếu là group, thử xóa thư mục cha (nếu rỗng)
+           if (contract.is_group && paths.length > 0) {
+              const dir = path.dirname(paths[0]);
+              // Chỉ xóa thư mục nếu nó nằm trong UPLOAD_DIR và tên thư mục là contractId (để tránh xóa nhầm root)
+              if (dir.includes(contractId)) {
+                 await fs.rmdir(dir).catch(() => {}); 
+              }
+           }
+
+        } catch (e) {
+          console.error("Error cleaning up files:", e);
+          // Không throw lỗi để vẫn tiếp tục xóa DB
+        }
+      }
+
+      // 3. Xóa dữ liệu OCR/Chat (bảng con)
+      await contractOcrModel.deleteOcrResult(contractId);
+
+      // 4. Xóa bản ghi Contract (bảng cha)
+      const deleted = await contractModel.deleteContract(contractId, userId);
+      
+      if (deleted) {
+        return responseHandler.success(res, "Đã xóa hợp đồng thành công.");
+      } else {
+        return responseHandler.badRequest(res, "Không thể xóa hợp đồng.");
+      }
+
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      return responseHandler.internalServerError(res, "Lỗi máy chủ khi xóa hợp đồng.");
+    }
   }
 };
 

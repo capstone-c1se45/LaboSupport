@@ -107,5 +107,18 @@ export const contractModel = {
       console.error("Error counting user contracts:", error);
       throw error;
     }
+  },
+  async deleteContract(contractId, userId) {
+    try {
+     
+      const [result] = await pool.query(
+        `DELETE FROM Contract WHERE contract_id = ? AND user_id = ?`,
+        [contractId, userId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error deleting contract:", error);
+      throw error;
+    }
   }
 };
