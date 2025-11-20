@@ -54,11 +54,15 @@ function calculatePersonalIncomeTax(taxableIncome) {
 }
 
 // Hàm tính lương Gross -> Net
-function grossToNet({ grossSalary, dependents = 0, region = "I" }) {
+function grossToNet({ grossSalary, insuranceSalary, dependents = 0, region = "I" }) {
+
+  // Nếu không nhập thì mặc định = gross
+  const insSalary = insuranceSalary || grossSalary;
+
   const insurances = {
-    BHXH: grossSalary * INSURANCE_RATES.BHXH,
-    BHYT: grossSalary * INSURANCE_RATES.BHYT,
-    BHTN: grossSalary * INSURANCE_RATES.BHTN,
+    BHXH: insSalary * INSURANCE_RATES.BHXH,
+    BHYT: insSalary * INSURANCE_RATES.BHYT,
+    BHTN: insSalary * INSURANCE_RATES.BHTN,
   };
 
   const totalInsurance = Object.values(insurances).reduce((a, b) => a + b, 0);
@@ -69,10 +73,12 @@ function grossToNet({ grossSalary, dependents = 0, region = "I" }) {
 
   const taxableIncome = Math.max(0, taxableIncomeBeforeDeduction - totalDeduction);
   const incomeTax = calculatePersonalIncomeTax(taxableIncome);
+
   const netSalary = taxableIncomeBeforeDeduction - incomeTax;
 
   return {
     grossSalary,
+    insuranceSalary: insSalary,
     netSalary,
     insurances,
     totalInsurance,
@@ -82,21 +88,29 @@ function grossToNet({ grossSalary, dependents = 0, region = "I" }) {
   };
 }
 
+
 // Hàm tính lương Net -> Gross
-function netToGross({ netSalary, dependents = 0, region = "I" }) {
-  // Dùng phép lặp để tìm gần đúng lương gross
+function netToGross({ netSalary, insuranceSalary, dependents = 0, region = "I" }) {
   let estimatedGross = netSalary;
   let result = {};
 
-  for (let i = 0; i < 20; i++) {
-    result = grossToNet({ grossSalary: estimatedGross, dependents, region });
+  for (let i = 0; i < 25; i++) {
+    result = grossToNet({
+      grossSalary: estimatedGross,
+      insuranceSalary,
+      dependents,
+      region,
+    });
+
     const diff = netSalary - result.netSalary;
     if (Math.abs(diff) < 1) break;
+
     estimatedGross += diff;
   }
 
   return result;
 }
+
 
 export default {
   grossToNet,

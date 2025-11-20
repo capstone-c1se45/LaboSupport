@@ -27,3 +27,5 @@ export const authMiddleware = {
     next();
   },
 };
+
+export default authMiddleware;

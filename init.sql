@@ -161,12 +161,19 @@ CREATE TABLE IF NOT EXISTS ForgotPassword (
   expire_at DATETIME NOT NULL
 );
 
-CREATE TABLE salary_history (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  type VARCHAR(20) NOT NULL, -- 'grossToNet' hoặc 'netToGross'
-  salary DECIMAL(15, 2) NOT NULL, -- Lương đầu vào
+CREATE TABLE IF NOT EXISTS SalaryHistory (
+  history_id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  type ENUM('grossToNet', 'netToGross') NOT NULL,
+  input_salary DECIMAL(15,2) NOT NULL,
+  insurance_salary DECIMAL(15,2),
   dependents INT DEFAULT 0,
-  region VARCHAR(5) DEFAULT 'I',
-  result JSON NOT NULL, -- Lưu kết quả tính toán dưới dạng JSON
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  region VARCHAR(5),
+  
+  -- JSON để lưu kết quả trả về từ calculator
+  result_json JSON NOT NULL,
+
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
