@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import { api } from '../lib/api-client.js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import NavbarLogged from '../components/NavbarLogged';
+import html2pdf from 'html2pdf.js';
 
 const MenuIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>;
 const UploadIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
@@ -22,6 +23,7 @@ const WarningIcon = () => <svg className="w-5 h-5 text-amber-600" fill="none" st
 const CloseIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>;
 const MinusIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>;
 const TrashIcon = () => <svg className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+const DownloadIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>; 
 
 const customScrollbarStyle = `
   .custom-scrollbar::-webkit-scrollbar {
@@ -163,6 +165,9 @@ export default function ContractAnalysis() {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // State cho menu xuất file
+  const [showExportMenu, setShowExportMenu] = useState(false);
   
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -180,6 +185,52 @@ export default function ContractAnalysis() {
       setIsChatOpen(true);
     }
   };
+
+  // --- Hàm xử lý Xuất PDF ---
+  const handleExportPDF = () => {
+    setShowExportMenu(false);
+    const element = document.getElementById('report-content');
+    if (!element) return alert("Không tìm thấy nội dung để xuất!");
+
+    const opt = {
+        margin:       [10, 10, 10, 10],
+        filename:     `${selectedContract?.data?.original_name || 'contract'}_analysis.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save().catch(err => console.error("PDF Export Error:", err));
+  };
+
+  const handleExportWord = () => {
+    setShowExportMenu(false);
+    const element = document.getElementById('report-content');
+    if (!element) return alert("Không tìm thấy nội dung để xuất!");
+
+    // Tạo nội dung HTML cơ bản cho Word
+    const content = element.innerHTML;
+    const preHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export Word</title><style>body{font-family: Arial, sans-serif;}</style></head><body>`;
+    const postHtml = "</body></html>";
+    const html = preHtml + content + postHtml;
+
+    const blob = new Blob(['\ufeff', html], {
+        type: 'application/msword'
+    });
+    
+    // Tạo link download
+    const downloadLink = document.createElement("a");
+    document.body.appendChild(downloadLink);
+    
+    if(navigator.msSaveOrOpenBlob){
+        navigator.msSaveOrOpenBlob(blob, `${selectedContract?.data?.original_name || 'contract'}.doc`);
+    } else {
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = `${selectedContract?.data?.original_name || 'contract'}_analysis.doc`;
+        downloadLink.click();
+    }
+    document.body.removeChild(downloadLink);
+  };
+
 
   // Load contracts
   useEffect(() => {
@@ -214,29 +265,23 @@ export default function ContractAnalysis() {
     }
   }, [searchParams, contracts]);
 
-  // --- Hàm xóa hợp đồng ---
   const handleDeleteContract = async (e, contractId) => {
-    e.stopPropagation(); // Ngăn chặn sự kiện click lan ra ngoài (gây chọn hợp đồng)
+    e.stopPropagation(); 
     if (!window.confirm("Bạn có chắc chắn muốn xóa hợp đồng này không?")) return;
 
     try {
         await api.delete(`/contracts/${contractId}`);
-        
-        // Cập nhật danh sách local
         setContracts(prev => prev.filter(c => c.contract_id !== contractId));
-        
-        // Nếu đang xem hợp đồng bị xóa thì reset
         if (selectedContract?.id === contractId) {
             setSelectedContract(null);
             setChatMessages([]);
-            setSearchParams({}); // Xóa query param trên URL
+            setSearchParams({}); 
         }
     } catch (err) {
         console.error("Failed to delete contract:", err);
         alert(err.response?.data?.message || "Lỗi khi xóa hợp đồng.");
     }
   };
-  // --------------------------------
 
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
@@ -412,7 +457,6 @@ export default function ContractAnalysis() {
   }
 
   return (
-    /* --- FIX 1: Đổi min-h-screen thành h-screen để chặn scroll toàn trang --- */
     <div className="h-screen bg-[#F5F8FB] flex flex-col overflow-hidden">
       <style>{customScrollbarStyle}</style>
       <NavbarLogged />
@@ -472,7 +516,6 @@ export default function ContractAnalysis() {
             </div>
 
             {/* Danh sách hợp đồng */}
-            {/* --- FIX 2: Thêm min-h-0 để overflow-y-auto hoạt động đúng trong flex --- */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar min-h-0">
                 {contracts.map(c => (
                     <div 
@@ -488,7 +531,6 @@ export default function ContractAnalysis() {
                             </span>
                         </div>
 
-                        {/* Nút Xóa (Hiện khi hover) */}
                         <button
                             onClick={(e) => handleDeleteContract(e, c.contract_id)}
                             className="absolute top-3 right-2 p-1 text-gray-400 hover:text-red-500 hover:bg-white rounded opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-gray-200"
@@ -517,11 +559,42 @@ export default function ContractAnalysis() {
                 </div>
                 
                 <div className="flex items-center gap-3">
+                    {/* Menu Xuất File */}
                     {selectedContract?.data?.status === 'ANALYZED' && (
-                        <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
-                            Xuất dữ liệu
-                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => setShowExportMenu(!showExportMenu)}
+                                className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2"
+                            >
+                                <DownloadIcon /> Xuất dữ liệu
+                            </button>
+                            
+                            {showExportMenu && (
+                                <>
+                                    <div 
+                                        className="fixed inset-0 z-40" 
+                                        onClick={() => setShowExportMenu(false)}
+                                    ></div>
+                                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-slide-up">
+                                        <button 
+                                            onClick={handleExportPDF}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="font-bold text-red-500">PDF</span> Xuất file PDF
+                                        </button>
+                                        <div className="border-t border-gray-100"></div>
+                                        <button 
+                                            onClick={handleExportWord}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="font-bold text-blue-600">DOC</span> Xuất file Word
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     )}
+
                     {(selectedContract?.data?.status === 'PENDING' || selectedContract?.data?.status?.startsWith('ERROR')) && (
                         <button 
                             onClick={() => handleAnalyze(selectedContract.id)}
@@ -549,7 +622,7 @@ export default function ContractAnalysis() {
                         <p className="text-sm mt-1">Vui lòng chọn một hợp đồng từ danh sách bên trái để xem chi tiết.</p>
                     </div>
                 ) : (
-                    <div className="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 pb-20"> 
+                    <div id="report-content" className="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 pb-20"> 
                         {/* Left Column: Contract Content */}
                         <div className="xl:col-span-7 flex flex-col gap-6">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[800px] p-8 md:p-10 relative">
@@ -579,7 +652,7 @@ export default function ContractAnalysis() {
                                 <div className="flex items-center gap-2 font-bold text-cyan-800 mb-3 text-base">
                                     <InfoIcon /> Tóm tắt hợp đồng
                                 </div>
-                                <div className="prose prose-sm max-w-none text-cyan-900/80 text-sm">
+                                <div className="prose prose-sm max-w-none text-cyan-900 text-sm">
                                     {selectedContract.data.analysis?.tomtat ? (
                                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{selectedContract.data.analysis.tomtat}</ReactMarkdown>
                                     ) : "Chưa có dữ liệu."}
@@ -591,7 +664,7 @@ export default function ContractAnalysis() {
                                 <div className="flex items-center gap-2 font-bold text-blue-800 mb-3 text-base">
                                     <ShieldCheckIcon /> Quyền lợi & Nghĩa vụ
                                 </div>
-                                <div className="prose prose-sm max-w-none text-blue-900/80 text-sm">
+                                <div className="prose prose-sm max-w-none text-blue-900 text-sm">
                                     {selectedContract.data.analysis?.danhgia ? (
                                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{selectedContract.data.analysis.danhgia}</ReactMarkdown>
                                     ) : "Chưa có dữ liệu."}
@@ -603,7 +676,7 @@ export default function ContractAnalysis() {
                                 <div className="flex items-center gap-2 font-bold text-amber-800 mb-3 text-base">
                                     <WarningIcon /> Cảnh báo rủi ro
                                 </div>
-                                <div className="prose prose-sm max-w-none text-amber-900/80 text-sm">
+                                <div className="prose prose-sm max-w-none text-amber-900 text-sm">
                                     {selectedContract.data.analysis?.phantich ? (
                                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{selectedContract.data.analysis.phantich}</ReactMarkdown>
                                     ) : "Chưa có dữ liệu."}
