@@ -6,7 +6,6 @@ import { api } from '../lib/api-client.js';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import NavbarLogged from '../components/NavbarLogged';
 
-// --- Icons ---
 const MenuIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>;
 const UploadIcon = () => <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
 const FileIcon = () => <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
@@ -40,8 +39,7 @@ const customScrollbarStyle = `
     background-color: #94a3b8; 
   }
 `;
-// --- [COMPONENT] Floating Chat Widget ---
-// (Giữ nguyên phần này)
+
 const FloatingChatWidget = ({ chatMessages, onSend, isLoading, chatInput, setChatInput, isOpen, setIsOpen }) => {
   const chatEndRef = useRef(null);
 
@@ -216,7 +214,7 @@ export default function ContractAnalysis() {
     }
   }, [searchParams, contracts]);
 
-  // --- [MỚI] Hàm xóa hợp đồng ---
+  // --- Hàm xóa hợp đồng ---
   const handleDeleteContract = async (e, contractId) => {
     e.stopPropagation(); // Ngăn chặn sự kiện click lan ra ngoài (gây chọn hợp đồng)
     if (!window.confirm("Bạn có chắc chắn muốn xóa hợp đồng này không?")) return;
@@ -414,7 +412,8 @@ export default function ContractAnalysis() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F8FB] flex flex-col overflow-hidden">
+    /* --- FIX 1: Đổi min-h-screen thành h-screen để chặn scroll toàn trang --- */
+    <div className="h-screen bg-[#F5F8FB] flex flex-col overflow-hidden">
       <style>{customScrollbarStyle}</style>
       <NavbarLogged />
 
@@ -473,7 +472,8 @@ export default function ContractAnalysis() {
             </div>
 
             {/* Danh sách hợp đồng */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {/* --- FIX 2: Thêm min-h-0 để overflow-y-auto hoạt động đúng trong flex --- */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar min-h-0">
                 {contracts.map(c => (
                     <div 
                         key={c.contract_id} 
