@@ -1,16 +1,38 @@
-import google.genai as genai
-import os
+import requests
+import json
 
-# 1. Lấy API Key từ biến môi trường (cách bảo mật)
-# Đảm bảo bạn đã đặt biến môi trường GEMINI_API_KEY
-GEMINI_API_KEY = "AIzaSyB0GGFyJLAytwEUGQk8ztw4nXjQQeAwEFU"
-client = genai.Client(api_key=GEMINI_API_KEY)
+API_KEY = "AIzaSyAMaCVDM6c3CBFEpZLgjW_PbTsRVWAiR6k"   # thay API key của bạn
 
-# 2. Gửi yêu cầu
-response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents="Giải thích trí tuệ nhân tạo bằng các từ đơn giản."
-)
+def call_gemini(model, text):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}"
 
-# 3. Xử lý phản hồi
-print(response.text)
+    payload = {
+        "contents": [
+            {
+                "parts": [{"text": text}]
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    # In mã lỗi và nội dung lỗi (nếu có)
+    print(f"--- Model: {model} ---")
+    print("Status:", response.status_code)
+    try:
+        print("Response:", json.dumps(response.json(), indent=4, ensure_ascii=False))
+    except:
+        print("Raw Response:", response.text)
+    print("\n---------------------------------------------\n")
+
+
+# ⚡ Test nội dung chat
+test_text = "Tóm tắt câu này trong 1 câu: Hợp đồng lao động là sự thỏa thuận giữa người lao động và người sử dụng lao động."
+
+# 🔥 Gọi Flash (nhanh, ít bị 429)
+#call_gemini("gemini-2.5-flash", test_text)
+
+# 🔥 Gọi Pro (chậm, dễ bị 429)
+call_gemini("gemini-2.5-pro", test_text)

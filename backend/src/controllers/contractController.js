@@ -24,6 +24,16 @@ const extractSection = (text, titleStart) => {
   return match ? match[0].trim() : "";
 };
 
+const extractSectionOcr = (text, titleStart) => {
+  const regex = new RegExp(
+    `###\\s*\\d+\\.\\s*.*${titleStart}.*?[\\s\\S]*?(?=###\\s*\\d+\\.\\s*|$)`,
+    "i"
+  );
+  const match = text.match(regex);
+  return match ? match[0].trim() : "";
+};
+
+
 // Đảm bảo thư mục upload tồn tại
 const ensureUploadDirExists = async () => {
   try {
@@ -415,7 +425,7 @@ async analyzeContract(req, res) {
         }
       } catch (e) {
         console.error("Error parsing file_path JSON:", e);
-        // Có thể kiểm tra nếu nó là file đơn lẻ (logic cũ)
+        // kiểm tra nếu nó là file đơn lẻ
         if (typeof contract.file_path === 'string' && /\.(png|jpg|jpeg)$/i.test(contract.file_path)) {
             imagePaths = [contract.file_path];
         } else {
@@ -455,15 +465,22 @@ async analyzeContract(req, res) {
         return responseHandler.internalServerError(res, "Không nhận được kết quả từ AI Service.");
       }
 
+      console.log("OCR and Analysis received from AI Service." + analysis);
+
       // 6. TÁCH NỘI DUNG VÀ LƯU DB
-      const tomTat = extractSection(analysis, "Tóm tắt nội dung");
-      const danhGia = extractSection(analysis, "Đánh giá Quyền lợi");
-      const phanTich = extractSection(analysis, "Phân tích các điều khoản");
-      const deXuat = extractSection(analysis, "Đề xuất chỉnh sửa");
+      const tomTat = extractSection(analysis, "Tóm tắt");
+      const danhGia = extractSection(analysis, "Đánh giá");
+      const phanTich = extractSection(analysis, "Phân tích");
+      const phantich2 = extractSection(analysis, "Các điều khoản");
+      const deXuat = extractSection(analysis, "Đề xuất");
 
-      console.log("Extracted Sections:", { tomTat, danhGia, phanTich, deXuat });
 
-      await contractOcrModel.saveOcrResult(contractId, ocr_text, analysis, tomTat, danhGia, phanTich, deXuat);
+      const phanTichFinal = phanTich ? phanTich : phantich2;
+
+
+      console.log("Extracted Sections:", { tomTat, danhGia, phanTichFinal , deXuat });
+
+      await contractOcrModel.saveOcrResult(contractId, ocr_text, analysis, tomTat, danhGia, phanTichFinal, deXuat);
       await contractModel.updateContractStatus(contractId, "ANALYZED");
       
 
@@ -474,7 +491,7 @@ async analyzeContract(req, res) {
         summary: analysis,
         tomtat: tomTat,
         danhgia: danhGia,
-        phantich: phanTich,
+        phantich: phanTichFinal,
         dexuat: deXuat,
       });
 

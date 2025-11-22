@@ -108,7 +108,7 @@ export default function HomeLogged() {
           </div>
 
           {/* Card 3: Quick Action (Upload) */}
-          <Link to="/contracts" className="bg-blue-600 p-6 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center justify-between group">
+          <Link to="/contract-analysis" className="bg-blue-600 p-6 rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center justify-between group">
             <div className="text-white">
               <div className="font-semibold text-lg">Tải lên hợp đồng mới</div>
               <div className="text-blue-100 text-sm">Nhận phân tích ngay lập tức</div>

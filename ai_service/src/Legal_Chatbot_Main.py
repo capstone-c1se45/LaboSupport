@@ -9,7 +9,8 @@ from untils.internal_analysis import generate_internal_report
 from untils.compliance import run_compliance_check 
 from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
-
+import time 
+import random
 GEMINI_API_KEY = "" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
@@ -54,13 +55,41 @@ def call_gemini_api(messages: List[Dict[str, str]], model_url: str):
         "Content-Type": "application/json"
     }
     
-    res = requests.post(model_url, headers=headers, json=payload, timeout=180)
-    res.raise_for_status()
+    MAX_RETRIES = 5
+    BASE_DELAY = 2 
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            res = requests.post(model_url, headers=headers, json=payload, timeout=180)
+            
+            if res.status_code == 429:
+                if attempt < MAX_RETRIES - 1:
+                    delay = BASE_DELAY * (2 ** attempt) + random.uniform(0, 1)
+                    print(f"Lỗi 429. Thử lại sau {delay:.2f} giây... (Lần {attempt + 1}/{MAX_RETRIES})")
+                    time.sleep(delay)
+                    continue
+                else:
+                    pass
+            
+            res.raise_for_status()
+            
+            result = res.json()
+            answer = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            return answer
+
+        except requests.exceptions.HTTPError as http_err:
+            if http_err.response is not None and http_err.response.status_code == 429:
+                 raise requests.exceptions.HTTPError(
+                    f"Vượt quá giới hạn Rate Limit sau {MAX_RETRIES} lần thử: {http_err}", 
+                    response=http_err.response
+                 ) from http_err
+            raise http_err 
+        
+        except Exception as e:
+            raise e
     
-    result = res.json()
-    
-    answer = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-    return answer
+
+    raise HTTPException(status_code=500, detail="Lỗi không xác định khi gọi Gemini API.")
 
 #PHÂN TÍCH HỢP ĐỒNG
 #api phân tích
@@ -245,10 +274,10 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
     {contract_excerpt}
 
     Hãy thực hiện các yêu cầu sau:
-    1. Tóm tắt ngắn gọn nội dung hợp đồng.
-    2. Đánh giá quyền lợi và nghĩa vụ của người lao động.
-    3. Xác định xem có điều khoản nào có dấu hiệu vi phạm Bộ luật Lao động 2019 không.
-    4. Đề xuất chỉnh sửa để hợp đồng hợp pháp hơn.
+    1. Tóm tắt nội dung hợp đồng ngắn gọn, dễ hiểu.
+    2. Đánh giá quyền lợi và nghĩa vụ của người lao động trong hợp đồng này.
+    3. Phân tích xem có điều khoản nào có dấu hiệu vi phạm Bộ luật Lao động 2019 không.
+    4. Đề xuất cách chỉnh sửa để hợp đồng phù hợp pháp luật hơn.
     Trình bày bằng tiếng Việt dễ hiểu và sử dụng format Markdown.
     """
 

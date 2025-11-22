@@ -229,7 +229,6 @@ export default function Profile() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              {/* Saved Documents */}
               <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="text-lg font-bold text-gray-900 mb-4">Tài liệu đã lưu</div>
                 {docs.length === 0 ? (
@@ -242,7 +241,7 @@ export default function Profile() {
                           <div className="font-medium text-gray-800 truncate">{d.title}</div>
                           <div className="text-xs text-gray-500">{d.size} • {d.date}</div>
                         </div>
-                        <button className="text-sm px-3 py-1 rounded border hover:bg-gray-50 shrink-0 ml-2">Xem</button>
+                        <button  className="text-sm px-3 py-1 rounded border hover:bg-gray-50 shrink-0 ml-2">Xem</button>
                       </li>
                     ))}
                   </ul>
@@ -293,7 +292,6 @@ export default function Profile() {
           </>
         )}
 
-        {/* INFO - Giữ nguyên logic hiển thị form */}
         {tab === 'info' && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
             <div className="px-5 py-4 border-b flex items-center justify-between">
@@ -357,7 +355,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* SETTINGS - Giữ nguyên */}
         {tab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
