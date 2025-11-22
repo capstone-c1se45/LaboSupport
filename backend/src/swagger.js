@@ -2,7 +2,11 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { readFileSync } from "fs";
 import { logger } from "./utils/logger.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url)));
 const options = {
   definition: {
@@ -18,7 +22,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: "http://localhost:3001",
         description: "Development server",
       },
     ],
@@ -177,7 +181,10 @@ const options = {
     ],
   },
   // looks for configuration in specified directories
-  apis: ["./src/routes/*.js"],
+  apis: [
+    path.join(__dirname, "../routes/*.js"),
+    path.join(__dirname, "../routes/**/*js"),
+  ],
 };
 const swaggerSpec = swaggerJsdoc(options);
 

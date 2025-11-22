@@ -2,6 +2,10 @@
 import { pool } from "../config/mysql.js";
 
 export const adminReportModel = {
+  async getAllUsers() {
+    const [rows] = await pool.query(`SELECT * FROM User`);
+    return rows;
+  },
   // Tổng quan người dùng
   async getUserOverview() {
     const [rows] = await pool.query(`

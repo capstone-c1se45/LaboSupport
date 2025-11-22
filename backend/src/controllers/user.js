@@ -248,6 +248,7 @@ async register(req, res) {
   async getUserByToken(req, res) { 
     try {
       const userId = req.user.user_id;
+      console.log("getUserByToken userId:", userId);
       const user = await userModel.getUserById(userId);
       if (!user) {
         return responseHandler.badRequest(res, "Người dùng không tồn tại");

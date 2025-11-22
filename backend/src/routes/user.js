@@ -1,19 +1,19 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.js";
 import { authMiddleware } from "../middlewares/auth.js";
-import { validateRegister, validateLogin, validateEmailForOtp } from "../middlewares/validateUser.js"; // thêm middleware validate
+import { validateRegister, validateLogin, validateEmailForOtp } from "../middlewares/validateUser.js";
 
 const router = Router();
 
 /**
- * @openapi
+ * @swagger
  * tags:
  *   name: Users
  *   description: API quản lý người dùng
  */
 
 /**
- * @openapi
+ * @swagger
  * /api/users:
  *   get:
  *     summary: Lấy danh sách tất cả người dùng
@@ -24,24 +24,102 @@ const router = Router();
  */
 router.get("/", authMiddleware.verifyToken, userController.getAllUsers);
 
-// 📨 Gửi mã xác nhận email
-router.post("/send-verify-code", validateEmailForOtp, userController.sendVerifyCode);
-
-// 📝 Đăng ký (validate đầu vào trước khi gọi controller)
-router.post("/register", validateRegister, userController.register);
 
 /**
- * @openapi
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Lấy thông tin người dùng hiện tại từ token
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lấy thông tin thành công
+ *       401:
+ *         description: Không có token hoặc token không hợp lệ
+ */
+router.get("/me", authMiddleware.verifyToken, userController.getUserByToken);
+
+
+/**
+ * @swagger
+ * /api/users/send-verify-code:
+ *   post:
+ *     summary: Gửi mã xác thực email (OTP)
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "example@mail.com"
+ *     responses:
+ *       200:
+ *         description: Mã OTP đã được gửi
+ *       400:
+ *         description: Email không hợp lệ
+ */
+router.post("/send-verify-code", validateEmailForOtp, userController.sendVerifyCode);
+
+
+/**
+ * @swagger
+ * /api/users/register:
+ *   post:
+ *     summary: Đăng ký tài khoản mới
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *               - full_name
+ *               - email
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "nhat123"
+ *               password:
+ *                 type: string
+ *                 example: "123456"
+ *               full_name:
+ *                 type: string
+ *                 example: "Trần Nhật"
+ *               email:
+ *                 type: string
+ *                 example: "nhat@example.com"
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       400:
+ *         description: Dữ liệu đầu vào không hợp lệ
+ */
+router.post("/register", validateRegister, userController.register);
+
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Lấy thông tin chi tiết người dùng theo ID
+ *     summary: Lấy thông tin người dùng theo ID
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
  *         description: ID người dùng
  *     responses:
  *       200:
@@ -51,8 +129,9 @@ router.post("/register", validateRegister, userController.register);
  */
 router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
 
+
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   put:
  *     summary: Cập nhật thông tin người dùng
@@ -60,9 +139,9 @@ router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
  *         description: ID người dùng cần cập nhật
  *     requestBody:
  *       required: true
@@ -76,7 +155,7 @@ router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
  *                 example: "Trần Nhật Updated"
  *               email:
  *                 type: string
- *                 example: "new@example.com"
+ *                 example: "updated@example.com"
  *     responses:
  *       200:
  *         description: Cập nhật thành công
@@ -85,37 +164,35 @@ router.get("/:id", authMiddleware.verifyToken, userController.getUserById);
  */
 router.put("/:id", authMiddleware.verifyToken, userController.updateUser);
 
+
 /**
- * @openapi
+ * @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Xóa người dùng theo ID
+ *     summary: Xóa người dùng theo ID (chỉ admin)
  *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: ID người dùng
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Xóa thành công
- *       404:
- *         description: Không tìm thấy người dùng
+ *       403:
+ *         description: Không có quyền admin
  */
-router.delete(
-  "/:id",
-  authMiddleware.verifyToken,
-  authMiddleware.isAdmin,
-  userController.deleteUser
-);
+router.delete("/:id", authMiddleware.verifyToken, authMiddleware.isAdmin, userController.deleteUser);
+
 
 /**
- * @openapi
+ * @swagger
  * /api/users/login:
  *   post:
- *     summary: Đăng nhập người dùng
+ *     summary: Đăng nhập tài khoản
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -139,11 +216,6 @@ router.delete(
  *       401:
  *         description: Sai username hoặc password
  */
-// ✅ validate login trước khi gọi controller
 router.post("/login", validateLogin, userController.login);
 
-router.get("/me", authMiddleware.verifyToken, userController.getUserByToken);
-
 export default router;
-
-

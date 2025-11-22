@@ -10,11 +10,14 @@ import { pool } from "./config/mysql.js";
 import main from "./utils/init_handbook.js";
 import { Server } from 'socket.io';
 import { initializeSocket } from './socket/chatHandler.js';
+import { userModel } from "./models/user.js";
+import { nanoidNumbersOnly } from "./utils/nanoid.js";
+import bcrypt from "bcryptjs";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 try {
   const connection = await pool.getConnection();
@@ -57,7 +60,27 @@ app.get("/", async (req, res) => {
   res.send("Hello World! this is backend server c1se45");
 });
 
-//test other account
+// //test other account
+// const username = "admindz";
+// const password = "admin123";
+// const full_name = "Administrator";
+// const email = "labo_admin@gmail.com";
+// const phone = "0764078204";
+// const role_id = "2"; 
+// const hashedPassword = await bcrypt.hash(password, 10);
+
+// const newUser = {
+//       user_id: nanoidNumbersOnly(10),
+//       username,
+//       password: hashedPassword,
+//       full_name,
+//       email,
+//       phone,
+//       role_id: role_id, // mặc định role user
+//     };
+
+//     const created = await userModel.createUser(newUser);
+
 
 
 swaggerDocs(app, PORT);

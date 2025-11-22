@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import NavbarLogged from '../components/NavbarLogged';
 import { api, getErrorMessage } from '../lib/api-client';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Label = ({ children }) => <div className="text-xs text-gray-500 mb-1">{children}</div>;
 const Field = ({ value }) => <div className="text-sm text-gray-800">{value || '—'}</div>;
@@ -20,6 +20,7 @@ function timeAgo(dateStr) {
 }
 
 export default function Profile() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState('overview'); 
   const [mode, setMode] = useState('view'); 
   const [loading, setLoading] = useState(false);
@@ -241,7 +242,12 @@ export default function Profile() {
                           <div className="font-medium text-gray-800 truncate">{d.title}</div>
                           <div className="text-xs text-gray-500">{d.size} • {d.date}</div>
                         </div>
-                        <button  className="text-sm px-3 py-1 rounded border hover:bg-gray-50 shrink-0 ml-2">Xem</button>
+                        <button 
+                  onClick={() => navigate(`/contract-analysis?id=${d.id}`)}
+                  className="text-sm px-3 py-1 rounded border hover:bg-gray-50 shrink-0 ml-2 text-blue-600 font-medium transition-colors"
+                >
+                  Xem
+                </button>
                       </li>
                     ))}
                   </ul>
