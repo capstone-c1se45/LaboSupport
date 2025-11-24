@@ -7,7 +7,7 @@ import salaryRoutes from "./salaryRoutes.js";
 import aiRoutes from "./ai.js";
 import contractRoutes from "./contract.js";
 import adminReportRoutes from "./adminReport.js";   
-
+import adminHandbookRoutes from "./adminHandbook.js";
 const router = Router();
 
 router.use("/users", user);
@@ -18,6 +18,6 @@ router.use("/salary", salaryRoutes); // route công cụ tính lương Gross, Ne
 router.use("/ai", aiRoutes); // route AI chat
 router.use("/contracts", contractRoutes); // route hợp đồng
 router.use("/admin/reports", adminReportRoutes); // route báo cáo admin
-
+router.use("/admin/handbooks", adminHandbookRoutes); // route quản lý cẩm nang pháp luật bởi admin
 
 export default router;

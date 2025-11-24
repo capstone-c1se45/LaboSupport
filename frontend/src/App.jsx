@@ -13,6 +13,7 @@ import UserChat from "./pages/UserChat";
 import ContractAnalysis from "./pages/ContractAnalysis";
 import React, { Suspense } from "react";
 import { ProtectedAdmin } from "./components/ui/protected-admin";
+import HandbookManagement from "./pages/admin/HandbookManagement";
 
 const PageLoader = () => <div className="flex justify-center items-center h-screen">Đang tải...</div>;
 
@@ -26,7 +27,6 @@ function App() {
     <Router>
       <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Home */}
         <Route path="/" element={<LandingHome />} />
         <Route path="/guest-chat" element={<GuestChat />} />
         <Route path="/user-chat" element={<UserChat />} />
@@ -48,6 +48,7 @@ function App() {
           >
             <Route index element={<AdminDashboard />} />     
             <Route path="users" element={<AdminUsers />} />
+            <Route path="handbooks" element={<HandbookManagement />} />
           </Route>
         <Route path="*" element={<NotFound />} /> 
       </Routes>

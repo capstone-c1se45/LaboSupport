@@ -11,6 +11,7 @@ export default function AdminLayout() {
         <nav className="flex-1 p-4 space-y-2">
           <Link to="/admin" className="block py-2.5 px-4 rounded hover:bg-slate-700">Dashboard</Link>
           <Link to="/admin/users" className="block py-2.5 px-4 rounded hover:bg-slate-700">Quản lý User</Link>
+          <Link to="/admin/handbooks" className="block py-2.5 px-4 rounded hover:bg-slate-700">Quản lý Luật </Link>
           <Link to="/admin/reports" className="block py-2.5 px-4 rounded hover:bg-slate-700">Báo cáo vi phạm</Link>
         </nav>
       </aside>

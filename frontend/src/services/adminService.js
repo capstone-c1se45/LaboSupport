@@ -30,5 +30,19 @@ export const adminService = {
   deleteUser: async (id) => {
     const response = await api.delete(`/admin/users/${id}`);
     return response.data;
+  },
+  getHandbooks: async (query = "") => {
+    const url = query ? `/admin/handbooks?q=${query}` : "/admin/handbooks";
+    const res = await api.get(url);
+    return res.data;
+  },
+  createHandbook: async (data) => {
+    return await api.post("/admin/handbooks", data);
+  },
+  updateHandbook: async (id, data) => {
+    return await api.put(`/admin/handbooks/${id}`, data);
+  },
+  deleteHandbook: async (id) => {
+    return await api.delete(`/admin/handbooks/${id}`);
   }
 };
