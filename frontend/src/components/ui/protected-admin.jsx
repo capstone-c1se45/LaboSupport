@@ -30,6 +30,7 @@ export const ProtectedAdmin = ({ children }) => {
       const payload = parseJwt(token);
       console.log("Decoded JWT payload:", payload);
       if (!payload || (payload.role !== 'admin' && payload.role_id !== '2')) {
+        console.log("User is not admin based on token payload.");
         setIsAuthenticated(true); // Đã đăng nhập nhưng không phải admin
         setIsAuthorized(false);
         setIsLoading(false);
