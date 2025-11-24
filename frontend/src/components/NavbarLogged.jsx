@@ -18,10 +18,10 @@ export default function NavbarLogged() {
         {/* Left: logo + brand */}
         <Link to="/home" className="flex items-center gap-3 select-none">
           <img src={logoImg} alt="LaboSupport" className="h-8 w-auto" />
-          <div className="leading-4 hidden sm:block">
+          {/* <div className="leading-4 hidden sm:block">
             <div className="text-[15px] font-semibold text-gray-800">LaboSupport</div>
             <div className="text-[11px] text-gray-500">Hỗ trợ người lao động</div>
-          </div>
+          </div> */}
         </Link>
 
         {/* Center: nav */}
