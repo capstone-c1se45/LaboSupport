@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 3001
 
-CMD ["npx", "nodemon", "app.js"]
+CMD ["nodemon", "src/app.js"]

@@ -6,12 +6,12 @@ services:
     container_name: labosupport-mysql
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=captone1@se45
+      - MYSQL_DATABASE=db_labosupport
+      - MYSQL_USER=se45
+      - MYSQL_PASSWORD=captone1@se45
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "4455:3306"
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
@@ -20,34 +20,44 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  ai-service:
-    build: ./ai_service
-    container_name: ai_service_container
+  redis:
+    image: redis:alpine
+    container_name: labosupport-redis
+    restart: always
     ports:
-      - "8000:8000"
-    volumes:
-      - ./ai_service:/app
-    environment:
-      - PYTHONUNBUFFERED=1
+      - "6379:6379"
+  # ai-service:
+  #   build: ./ai_service
+  #   container_name: ai_service_container
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ./ai_service:/app
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
   backend:
     build: ./backend
     container_name: backend_container
+    restart: always
     ports:
       - "3001:3001"
     volumes:
       - ./backend:/app
       - /app/node_modules
-    depends_on:
-      ai-service:
-        condition: service_started
-      mysql:
-        condition: service_healthy
     environment:
-      - DB_HOST=mysql           
-      - DB_USER=${MYSQL_USER}
-      - DB_PASS=${MYSQL_PASSWORD}
-      - DB_NAME=${MYSQL_DATABASE}
-      - DB_PORT=3306
+      - MYSQL_HOST=mysql      # Lưu ý: Nên dùng tên service là 'mysql', không phải 'localhost'
+      - MYSQL_PORT=3306  # Cổng nội bộ container là 3306
+      - MYSQL_USER=se45
+      - MYSQL_PASSWORD=captone1@se45
+      - MYSQL_ROOT_PASSWORD=captone1@se45
+      - MYSQL_DATABASE=db_labosupport
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      mysql:
+        condition: service_healthy  # <--- THÊM DÒNG NÀY
+      redis:
+        condition: service_started
   frontend:
     build: ./frontend
     container_name: frontend_container
@@ -62,5 +72,6 @@ services:
     tty: true
     depends_on:
       - backend
+
 volumes:
   mysql_data:

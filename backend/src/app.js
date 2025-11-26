@@ -18,14 +18,47 @@ const app = express();
 const server = createServer(app);
 
 const PORT = process.env.PORT || 3001;
+const connection = await pool.getConnection();
+// try {
+//   
+//   console.log("✅ Đã kết nối MySQL thành công!");
+//   connection.release(); // Trả lại pool
+// } catch (error) {
+//   console.error("❌ Lỗi kết nối MySQL:", error.message);
+// }
 
-try {
-  const connection = await pool.getConnection();
-  console.log("✅ Đã kết nối MySQL thành công!");
-  connection.release(); // Trả lại pool
-} catch (error) {
-  console.error("❌ Lỗi kết nối MySQL:", error.message);
-}
+// 1. Import pool từ file mysql.js của bạn
+
+const connectDB = async () => {
+  const maxRetries = 10;
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      console.log(`⏳ Đang thử kết nối MySQL (Lần ${retries + 1})...`);
+      
+      console.log('✅ Kết nối MySQL thành công!');
+      
+      connection.release(); 
+      
+      break;
+    } catch (error) {
+      retries += 1;
+      console.log(`Lỗi kết nối MySQL: ${error.message}`);
+      console.log(`...Đang chờ 5s trước khi thử lại...`);
+      
+      await new Promise(res => setTimeout(res, 5000));
+    }
+  }
+  
+  if (retries === maxRetries) {
+     console.error('🚨 Không thể kết nối tới MySQL sau nhiều lần thử. Dừng ứng dụng.');
+     process.exit(1);
+  }
+};
+
+// Gọi hàm
+connectDB();
 
 // chèn luật
 // (async () => {
