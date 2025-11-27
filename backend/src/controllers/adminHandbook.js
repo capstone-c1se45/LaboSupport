@@ -1,18 +1,45 @@
-// src/controllers/adminHandbook.js
 import { handbookModel } from "../models/handbook.js";
 import { nanoid } from "nanoid"; // Hoặc dùng crypto.randomUUID()
+import { redisClient } from "../config/redis.js";
+import { parseLaborLawDocx } from "../utils/docxParser.js";
+
+const REDIS_CACHE_KEY = "handbook_list";
+const CACHE_TIME = 3600;
 
 export const adminHandbookController = {
+  // 
   async getAll(req, res) {
     try {
-      const { q } = req.query;
-      let data;
-      if (q) {
-        data = await handbookModel.search(q);
-      } else {
-        data = await handbookModel.getAll();
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      // 1. Kiểm tra Cache Redis
+      const cacheKey = `${REDIS_CACHE_KEY}:page:${page}:limit:${limit}`;
+      const cachedData = await redisClient.get(cacheKey);
+
+      if (cachedData) {
+        return res.json(JSON.parse(cachedData));
       }
-      res.json(data);
+
+      // 2. Nếu không có Cache, gọi DB
+      const total = await handbookModel.countAll();
+      const items = await handbookModel.getPaginated(limit, offset);
+      
+      const responseData = {
+        data: items,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
+      };
+
+      // 3. Lưu vào Redis
+      await redisClient.setEx(cacheKey, CACHE_TIME, JSON.stringify(responseData));
+
+      res.json(responseData);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Lỗi server" });
@@ -48,6 +75,34 @@ export const adminHandbookController = {
       res.json({ message: "Xóa thành công" });
     } catch (error) {
       res.status(500).json({ message: "Lỗi khi xóa" });
+    }
+  },
+  async importDocx(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vui lòng upload file .docx" });
+      }
+
+      // 1. Parse file từ buffer (RAM)
+      const dataList = await parseLaborLawDocx(req.file.buffer);
+
+      if (dataList.length === 0) {
+        return res.status(400).json({ message: "Không tìm thấy nội dung hợp lệ trong file." });
+      }
+
+      // 2. Lưu vào DB
+      await handbookModel.createMany(dataList);
+
+      // 3. Xóa Cache Redis (Invalidate) để user thấy dữ liệu mới ngay
+      // Xóa tất cả các key liên quan đến handbook
+      const keys = await redisClient.keys(`${REDIS_CACHE_KEY}:*`);
+      if (keys.length > 0) await redisClient.del(keys);
+
+      res.json({ message: `Đã import thành công ${dataList.length} điều luật.` });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Lỗi khi xử lý file." });
     }
   }
 };

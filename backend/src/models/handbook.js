@@ -50,5 +50,21 @@ export const handbookModel = {
   async delete(id) {
     await pool.query("DELETE FROM Handbook_Section WHERE section_id=?", [id]);
     return true;
+  },
+  async createMany(items) {
+    // Insert nhiều dòng một lúc để tối ưu
+    const sql = `INSERT INTO Handbook_Section (section_id, law_name, chapter, law_reference, category, article_title, chunk_index, content) VALUES ?`;
+    const values = items.map(i => [i.section_id, i.law_name, i.chapter, i.law_reference, i.category, i.article_title, i.chunk_index, i.content]);
+    await pool.query(sql, [values]);
+  },
+
+  async countAll() {
+    const [rows] = await pool.query("SELECT COUNT(*) as total FROM Handbook_Section");
+    return rows[0].total;
+  },
+// Phân trang
+  async getPaginated(limit, offset) {
+    const [rows] = await pool.query("SELECT * FROM Handbook_Section ORDER BY chunk_index ASC LIMIT ? OFFSET ?", [limit, offset]);
+    return rows;
   }
 };

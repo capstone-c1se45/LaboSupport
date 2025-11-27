@@ -13,6 +13,7 @@ import { initializeSocket } from './socket/chatHandler.js';
 import { userModel } from "./models/user.js";
 import { nanoidNumbersOnly } from "./utils/nanoid.js";
 import bcrypt from "bcryptjs";
+import { redisClient } from "./config/redis.js";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
@@ -78,6 +79,15 @@ app.use(
 
 app.use("/api", router);
 
+// check khởi động redis
+redisClient.ping().then(() => {
+  console.log("✅ Redis is running");
+}).catch((err) => {
+  console.error("❌ Redis connection error:", err);
+}
+);
+
+
 // Khởi tạo Socket.io
 const io = new Server(server, {
   cors: {
@@ -94,27 +104,81 @@ app.get("/", async (req, res) => {
 });
 
 // //test other account
-// const username = "admindz";
-// const password = "admin123";
-// const full_name = "Administrator";
-// const email = "labo_admin@gmail.com";
-// const phone = "0764078204";
-// const role_id = "2"; 
-// const hashedPassword = await bcrypt.hash(password, 10);
+const username = "admindz";
+const password = "admin123";
+const full_name = "Administrator";
+const email = "labo_admin@gmail.com";
+const phone = "0764078204";
+const role_id = "2"; 
+const hashedPassword = await bcrypt.hash(password, 10);
 
-// const newUser = {
-//       user_id: nanoidNumbersOnly(10),
-//       username,
-//       password: hashedPassword,
-//       full_name,
-//       email,
-//       phone,
-//       role_id: role_id, // mặc định role user
-//     };
+const newUser = {
+      user_id: nanoidNumbersOnly(10),
+      username,
+      password: hashedPassword,
+      full_name,
+      email,
+      phone,
+      role_id: role_id, // mặc định role user
+    };
 
-//     const created = await userModel.createUser(newUser);
+    const created = await userModel.createUser(newUser);
 
+// const seedFAQs = async () => {
+//     const CREATED_BY_USER_ID = "2"; 
 
+//     const faqData = [
+//         {
+//             q: "Lương thử việc tối thiểu là bao nhiêu?",
+//             a: "Theo Điều 26 Bộ luật Lao động 2019, tiền lương thử việc do hai bên thỏa thuận nhưng ít nhất phải bằng 85% mức lương của công việc đó."
+//         },
+//         {
+//             q: "Thời gian thử việc tối đa là bao lâu?",
+//             a: "Tối đa 180 ngày với quản lý doanh nghiệp; 60 ngày với trình độ cao đẳng trở lên; 30 ngày với trình độ trung cấp; 6 ngày với công việc khác."
+//         },
+//         {
+//             q: "Người lao động nghỉ việc cần báo trước bao nhiêu ngày?",
+//             a: "HĐLĐ không xác định thời hạn: báo trước 45 ngày. HĐLĐ 12-36 tháng: báo trước 30 ngày. HĐLĐ dưới 12 tháng: báo trước 3 ngày."
+//         },
+//         {
+//             q: "Cách tính lương làm thêm giờ (OT) như thế nào?",
+//             a: "Ngày thường: ít nhất 150%. Ngày nghỉ hằng tuần: ít nhất 200%. Ngày lễ, tết, ngày nghỉ có hưởng lương: ít nhất 300%."
+//         },
+//         {
+//             q: "Người lao động có bao nhiêu ngày nghỉ phép năm?",
+//             a: "Người lao động làm việc đủ 12 tháng được nghỉ 12 ngày phép năm hưởng nguyên lương (điều kiện bình thường). Cứ 5 năm làm việc được tăng thêm 1 ngày."
+//         },
+//         {
+//             q: "Chế độ thai sản được nghỉ bao nhiêu tháng?",
+//             a: "Lao động nữ được nghỉ thai sản trước và sau khi sinh con là 06 tháng. Trường hợp sinh đôi trở lên thì từ con thứ 2 trở đi, mỗi con được nghỉ thêm 01 tháng."
+//         }
+//     ];
+
+//     try {
+//         console.log("⏳ Đang bắt đầu thêm dữ liệu mẫu FAQ...");
+
+//         const [users] = await pool.query('SELECT user_id FROM User WHERE user_id = ?', [CREATED_BY_USER_ID]);
+//         if (users.length === 0) {
+//             console.log(`⚠️ CẢNH BÁO: Không tìm thấy user_id = "${CREATED_BY_USER_ID}" trong bảng User. Không thể thêm FAQ.`);
+//             return;
+//         }
+
+//         const query = 'INSERT INTO FAQ (faq_id, question, answer, created_by) VALUES ?';
+        
+//         const values = faqData.map(item => [nanoidNumbersOnly(10), item.q, item.a, CREATED_BY_USER_ID]);
+
+//         await pool.query(query, [values]);
+        
+//         console.log(`✅ Đã thêm thành công ${values.length} câu hỏi FAQ vào database!`);
+
+//     } catch (error) {
+//         console.error("❌ Lỗi khi thêm FAQ:", error.message);
+//     }
+// };
+
+// Gọi hàm này MỘT LẦN (ví dụ gọi trong startServer)
+// Sau khi chạy xong và thấy log thành công, bạn có thể comment dòng này lại để không chạy mỗi lần restart
+//seedFAQs();
 
 swaggerDocs(app, PORT);
 

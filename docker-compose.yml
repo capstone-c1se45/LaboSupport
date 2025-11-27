@@ -45,17 +45,18 @@ services:
       - ./backend:/app
       - /app/node_modules
     environment:
-      - MYSQL_HOST=mysql      # Lưu ý: Nên dùng tên service là 'mysql', không phải 'localhost'
-      - MYSQL_PORT=3306  # Cổng nội bộ container là 3306
+      - MYSQL_HOST=mysql     
+      - MYSQL_PORT=3306 
       - MYSQL_USER=se45
       - MYSQL_PASSWORD=captone1@se45
       - MYSQL_ROOT_PASSWORD=captone1@se45
       - MYSQL_DATABASE=db_labosupport
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - AI_SERVICE_URL=http://host.docker.internal:8000
     depends_on:
       mysql:
-        condition: service_healthy  # <--- THÊM DÒNG NÀY
+        condition: service_healthy 
       redis:
         condition: service_started
   frontend:
