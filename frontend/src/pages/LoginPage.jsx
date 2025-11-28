@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { api, getErrorMessage } from '../lib/api-client';
 import registerBg from '../assets/registerBg.png';
 import logoImg from '../assets/logo.png';
-
 const illustrationUrl = registerBg;
 
 const LOGO = (
@@ -58,8 +57,14 @@ export default function LoginPage() {
       if (!token) throw new Error('NO_TOKEN');
       storeToken(token);
       setToast({ type: 'success', message: 'Đăng nhập thành công!' });
+
+      const userRole = resp.data?.user?.role;
       setTimeout(() => {
-        window.location.href = '/home';
+        if (userRole === 'admin') {
+          window.location.href = '/admin'; // Chuyển hướng đến Dashboard nếu là admin
+        } else {
+          window.location.href = '/home';  // Mặc định chuyển hướng về Home
+        }
       }, 500);
     } catch (err) {
       const msg = getErrorMessage(err, 'Tên đăng nhập hoặc mật khẩu không đúng');
@@ -162,12 +167,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          <div className="flex items-center justify-center gap-4 text-2xl select-none">
-            <span title="Google" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#DB4437]">G</span></span>
-            <span title="Facebook" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1877F2]">f</span></span>
-            <span title="Instagram" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#E4405F]">◎</span></span>
-            <span title="Twitter" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1DA1F2]">t</span></span>
-          </div>
+         
         </form>
       </div>
     </div>

@@ -240,12 +240,7 @@ export default function RegisterPage() {
         <span className="px-1 text-gray-400 text-xs tracking-wide">Hoặc tiếp tục với</span>
         <hr className="flex-1 border-t border-gray-200" />
       </div>
-      <div className="flex items-center justify-center gap-4 text-2xl select-none">
-        <span title="Google" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#DB4437]">G</span></span>
-        <span title="Facebook" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1877F2]">f</span></span>
-        <span title="Instagram" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#E4405F]">◎</span></span>
-        <span title="Twitter" className="inline-flex items-center justify-center w-11 h-11 rounded-md shadow-sm bg-white border"><span className="text-[#1DA1F2]">t</span></span>
-      </div>
+     
     </form>
   );
 
