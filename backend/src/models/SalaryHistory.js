@@ -1,4 +1,3 @@
-// models/SalaryHistory.js
 import { pool } from "../config/mysql.js"; 
 import { v4 as uuidv4 } from "uuid";
 

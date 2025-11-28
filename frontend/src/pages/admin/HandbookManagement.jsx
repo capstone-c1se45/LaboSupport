@@ -1,188 +1,286 @@
-// src/pages/admin/HandbookManagement.jsx
 import React, { useEffect, useState } from "react";
-import { adminService } from "../../services/adminService";
+import { api } from "../../lib/api-client"; 
+import { Dialog } from "@headlessui/react"; 
 
 export default function HandbookManagement() {
+  // State quản lý dữ liệu và phân trang
   const [items, setItems] = useState([]);
-  const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState(null); // null = mode thêm mới, object = mode sửa
-  const [showForm, setShowForm] = useState(false);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 });
+  const [loading, setLoading] = useState(false);
+  
+  // State tìm kiếm & file
+  const [searchTerm, setSearchTerm] = useState("");
+  const [file, setFile] = useState(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    law_name: "",
-    chapter: "",
-    article_title: "",
-    content: "",
-    law_reference: "",
-    category: "luat lao dong"
-  });
+  // State cho Modal Thêm/Sửa
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null); // null = Thêm mới, object = Sửa
+  const [formData, setFormData] = useState({ article_title: "", chapter: "", content: "" });
 
+  // 1. Hàm tải dữ liệu (Gọi API)
+  const loadData = async (page = 1, search = "") => {
+    setLoading(true);
+    try {
+      // Gọi API Backend: /admin/handbooks?page=1&limit=10&search=...
+      const res = await api.get(`/admin/handbooks?page=${page}&limit=10&search=${search}`);
+      
+      if (res.data && res.data.data) {
+        setItems(res.data.data);
+        setPagination(res.data.pagination);
+      } else {
+        setItems([]);
+      }
+    } catch (error) {
+      console.error("Lỗi tải dữ liệu:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load lần đầu
   useEffect(() => {
-    loadData();
+    loadData(1, "");
   }, []);
 
-  async function loadData(query = "") {
+  // 2. Xử lý Tìm kiếm
+  const handleSearch = (e) => {
+    e.preventDefault();
+    loadData(1, searchTerm); // Reset về trang 1 khi tìm kiếm
+  };
+
+  // 3. Xử lý Upload File
+  const handleFileUpload = async () => {
+    if (!file) return alert("Vui lòng chọn file .docx");
+    const data = new FormData();
+    data.append("file", file);
     try {
-      const data = await adminService.getHandbooks(query);
-      setItems(data);
+      setLoading(true);
+      await api.post("/admin/handbooks/import-docx", data);
+      alert("Import thành công!");
+      setFile(null);
+      loadData(1, searchTerm);
     } catch (error) {
-      alert("Lỗi tải dữ liệu handbook");
+      alert("Lỗi import: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  function handleSearch(e) {
-    e.preventDefault();
-    loadData(search);
-  }
+  // 4. Xử lý Xóa
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bạn chắc chắn muốn xóa điều luật này?")) return;
+    try {
+      await api.delete(`/admin/handbooks/${id}`);
+      alert("Đã xóa!");
+      loadData(pagination.page, searchTerm);
+    } catch (error) {
+      alert("Lỗi xóa: " + error.message);
+    }
+  };
 
-  function handleEdit(item) {
-    setEditing(item);
-    setFormData({
-      law_name: item.law_name,
-      chapter: item.chapter,
-      article_title: item.article_title,
-      content: item.content,
-      law_reference: item.law_reference || "",
-      category: item.category || "luat lao dong"
-    });
-    setShowForm(true);
-  }
-
-  function handleCreate() {
-    setEditing(null);
-    setFormData({ law_name: "", chapter: "", article_title: "", content: "", law_reference: "", category: "luat lao dong" });
-    setShowForm(true);
-  }
-
-  async function handleSubmit(e) {
+  // 5. Xử lý Lưu (Thêm/Sửa)
+  const handleSave = async (e) => {
     e.preventDefault();
     try {
-      if (editing) {
-        await adminService.updateHandbook(editing.section_id, formData);
+      if (editingItem) {
+        // Cập nhật
+        await api.put(`/admin/handbooks/${editingItem.section_id}`, formData);
         alert("Cập nhật thành công!");
       } else {
-        await adminService.createHandbook(formData);
+        // Thêm mới
+        await api.post("/admin/handbooks", {
+            ...formData,
+            law_name: "Bộ Luật Lao động 2019",
+            category: "luat lao dong",
+            law_reference: "manual_add"
+        });
         alert("Thêm mới thành công!");
       }
-      setShowForm(false);
-      loadData(search);
+      setIsModalOpen(false);
+      loadData(pagination.page, searchTerm);
     } catch (error) {
-      console.error(error);
-      alert("Có lỗi xảy ra, vui lòng kiểm tra lại console.");
+      alert("Lỗi lưu: " + error.message);
     }
-  }
+  };
 
-  async function handleDelete(id) {
-    if (!window.confirm("Bạn chắc chắn muốn xóa mục này?")) return;
-    try {
-      await adminService.deleteHandbook(id);
-      setItems(prev => prev.filter(i => i.section_id !== id));
-    } catch (error) {
-      alert("Lỗi khi xóa.");
+  // Mở Modal
+  const openModal = (item = null) => {
+    setEditingItem(item);
+    if (item) {
+      setFormData({ article_title: item.article_title, chapter: item.chapter, content: item.content });
+    } else {
+      setFormData({ article_title: "", chapter: "", content: "" });
     }
-  }
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Quản lý Cẩm nang Pháp luật</h2>
-        <button 
-          onClick={handleCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          + Thêm mục mới
-        </button>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Quản lý Luật Lao động</h2>
+
+      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex items-center gap-2">
+           <input 
+              type="file" accept=".docx"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="text-sm file:mr-2 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            <button 
+              onClick={handleFileUpload}
+              disabled={!file || loading}
+              className="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 disabled:bg-gray-400"
+            >
+              Upload
+            </button>
+        </div>
+
+        <div className="flex gap-2 w-full md:w-auto">
+            <form onSubmit={handleSearch} className="flex gap-2">
+                <input 
+                    type="text" 
+                    placeholder="Tìm theo điều, nội dung..." 
+                    className="border rounded px-3 py-2 text-sm w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button type="submit" className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700">
+                    Tìm
+                </button>
+            </form>
+            <button 
+                onClick={() => openModal(null)}
+                className="bg-indigo-600 text-white px-3 py-2 rounded text-sm hover:bg-indigo-700 whitespace-nowrap"
+            >
+                + Thêm Luật
+            </button>
+        </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex gap-2 mb-4">
-        <input 
-          type="text" 
-          placeholder="Tìm theo tên luật, điều khoản..." 
-          className="border p-2 rounded w-80"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <button onClick={handleSearch} className="bg-gray-200 px-4 py-2 rounded">Tìm</button>
-      </div>
-
-      {/* Bảng dữ liệu */}
-      <div className="bg-white shadow rounded overflow-hidden">
+      <div className="bg-white shadow rounded-lg overflow-hidden mb-4">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
             <tr>
-              <th className="p-3 border-b">Tên Luật</th>
-              <th className="p-3 border-b">Điều khoản</th>
-              <th className="p-3 border-b w-1/3">Nội dung (trích)</th>
+              <th className="p-3 border-b">STT</th>
+              <th className="p-3 border-b w-1/4">Tiêu đề Điều</th>
+              <th className="p-3 border-b">Chương</th>
+              <th className="p-3 border-b w-1/3">Nội dung (Trích)</th>
               <th className="p-3 border-b text-center">Hành động</th>
             </tr>
           </thead>
-          <tbody>
-            {items.map(item => (
-              <tr key={item.section_id} className="hover:bg-gray-50">
-                <td className="p-3 border-b text-sm font-medium">{item.law_name}</td>
-                <td className="p-3 border-b text-sm text-gray-600">{item.article_title}</td>
-                <td className="p-3 border-b text-sm text-gray-500 truncate max-w-xs">
-                  {item.content?.substring(0, 100)}...
-                </td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline">Sửa</button>
-                  <button onClick={() => handleDelete(item.section_id)} className="text-red-600 hover:underline">Xóa</button>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr><td colSpan="4" className="p-4 text-center text-gray-500">Không tìm thấy dữ liệu</td></tr>
+          <tbody className="divide-y divide-gray-200">
+            {loading ? (
+                <tr><td colSpan="5" className="p-4 text-center">Đang tải dữ liệu...</td></tr>
+            ) : items.length === 0 ? (
+                <tr><td colSpan="5" className="p-4 text-center text-gray-500">Không tìm thấy dữ liệu</td></tr>
+            ) : (
+                items.map((item, index) => (
+                <tr key={item.section_id} className="hover:bg-gray-50">
+                    <td className="p-3 text-sm">{index + 1 + (pagination.page - 1) * pagination.limit}</td>
+                    <td className="p-3 font-medium text-blue-900">{item.article_title}</td>
+                    <td className="p-3 text-sm text-gray-600">{item.chapter}</td>
+                    <td className="p-3 text-sm text-gray-500 truncate max-w-xs" title={item.content}>
+                    {item.content ? item.content.substring(0, 80) + "..." : ""}
+                    </td>
+                    <td className="p-3 text-center">
+                        <button 
+                            onClick={() => openModal(item)}
+                            className="text-blue-600 hover:text-blue-800 mr-3 text-sm font-semibold"
+                        >
+                            Sửa
+                        </button>
+                        <button 
+                            onClick={() => handleDelete(item.section_id)}
+                            className="text-red-600 hover:text-red-800 text-sm font-semibold"
+                        >
+                            Xóa
+                        </button>
+                    </td>
+                </tr>
+                ))
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal Form */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold mb-4">{editing ? "Chỉnh sửa" : "Thêm mới"}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tên luật</label>
-                  <input required className="w-full border p-2 rounded" value={formData.law_name} onChange={e => setFormData({...formData, law_name: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Chương</label>
-                  <input className="w-full border p-2 rounded" value={formData.chapter} onChange={e => setFormData({...formData, chapter: e.target.value})} />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Tiêu đề điều khoản (Article Title)</label>
-                <input required className="w-full border p-2 rounded" value={formData.article_title} onChange={e => setFormData({...formData, article_title: e.target.value})} />
-              </div>
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+            <button 
+                disabled={pagination.page <= 1}
+                onClick={() => loadData(pagination.page - 1, searchTerm)}
+                className="px-3 py-1 rounded border hover:bg-gray-100 disabled:opacity-50"
+            >
+                Trước
+            </button>
+            <span className="text-sm font-medium">
+                Trang {pagination.page} / {pagination.totalPages}
+            </span>
+            <button 
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => {
+                     // Log kiểm tra xem sự kiện click có nhận không
+                     console.log("Next page click:", pagination.page + 1);
+                     loadData(pagination.page + 1, searchTerm);
+                }}
+                className="px-3 py-1 rounded border hover:bg-gray-100 disabled:opacity-50"
+            >
+                Sau
+            </button>
+        </div>
+      )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Nội dung chi tiết</label>
-                <textarea required rows={6} className="w-full border p-2 rounded" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tham chiếu luật (Law Reference)</label>
-                  <input className="w-full border p-2 rounded" value={formData.law_reference} onChange={e => setFormData({...formData, law_reference: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Danh mục</label>
-                  <input className="w-full border p-2 rounded" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-gray-200 rounded">Hủy</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Lưu thông tin</button>
-              </div>
-            </form>
-          </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl">
+                <h3 className="text-xl font-bold mb-4">{editingItem ? "Cập nhật Luật" : "Thêm Luật Mới"}</h3>
+                <form onSubmit={handleSave} className="flex flex-col gap-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Chương</label>
+                        <input 
+                            type="text" 
+                            className="w-full border p-2 rounded"
+                            value={formData.chapter}
+                            onChange={(e) => setFormData({...formData, chapter: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Tiêu đề Điều</label>
+                        <input 
+                            type="text" 
+                            className="w-full border p-2 rounded"
+                            value={formData.article_title}
+                            onChange={(e) => setFormData({...formData, article_title: e.target.value})}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Nội dung</label>
+                        <textarea 
+                            rows="6"
+                            className="w-full border p-2 rounded"
+                            value={formData.content}
+                            onChange={(e) => setFormData({...formData, content: e.target.value})}
+                            required
+                        ></textarea>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-2">
+                        <button 
+                            type="button" 
+                            onClick={() => setIsModalOpen(false)}
+                            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                        >
+                            Hủy
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ import { isAdmin } from "../middlewares/isAdmin.js";
 
 const router = Router();
 
-// ⚙️ Áp dụng middleware kiểm tra token và quyền admin
+// Áp dụng middleware kiểm tra token và quyền admin
 router.use(authMiddleware.verifyToken, isAdmin);
 
 // CRUD user

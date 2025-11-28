@@ -52,19 +52,56 @@ export const handbookModel = {
     return true;
   },
   async createMany(items) {
-    // Insert nhiều dòng một lúc để tối ưu
     const sql = `INSERT INTO Handbook_Section (section_id, law_name, chapter, law_reference, category, article_title, chunk_index, content) VALUES ?`;
     const values = items.map(i => [i.section_id, i.law_name, i.chapter, i.law_reference, i.category, i.article_title, i.chunk_index, i.content]);
     await pool.query(sql, [values]);
   },
 
-  async countAll() {
-    const [rows] = await pool.query("SELECT COUNT(*) as total FROM Handbook_Section");
+  // Thêm mới 1 bản ghi
+  async create(item) {
+    const sql = `INSERT INTO Handbook_Section SET ?`;
+    await pool.query(sql, item);
+    return item;
+  },
+
+  // Cập nhật
+  async update(id, data) {
+    const sql = `UPDATE Handbook_Section SET ? WHERE section_id = ?`;
+    await pool.query(sql, [data, id]);
+  },
+
+  // Xóa
+  async delete(id) {
+    const sql = `DELETE FROM Handbook_Section WHERE section_id = ?`;
+    await pool.query(sql, [id]);
+  },
+
+  // Đếm tổng (có hỗ trợ tìm kiếm)
+  async countAll(search = "") {
+    let sql = "SELECT COUNT(*) as total FROM Handbook_Section";
+    let params = [];
+    if (search) {
+      sql += " WHERE article_title LIKE ? OR content LIKE ?";
+      params = [`%${search}%`, `%${search}%`];
+    }
+    const [rows] = await pool.query(sql, params);
     return rows[0].total;
   },
-// Phân trang
-  async getPaginated(limit, offset) {
-    const [rows] = await pool.query("SELECT * FROM Handbook_Section ORDER BY chunk_index ASC LIMIT ? OFFSET ?", [limit, offset]);
+
+  // Lấy danh sách (có hỗ trợ tìm kiếm + phân trang)
+  async getPaginated(limit, offset, search = "") {
+    let sql = "SELECT * FROM Handbook_Section";
+    let params = [];
+    
+    if (search) {
+      sql += " WHERE article_title LIKE ? OR content LIKE ?";
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    sql += " ORDER BY chunk_index ASC LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+    const [rows] = await pool.query(sql, params);
     return rows;
   }
 };

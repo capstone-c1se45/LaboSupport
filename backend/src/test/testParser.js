@@ -4,10 +4,10 @@ import path from "path";
 import { parseLaborLawDocx } from "../utils/docxParser.js";
 
 // Đổi tên file này thành file .docx thực tế của bạn
-const FILE_NAME = "./45_2019_QH14_333670.doc"; 
+const FILE_NAME = "./45_2019_QH14_333670.docx"; 
 
 // check if file exists
-if(!FILE_NAME.endsWith(".doc")) {
+if(!FILE_NAME.endsWith(".docx")) {
   console.error("❌ Vui lòng sử dụng file .docx để test parser.");
   process.exit(1);
 }
