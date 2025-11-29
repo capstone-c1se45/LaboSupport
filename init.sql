@@ -177,3 +177,21 @@ CREATE TABLE IF NOT EXISTS SalaryHistory (
 
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
+
+CREATE TABLE IF NOT EXISTS BHXH_Calculation_History (
+  history_id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  input_data JSON NOT NULL,      -- dữ liệu người dùng nhập
+  result_data JSON NOT NULL,     -- kết quả tính BHXH
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS BHXH_TuNguyen_History (
+  history_id CHAR(36) PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  input_data JSON NOT NULL,
+  result_data JSON NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+);

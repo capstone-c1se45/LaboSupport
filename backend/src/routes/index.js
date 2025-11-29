@@ -8,6 +8,9 @@ import aiRoutes from "./ai.js";
 import contractRoutes from "./contract.js";
 import adminReportRoutes from "./adminReport.js";   
 import adminHandbookRoutes from "./adminHandbook.js";
+import bhxhRoutes from "./bhxh.js"; 
+import bhxhTuNguyenRoutes from "./bhxhTuNguyen.js";
+
 const router = Router();
 
 router.use("/users", user);
@@ -19,5 +22,7 @@ router.use("/ai", aiRoutes); // route AI chat
 router.use("/contracts", contractRoutes); // route hợp đồng
 router.use("/admin/reports", adminReportRoutes); // route báo cáo admin
 router.use("/admin/handbooks", adminHandbookRoutes); // route quản lý cẩm nang pháp luật bởi admin
+router.use("/bhxh", bhxhRoutes); // route công cụ tính BHXH một lần
+router.use("/bhxh", bhxhTuNguyenRoutes); // route công cụ tính BHXH tự nguyện
 
 export default router;
