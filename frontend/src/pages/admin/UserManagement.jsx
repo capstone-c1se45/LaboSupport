@@ -11,7 +11,7 @@ export default function UserManagement() {
         full_name: "", 
         email: "", 
         password: "", // Cần cho tạo mới
-        role_id: "user",
+        role_id: "1",
         phone: "" 
     });
     const [editing, setEditing] = useState(false);
@@ -65,7 +65,6 @@ export default function UserManagement() {
                     email: form.email,
                     role_id: form.role_id,
                     phone: form.phone,
-                    // Chỉ gửi password nếu admin nhập mới
                     ...(form.password ? { password: form.password } : {})
                 });
                 alert("Cập nhật thành công!");
@@ -136,7 +135,6 @@ export default function UserManagement() {
                 <select name="role_id" value={form.role_id} onChange={handleChange} style={styles.select}>
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
-                    <option value="lawyer">Lawyer</option>
                 </select>
                 
                 <div style={{ display: "flex", gap: 8 }}>
@@ -186,12 +184,12 @@ export default function UserManagement() {
                                 <span style={{
                                     padding: '2px 6px', 
                                     borderRadius: 4, 
-                                    background: u.role_id === 'admin' ? '#e6fffa' : '#fff0f6',
-                                    color: u.role_id === 'admin' ? '#006d75' : '#c41d7f',
+                                    background: u.role_id === "2" ? '#e6fffa' : '#fff0f6',
+                                    color: u.role_id === "2" ? '#006d75' : '#c41d7f',
                                     fontSize: 12,
                                     fontWeight: 'bold'
                                 }}>
-                                    {u.role_id.toUpperCase()}
+                                    {u.role_id === "2" ? 'ADMIN' : 'USER'}
                                 </span>
                             </td>
                             <td style={styles.td}>
@@ -206,9 +204,7 @@ export default function UserManagement() {
     );
 }
 
-// Styles giữ nguyên như file cũ của bạn, chỉ cập nhật một chút để responsive hơn nếu cần
 const styles = {
-    // ... (Copy styles từ file UserManagement.jsx gốc của bạn)
     container: { padding: 20, maxWidth: 1000, margin: "0 auto" },
     form: { display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" },
     input: { padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", minWidth: 150 },

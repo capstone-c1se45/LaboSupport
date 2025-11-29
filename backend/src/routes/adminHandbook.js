@@ -14,5 +14,5 @@ router.post("/", adminHandbookController.create);
 router.post("/import-docx", upload.single("file"), adminHandbookController.importDocx);
 router.put("/:id", adminHandbookController.update);
 router.delete("/:id", adminHandbookController.delete);
-
+router.delete("/action/delete-all", adminHandbookController.deleteAll);
 export default router;

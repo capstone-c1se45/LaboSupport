@@ -94,6 +94,19 @@ export const adminHandbookController = {
     }
   },
 
+  async deleteAll(req, res) {
+    try {
+      await handbookModel.deleteAll();
+
+      await clearHandbookCache();
+
+      res.json({ message: "Đã xóa toàn bộ dữ liệu luật thành công." });
+    } catch (error) {
+      console.error("Error deleteAll handbook:", error);
+      res.status(500).json({ message: "Lỗi khi xóa toàn bộ dữ liệu." });
+    }
+  },
+
   // IMPORT (Giữ nguyên, nhớ thêm clearCache)
   async importDocx(req, res) {
     try {

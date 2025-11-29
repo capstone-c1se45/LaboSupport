@@ -103,5 +103,10 @@ export const handbookModel = {
 
     const [rows] = await pool.query(sql, params);
     return rows;
+  },
+
+  async deleteAll() {
+    await pool.query("DELETE FROM Handbook_Section"); 
+    return true;
   }
 };

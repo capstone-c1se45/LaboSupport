@@ -44,5 +44,6 @@ export const adminService = {
   },
   deleteHandbook: async (id) => {
     return await api.delete(`/admin/handbooks/${id}`);
-  }
+  },
+  deleteAllHandbooks: () => api.delete("/admin/handbooks/action/delete-all").then(res => res.data),
 };

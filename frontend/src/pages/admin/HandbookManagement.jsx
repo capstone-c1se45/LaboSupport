@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api-client"; 
+import { adminService } from "../../services/adminService";
 import { Dialog } from "@headlessui/react"; 
 
 export default function HandbookManagement() {
@@ -16,6 +17,8 @@ export default function HandbookManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); // null = Thêm mới, object = Sửa
   const [formData, setFormData] = useState({ article_title: "", chapter: "", content: "" });
+
+  
 
   // 1. Hàm tải dữ liệu (Gọi API)
   const loadData = async (page = 1, search = "") => {
@@ -104,6 +107,40 @@ export default function HandbookManagement() {
     }
   };
 
+  const fetchHandbooks = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/admin/handbooks?page=1&limit=10");
+      setItems(res.data.data);
+      setPagination(res.data.pagination);
+    } catch (error) {
+      console.error("Lỗi tải dữ liệu:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+        const confirmMsg = "CẢNH BÁO: Hành động này sẽ xóa TOÀN BỘ dữ liệu luật trong hệ thống và không thể khôi phục.\n\nBạn có chắc chắn muốn tiếp tục không?";
+        if (!window.confirm(confirmMsg)) return;
+
+        // Hỏi lại lần 2 cho chắc chắn (UX an toàn cho tính năng nguy hiểm)
+        if (!window.confirm("Xác nhận lần cuối: Bạn thực sự muốn xóa sạch dữ liệu?")) return;
+
+        try {
+            setLoading(true);
+            await adminService.deleteAllHandbooks();
+            alert("Đã xóa toàn bộ dữ liệu luật.");
+            fetchHandbooks(); // Tải lại danh sách (trống)
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi khi xóa dữ liệu: " + (error.response?.data?.message || "Lỗi server"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
   // Mở Modal
   const openModal = (item = null) => {
     setEditingItem(item);
@@ -153,6 +190,12 @@ export default function HandbookManagement() {
                 className="bg-indigo-600 text-white px-3 py-2 rounded text-sm hover:bg-indigo-700 whitespace-nowrap"
             >
                 + Thêm Luật
+            </button>
+            <button
+            onClick={handleDeleteAll}
+            className="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 whitespace-nowrap"
+        >
+            Xóa Toàn Bộ Luật  
             </button>
         </div>
       </div>
