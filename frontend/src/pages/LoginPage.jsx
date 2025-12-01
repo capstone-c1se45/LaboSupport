@@ -32,13 +32,16 @@ export default function LoginPage() {
   }, []);
 
   function storeToken(token) {
-    if (remember) {
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('ls_last_username', username);
-    } else {
-      sessionStorage.setItem('auth_token', token);
-    }
+  localStorage.removeItem('auth_token');
+  sessionStorage.removeItem('auth_token');
+
+  if (remember) {
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('ls_last_username', username);
+  } else {
+    sessionStorage.setItem('auth_token', token);
   }
+}
 
   async function handleSubmit(e) {
     e.preventDefault();

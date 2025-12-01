@@ -19,22 +19,24 @@ export const reportModel = {
   },
 
   // Lấy danh sách báo cáo cho Admin dashboard
-  async getAll({ limit, offset, status }) {
-    const sql = `
+ async getAll({ limit, offset, status }) {
+    let sql = `
       SELECT r.*, u.username, u.full_name, u.email
       FROM Report r
       LEFT JOIN User u ON r.user_id = u.user_id
-      ORDER BY r.created_at DESC
     `;
+    
     const params = [];
 
     if (status && status !== 'ALL') {
       sql += ` WHERE r.status = ?`;
       params.push(status);
     }
+
     sql += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
     params.push(limit, offset);
-    const [rows] = await pool.query(sql);
+
+    const [rows] = await pool.query(sql, params);
     return rows;
   },
 

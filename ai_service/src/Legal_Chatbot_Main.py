@@ -11,7 +11,7 @@ from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_d
 from ocr.ocr_utils_main import ocr_image
 import time 
 import random
-GEMINI_API_KEY = "" 
+GEMINI_API_KEY = "AIzaSyA5a5Ktg5_cK1cW1uT7Ba0S5ptweuu1lUk" 
 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
