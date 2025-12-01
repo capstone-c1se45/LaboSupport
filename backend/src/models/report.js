@@ -19,18 +19,38 @@ export const reportModel = {
   },
 
   // Lấy danh sách báo cáo cho Admin dashboard
-  async getAll() {
+  async getAll({ limit, offset, status }) {
     const sql = `
       SELECT r.*, u.username, u.full_name, u.email
       FROM Report r
       LEFT JOIN User u ON r.user_id = u.user_id
       ORDER BY r.created_at DESC
     `;
+    const params = [];
+
+    if (status && status !== 'ALL') {
+      sql += ` WHERE r.status = ?`;
+      params.push(status);
+    }
+    sql += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
     const [rows] = await pool.query(sql);
     return rows;
   },
 
-  // Cập nhật trạng thái báo cáo (NEW -> RESOLVED / IGNORED)
+  async countAll({ status }) {
+    let sql = `SELECT COUNT(*) as total FROM Report`;
+    const params = [];
+
+    if (status && status !== 'ALL') {
+      sql += ` WHERE status = ?`;
+      params.push(status);
+    }
+
+    const [rows] = await pool.query(sql, params);
+    return rows[0].total;
+  },
+
   async updateStatus(report_id, status) {
     const sql = `UPDATE Report SET status = ? WHERE report_id = ?`;
     await pool.query(sql, [status, report_id]);

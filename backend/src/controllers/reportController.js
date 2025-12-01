@@ -14,7 +14,7 @@ export const reportController = {
         return res.status(400).json({ message: "Vui lòng chọn loại và nhập nội dung." });
       }
 
-      const newReportData =  reportModel.create({ user_id, category, description });
+      reportModel.create({ user_id, category, description });
 
       const socketPayload = {
         username: user?.username || null,
@@ -40,8 +40,25 @@ export const reportController = {
   // Admin lấy danh sách
   async getAllReports(req, res) {
     try {
-      const reports = await reportModel.getAll();
-      res.json(reports);
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const status = req.query.status || 'ALL';
+      const offset = (page - 1) * limit;
+
+      const [reports, total] = await Promise.all([
+        reportModel.getAll({ limit, offset, status }),
+        reportModel.countAll({ status })
+      ]);
+
+      res.json({
+        data: reports,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Lỗi server." });

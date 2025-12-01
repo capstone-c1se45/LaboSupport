@@ -23,6 +23,7 @@ export const authMiddleware = {
 
   // Kiểm tra quyền admin
   isAdmin(req, res, next) {
+    console.log('User role in isAdmin middleware:', req.user);
     if (req.user.role_id !== "2") {
       return res.status(403).json({ message: "Bạn không có quyền truy cập" });
     }

@@ -1,4 +1,3 @@
-// src/models/adminReport.js
 import { pool } from "../config/mysql.js";
 
 export const adminReportModel = {
