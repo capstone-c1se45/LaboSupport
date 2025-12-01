@@ -4,7 +4,7 @@ import { nanoidNumbersOnly } from "../utils/nanoid.js";
 export const reportModel = {
   // Tạo báo cáo mới
   async create(data) {
-    const report_id = nanoid(10);
+    const report_id = nanoidNumbersOnly(10);
     const sql = `
       INSERT INTO Report (report_id, user_id, category, description, status)
       VALUES (?, ?, ?, ?, 'NEW')

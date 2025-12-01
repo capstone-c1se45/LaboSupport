@@ -46,4 +46,9 @@ export const adminService = {
     return await api.delete(`/admin/handbooks/${id}`);
   },
   deleteAllHandbooks: () => api.delete("/admin/handbooks/action/delete-all").then(res => res.data),
+
+  getAllReports: () => api.get("/reports/admin").then(res => res.data),
+  
+  updateReportStatus: (id, status) => api.put(`/reports/admin/${id}`, { status }).then(res => res.data),
+  deleteReport: (id) => api.delete(`/reports/admin/${id}`).then(res => res.data),
 };

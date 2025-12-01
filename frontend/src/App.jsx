@@ -14,6 +14,8 @@ import ContractAnalysis from "./pages/ContractAnalysis";
 import React, { Suspense } from "react";
 import { ProtectedAdmin } from "./components/ui/protected-admin";
 import HandbookManagement from "./pages/admin/HandbookManagement";
+import ReportPage from "./pages/ReportPage";
+import ReportManagement from "./pages/admin/ReportManagement";
 
 const PageLoader = () => <div className="flex justify-center items-center h-screen">Đang tải...</div>;
 
@@ -33,6 +35,7 @@ function App() {
         <Route path="/contract-analysis" element={<ContractAnalysis />} />
         <Route path="/home" element={<HomeLogged />} />
         <Route path="/salary" element={<SalaryTool />} />
+        <Route path="/report" element={<ReportPage />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -49,6 +52,7 @@ function App() {
             <Route index element={<AdminDashboard />} />     
             <Route path="users" element={<AdminUsers />} />
             <Route path="handbooks" element={<HandbookManagement />} />
+            <Route path="reports" element={<ReportManagement />} />
           </Route>
         <Route path="*" element={<NotFound />} /> 
       </Routes>

@@ -12,8 +12,8 @@ export const jwtService = {
       {
         user_id: user.user_id,
         username: user.username,
-        // ✅ Dùng == để nhận cả "2" hoặc 2
         role: user.role_name || (user.role_id == 2 ? "admin" : "user"),
+        role_id: user.role_id
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES }

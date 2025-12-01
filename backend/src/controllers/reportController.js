@@ -5,13 +5,28 @@ export const reportController = {
   async createReport(req, res) {
     try {
       const { category, description } = req.body;
+      const user =  req.user;
       const user_id = req.user?.user_id || null; 
 
       if (!category || !description) {
         return res.status(400).json({ message: "Vui lòng chọn loại và nhập nội dung." });
       }
 
-      await reportModel.create({ user_id, category, description });
+      const newReportData =  reportModel.create({ user_id, category, description });
+
+      const socketPayload = {
+        ...newReportData,
+        username: user?.username || null,
+        full_name: user?.full_name || null,
+        email: user?.email || null,
+        created_at: new Date().toISOString(),
+        status: 'NEW'
+      };
+
+      if (req.io) {
+        req.io.to('admin-room').emit('report:new', socketPayload);
+      }
+
       res.status(201).json({ message: "Gửi báo cáo thành công! Cảm ơn đóng góp của bạn." });
     } catch (error) {
       console.error(error);
