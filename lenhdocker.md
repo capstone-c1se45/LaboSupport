@@ -37,3 +37,10 @@
 -docker-compose down -v (Warning ⚠️)
 +Tác dụng: Tắt container VÀ XÓA LUÔN VOLUMES (dữ liệu).
 +Khi nào dùng: Khi Database bị lỗi quá nặng, bạn muốn xóa sạch sành sanh để MySQL tạo lại database mới tinh từ đầu (chạy lại file init.sql).
+
+
+Bạn vừa làm gì?,           Lệnh cần dùng
+"Code, sửa lỗi, chỉnh UI", Không làm gì cả (Chỉ cần Save)
+Cài thư viện mới (npm i),  docker-compose up -d --build
+Sửa .env / Config,         docker-compose up -d
+Server bị đơ/lag,          docker-compose restart [tên_service]
