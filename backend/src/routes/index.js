@@ -10,6 +10,7 @@ import adminReportRoutes from "./adminReport.js";
 import adminHandbookRoutes from "./adminHandbook.js";
 import bhxhRoutes from "./bhxh.js"; 
 import bhxhTuNguyenRoutes from "./bhxhTuNguyen.js";
+import reportRouter from "./reportRoutes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/admin/reports", adminReportRoutes); // route báo cáo admin
 router.use("/admin/handbooks", adminHandbookRoutes); // route quản lý cẩm nang pháp luật bởi admin
 router.use("/bhxh", bhxhRoutes); // route công cụ tính BHXH một lần
 router.use("/bhxh", bhxhTuNguyenRoutes); // route công cụ tính BHXH tự nguyện
+router.use("/reports", reportRouter); // route báo cáo
 
 export default router;
