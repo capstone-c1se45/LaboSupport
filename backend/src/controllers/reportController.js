@@ -1,12 +1,14 @@
 import { reportModel } from "../models/report.js";
-
+import { userModel } from "../models/user.js";
 export const reportController = {
   // User gửi báo cáo
   async createReport(req, res) {
     try {
       const { category, description } = req.body;
-      const user =  req.user;
+      const user =  await userModel.getUserById(req.user.user_id);
       const user_id = req.user?.user_id || null; 
+
+      console.log('Creating report from user:', user);
 
       if (!category || !description) {
         return res.status(400).json({ message: "Vui lòng chọn loại và nhập nội dung." });
@@ -15,11 +17,12 @@ export const reportController = {
       const newReportData =  reportModel.create({ user_id, category, description });
 
       const socketPayload = {
-        ...newReportData,
         username: user?.username || null,
         full_name: user?.full_name || null,
         email: user?.email || null,
         created_at: new Date().toISOString(),
+        category: category,
+        description: description,
         status: 'NEW'
       };
 
