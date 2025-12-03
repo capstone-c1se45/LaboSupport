@@ -20,6 +20,7 @@ const PageLoader = () => <div className="flex justify-center items-center h-scre
 const AdminLayout = React.lazy(() => import("./components/layouts/AdminLayout"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
 const AdminUsers = React.lazy(() => import("./pages/admin/UserManagement"));
+const AdminReports = React.lazy(() => import("./pages/admin/Reports"));
 
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
             <Route index element={<AdminDashboard />} />     
             <Route path="users" element={<AdminUsers />} />
             <Route path="handbooks" element={<HandbookManagement />} />
+            <Route path="reports" element={<AdminReports />} />
           </Route>
         <Route path="*" element={<NotFound />} /> 
       </Routes>

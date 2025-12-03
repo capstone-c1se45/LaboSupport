@@ -1,223 +1,463 @@
-// src/pages/admin/UserManagement.jsx
-import React, { useEffect, useState } from "react";
-import { adminService } from "../../services/adminService";
+import React, { useEffect, useMemo, useState } from 'react';
+import { api } from '../../lib/api-client';
+
+const emptyForm = {
+  id: null,
+  username: '',
+  full_name: '',
+  email: '',
+  password: '',
+  role_id: '2', // 1 = admin, 2 = user (tu dong)
+  phone: '',
+  address: '',
+  dob: '',
+  gender: '',
+  status: 'active',
+};
 
 export default function UserManagement() {
-    const [users, setUsers] = useState([]);
-    const [q, setQ] = useState(""); // Từ khóa tìm kiếm
-    const [form, setForm] = useState({ 
-        id: null, 
-        username: "", 
-        full_name: "", 
-        email: "", 
-        password: "", // Cần cho tạo mới
-        role_id: "1",
-        phone: "" 
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  async function fetchUsers() {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get('/admin/users');
+      const data = Array.isArray(res.data) ? res.data : res.data.data || [];
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.response?.data?.message ||
+          'Khong tai duoc danh sach nguoi dung.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) => {
+      const name = `${u.full_name || ''} ${u.username || ''}`.toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      const phone = (u.phone || '').toLowerCase();
+      return (
+        name.includes(q) || email.includes(q) || phone.includes(q)
+      );
     });
-    const [editing, setEditing] = useState(false);
-    const [loading, setLoading] = useState(false);
+  }, [users, search]);
 
-    // Thay thế localStorage bằng API fetch
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }
 
-    // Hàm gọi API lấy danh sách users
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const data = await adminService.getAllUsers();
-            setUsers(data);
-        } catch (error) {
-            alert("Lỗi tải danh sách người dùng");
-        } finally {
-            setLoading(false);
-        }
-    };
+  function startCreate() {
+    setForm(emptyForm);
+    setEditing(false);
+  }
 
-    // Hàm tìm kiếm
-    const handleSearch = async () => {
-        if (!q.trim()) {
-            fetchUsers();
-            return;
-        }
-        try {
-            const results = await adminService.searchUsers(q);
-            setUsers(results);
-        } catch (error) {
-            // Backend trả về 404 nếu không thấy
-            setUsers([]); 
-        }
-    };
+  function startEdit(user) {
+    setForm({
+      id: user.user_id,
+      username: user.username,
+      full_name: user.full_name || '',
+      email: user.email || '',
+      password: '',
+      role_id: String(user.role_id ?? '2'),
+      phone: user.phone || '',
+      address: user.address || '',
+      dob: user.dob || '',
+      gender: user.gender || '',
+      status: user.status || 'active',
+    });
+    setEditing(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-    function handleChange(e) {
-        const { name, value } = e.target;
-        setForm((f) => ({ ...f, [name]: value }));
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (editing && form.id) {
+        // UPDATE
+        const payload = {
+          full_name: form.full_name,
+          phone: form.phone,
+          email: form.email,
+          role_id: form.role_id,
+          address: form.address,
+          dob: form.dob || null,
+          gender: form.gender || null,
+          status: form.status,
+        };
+        await api.put(`/admin/users/${form.id}`, payload);
+      } else {
+        // CREATE
+        const payload = {
+          username: form.username,
+          full_name: form.full_name,
+          email: form.email,
+          password: form.password,
+          role_id: form.role_id,
+          status: form.status,
+        };
+        await api.post('/admin/users', payload);
+      }
+      await fetchUsers();
+      setForm(emptyForm);
+      setEditing(false);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.response?.data?.message || 'Co loi xay ra khi luu nguoi dung.'
+      );
+    } finally {
+      setSaving(false);
     }
+  }
 
-    async function handleSubmit(e) {
-        e.preventDefault();
-        try {
-            if (editing) {
-                // Gọi API Update
-                await adminService.updateUser(form.id, {
-                    full_name: form.full_name,
-                    email: form.email,
-                    role_id: form.role_id,
-                    phone: form.phone,
-                    ...(form.password ? { password: form.password } : {})
-                });
-                alert("Cập nhật thành công!");
-            } else {
-                // Gọi API Create
-                await adminService.createUser({
-                    username: form.username,
-                    password: form.password,
-                    full_name: form.full_name,
-                    email: form.email,
-                    role_id: form.role_id,
-                    phone: form.phone
-                });
-                alert("Thêm người dùng thành công!");
-            }
-            resetForm();
-            fetchUsers(); // Tải lại danh sách
-        } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.message || "Có lỗi xảy ra.");
-        }
+  async function handleDelete(user) {
+    if (
+      !window.confirm(
+        `Xoa tai khoan "${user.username}"? Hanh dong nay khong the hoan tac.`
+      )
+    ) {
+      return;
     }
-
-    function handleEdit(user) {
-        // Map dữ liệu từ bảng vào form
-        setForm({
-            id: user.user_id, // Lưu ý backend dùng user_id
-            username: user.username,
-            full_name: user.full_name || "",
-            email: user.email,
-            role_id: user.role_id,
-            phone: user.phone || "",
-            password: "" // Reset mật khẩu khi edit
-        });
-        setEditing(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      await api.delete(`/admin/users/${user.user_id}`);
+      setUsers((prev) => prev.filter((u) => u.user_id !== user.user_id));
+    } catch (err) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message || 'Khong xoa duoc nguoi dung.'
+      );
     }
+  }
 
-    async function handleDelete(id) {
-        if (!window.confirm("Xóa user này? Hành động không thể hoàn tác.")) return;
-        try {
-            await adminService.deleteUser(id);
-            setUsers((prev) => prev.filter((u) => u.user_id !== id));
-        } catch (error) {
-            alert("Lỗi khi xóa người dùng.");
-        }
-    }
-
-    function resetForm() {
-        setForm({ id: null, username: "", full_name: "", email: "", password: "", role_id: "user", phone: "" });
-        setEditing(false);
-    }
-
-    return (
-        <div style={styles.container}>
-            <h2>Quản lý người dùng</h2>
-
-            {/* Form Thêm / Sửa */}
-            <form onSubmit={handleSubmit} style={styles.form}>
-                {!editing && (
-                    <input name="username" placeholder="Username *" value={form.username} onChange={handleChange} style={styles.input} required />
-                )}
-                <input name="full_name" placeholder="Họ tên" value={form.full_name} onChange={handleChange} style={styles.input} />
-                <input name="email" type="email" placeholder="Email *" value={form.email} onChange={handleChange} style={styles.input} required />
-                <input name="password" type="password" placeholder={editing ? "Mật khẩu (để trống nếu ko đổi)" : "Mật khẩu *"} value={form.password} onChange={handleChange} style={styles.input} required={!editing} />
-                <input name="phone" placeholder="Số điện thoại" value={form.phone} onChange={handleChange} style={styles.input} />
-                
-                <select name="role_id" value={form.role_id} onChange={handleChange} style={styles.select}>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
-                
-                <div style={{ display: "flex", gap: 8 }}>
-                    <button type="submit" style={styles.btnPrimary}>{editing ? "Lưu" : "Thêm"}</button>
-                    {editing && <button type="button" onClick={resetForm} style={styles.btn}>Hủy</button>}
-                </div>
-            </form>
-
-            {/* Toolbar Tìm kiếm */}
-            <div style={styles.toolbar}>
-                <div style={{display: 'flex', gap: 8}}>
-                    <input 
-                        placeholder="Tìm theo tên hoặc ID..." 
-                        value={q} 
-                        onChange={(e) => setQ(e.target.value)} 
-                        style={styles.search} 
-                    />
-                    <button onClick={handleSearch} style={styles.btn}>Tìm</button>
-                </div>
-                <div style={{ fontSize: 14, color: "#555" }}>{users.length} kết quả</div>
-            </div>
-
-            {/* Bảng danh sách */}
-            <table style={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={styles.th}>ID</th>
-                        <th style={styles.th}>Username</th>
-                        <th style={styles.th}>Họ tên</th>
-                        <th style={styles.th}>Email</th>
-                        <th style={styles.th}>Vai trò</th>
-                        <th style={styles.th}>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading && <tr><td colSpan="6" style={{padding: 20, textAlign: 'center'}}>Đang tải...</td></tr>}
-                    {!loading && users.length === 0 && (
-                        <tr><td colSpan="6" style={styles.empty}>Không có user</td></tr>
-                    )}
-                    {users.map((u, idx) => (
-                        <tr key={u.user_id} style={idx % 2 ? styles.rowAlt : undefined}>
-                            <td style={styles.td}>{u.user_id}</td>
-                            <td style={styles.td}>{u.username}</td>
-                            <td style={styles.td}>{u.full_name}</td>
-                            <td style={styles.td}>{u.email}</td>
-                            <td style={styles.td}>
-                                <span style={{
-                                    padding: '2px 6px', 
-                                    borderRadius: 4, 
-                                    background: u.role_id === "2" ? '#e6fffa' : '#fff0f6',
-                                    color: u.role_id === "2" ? '#006d75' : '#c41d7f',
-                                    fontSize: 12,
-                                    fontWeight: 'bold'
-                                }}>
-                                    {u.role_id === "2" ? 'ADMIN' : 'USER'}
-                                </span>
-                            </td>
-                            <td style={styles.td}>
-                                <button onClick={() => handleEdit(u)} style={styles.actionBtn}>Sửa</button>
-                                <button onClick={() => handleDelete(u.user_id)} style={{ ...styles.actionBtn, ...styles.delete }}>Xóa</button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+  return (
+    <div className="space-y-6">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Quan ly Nguoi dung
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Quan ly tai khoan nguoi dung, vai tro va trang thai truy cap.
+          </p>
         </div>
-    );
+        <button
+          type="button"
+          onClick={startCreate}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+        >
+          <span className="text-base leading-none">＋</span>
+          <span>Them nguoi dung</span>
+        </button>
+      </header>
+
+      {/* Form create / edit */}
+      <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3">
+          {editing ? 'Chinh sua nguoi dung' : 'Them nguoi dung moi'}
+        </h3>
+        {error && (
+          <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+            {error}
+          </div>
+        )}
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm"
+        >
+          {!editing && (
+            <div>
+              <label className="block text-gray-700 mb-1">
+                Ten dang nhap *
+              </label>
+              <input
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-gray-700 mb-1">Ho ten</label>
+            <input
+              name="full_name"
+              value={form.full_name}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          {!editing && (
+            <div>
+              <label className="block text-gray-700 mb-1">Mat khau *</label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-gray-700 mb-1">Vai tro</label>
+            <select
+              name="role_id"
+              value={form.role_id}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="1">Admin</option>
+              <option value="2">User</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Trang thai</label>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="active">Hoat dong</option>
+              <option value="banned">Bi khoa</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">So dien thoai</label>
+            <input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Ngay sinh</label>
+            <input
+              type="date"
+              name="dob"
+              value={form.dob}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-1">Gioi tinh</label>
+            <select
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Chua chon</option>
+              <option value="male">Nam</option>
+              <option value="female">Nu</option>
+              <option value="other">Khac</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-3 flex justify-end gap-2 pt-2">
+            {editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setForm(emptyForm);
+                }}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 text-sm hover:bg-gray-50"
+              >
+                Huy
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+            >
+              {saving
+                ? 'Dang luu...'
+                : editing
+                ? 'Luu thay doi'
+                : 'Tao moi'}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* Toolbar search */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex-1">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+              🔍
+            </span>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Tim theo ten, email hoac so dien thoai..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="text-xs text-gray-500">
+          {filteredUsers.length} nguoi dung
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">
+                Nguoi dung
+              </th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">
+                Email
+              </th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">
+                Vai tro
+              </th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">
+                Trang thai
+              </th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">
+                Ngay tao
+              </th>
+              <th className="px-4 py-2 text-right text-gray-600 font-medium">
+                Hanh dong
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-sm text-gray-500"
+                >
+                  Dang tai du lieu...
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              filteredUsers.map((u) => (
+                <tr
+                  key={u.user_id}
+                  className="border-t border-gray-100 hover:bg-gray-50"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
+                        {(u.full_name || u.username || 'U')
+                          .split(' ')
+                          .map((p) => p[0])
+                          .join('')
+                          .slice(0, 2)}
+                      </div>
+                      <span className="text-sm text-gray-900">
+                        {u.full_name || u.username}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">{u.email}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                        String(u.role_id) === '1'
+                          ? 'bg-indigo-50 text-indigo-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {String(u.role_id) === '1' ? 'admin' : 'user'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                        u.status === 'active'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-600'
+                      }`}
+                    >
+                      {u.status === 'active' ? 'Hoat dong' : 'Bi khoa'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {u.created_at
+                      ? new Date(u.created_at).toLocaleDateString('vi-VN')
+                      : '-'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2 text-gray-500">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(u)}
+                        className="p-1.5 rounded-full hover:bg-gray-100"
+                        title="Chinh sua"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(u)}
+                        className="p-1.5 rounded-full hover:bg-red-50 text-red-600"
+                        title="Xoa"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            {!loading && filteredUsers.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-6 text-center text-sm text-gray-500"
+                >
+                  Khong tim thay nguoi dung nao.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-const styles = {
-    container: { padding: 20, maxWidth: 1000, margin: "0 auto" },
-    form: { display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" },
-    input: { padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", minWidth: 150 },
-    select: { padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc" },
-    btnPrimary: { background: "#0366d6", color: "#fff", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer" },
-    btn: { background: "#eee", border: "none", padding: "8px 12px", borderRadius: 6, cursor: "pointer" },
-    toolbar: { display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" },
-    search: { padding: "8px 10px", borderRadius: 6, border: "1px solid #ccc", width: 250 },
-    table: { width: "100%", borderCollapse: "collapse", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" },
-    th: { textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #eee", background: "#fafafa", fontSize: 14 },
-    td: { padding: "10px 12px", borderBottom: "1px solid #f6f6f6", fontSize: 14 },
-    rowAlt: { background: "#fafafa" },
-    actionBtn: { marginRight: 8, padding: "6px 10px", borderRadius: 6, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 13 },
-    delete: { borderColor: "#f2b6b6", background: "#fff6f6", color: "#d00" },
-    empty: { padding: 20, textAlign: "center", color: "#666" },
-};

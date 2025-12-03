@@ -5,7 +5,7 @@ import pytesseract
 import io
 
 # 🧭 Đường dẫn đến tesseract.exe
-pytesseract.pytesseract.tesseract_cmd = r"E:\TesseractOCRNew\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"D:\TesseractOCRNew\tesseract.exe"
 
 def process_images(files):
     texts = []

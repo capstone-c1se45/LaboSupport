@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 import io
 
-pytesseract.pytesseract.tesseract_cmd = r"E:\TesseractOCRNew\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"D:\TesseractOCRNew\tesseract.exe"
 
 def ocr_image(file_bytes, enhance=False):
+    
     if not enhance:
         # Đọc ảnh bằng Pillow 
         img = Image.open(io.BytesIO(file_bytes))
