@@ -32,7 +32,14 @@ export const initializeSocket = (io) => {
 
   // Khi client kết nối
   io.on('connection', (socket) => {
-    console.log(`Client đã kết nối: ${socket.id} (User: ${socket.user.username})`);
+    console.log('Socket in4:', socket.user);
+    console.log(`Client đã kết nối: ${socket.id} (User: ${socket.user.username}) (Role: ${socket.user.role})`);
+
+    if (socket.user.role_id == 2 || socket.user.role === 'admin') {
+        console.log('Đây là kết nối của admin, tham gia admin-room');
+        socket.join('admin-room');
+        console.log(`Admin [${socket.user.username}] đã tham gia admin-room`);
+    }
 
     // Lắng nghe sự kiện "chat:send" từ client
     socket.on('chat:send', async (data) => {

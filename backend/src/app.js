@@ -77,7 +77,6 @@ app.use(
   }),
 );
 
-app.use("/api", router);
 
 // check khởi động redis
 redisClient.ping().then(() => {
@@ -98,6 +97,13 @@ const io = new Server(server, {
 
 initializeSocket(io);
 
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+
+app.use("/api", router);
 
 app.get("/", async (req, res) => {
   res.send("Hello World! this is backend server c1se45");

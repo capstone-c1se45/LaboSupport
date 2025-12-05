@@ -42,7 +42,7 @@ async saveOcrResult(contractId, extractedText, summary ,tomtat, danhgia, phantic
          WHERE contract_id = ?`,
         [contractId]
       );
-      return rows[0]; // Trả về null nếu chưa có kết quả
+      return rows[0]; 
     } catch (error) {
       console.error("Error fetching OCR result:", error);
       throw error;

@@ -84,6 +84,7 @@ export default function NavbarLogged() {
               <ul className="p-2 text-sm text-gray-800 space-y-1">
                 <li><Link to="/profile" className="block rounded-lg px-3 py-2 hover:bg-gray-50">Thông tin cá nhân</Link></li>
                 <li><Link to="/home" className="block rounded-lg px-3 py-2 hover:bg-gray-50">Tổng quan</Link></li>
+                <li><Link to="/report" className="block rounded-lg px-3 py-2 hover:bg-gray-50">Báo cáo & Góp ý</Link></li>
                 <li><a href="#" className="block rounded-lg px-3 py-2 hover:bg-gray-50">Cài đặt</a></li>
                 <li>
                   <Link to="/logout" className="block rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center justify-between">

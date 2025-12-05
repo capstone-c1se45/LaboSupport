@@ -8,11 +8,13 @@ export  const api = axios.create({
   headers: { Accept: "application/json" },
 });
 
-// Attach token from storage if present
 api.interceptors.request.use((config) => {
   try {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-    if (token) config.headers = { ...config.headers, Authorization: `Bearer ${token}` };  
+   // if (token) config.headers = { ...config.headers, Authorization: `Bearer ${token}` }; 
+   if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
   } catch(err) {
     console.error("Error attaching auth token to request:", err);
   }

@@ -98,14 +98,14 @@ CREATE TABLE IF NOT EXISTS Contract (
 -- lưu kết quả OCR và trích xuất thông tin từ hợp đồng
 CREATE TABLE IF NOT EXISTS Contract_OCR (
   ocr_id CHAR(36) PRIMARY KEY,
-  contract_id CHAR(36) NOT NULL,
+  contract_id CHAR(36) NOT NULL UNIQUE,
   extracted_text LONGTEXT,
   summary TEXT,
-  tomtat TEXT,
+  tomtat TEXT, -- tách tóm tắt riêng từ sum
   danhgia TEXT,
   phantich TEXT,
   dexuat TEXT,
-  chat_history JSON DEFAULT (JSON_ARRAY()),
+  chat_history JSON DEFAULT (JSON_ARRAY()), -- lưu lịch sử chat với AI về hợp đồng này
   processed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (contract_id) REFERENCES Contract(contract_id)
 );
@@ -134,16 +134,6 @@ CREATE TABLE IF NOT EXISTS Notification (
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
 
--- quản lý tất cả file người dùng hoặc admin upload lên hệ thống (không chỉ hợp đồng).
--- không lưu hợp đồng ở đây vì đã có bảng Contract
-CREATE TABLE IF NOT EXISTS  File_Storage (
-  file_id CHAR(36) PRIMARY KEY,
-  file_path VARCHAR(255) NOT NULL,
-  file_type VARCHAR(50),
-  uploaded_by CHAR(36),
-  uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (uploaded_by) REFERENCES User(user_id)
-);
 
 -- ghi lại nhật ký hoạt động trong hệ thống để theo dõi, kiểm soát, bảo mật.
 CREATE TABLE IF NOT EXISTS Audit_Log (
