@@ -32,8 +32,9 @@ export const initializeSocket = (io) => {
 
   // Khi client kết nối
   io.on('connection', (socket) => {
-    console.log('Socket in4:', socket.user);
-    console.log(`Client đã kết nối: ${socket.id} (User: ${socket.user.username}) (Role: ${socket.user.role})`);
+    const username = socket.user?.username || "Khách (Chưa đăng nhập)";
+    const role = socket.user?.role || "N/A";
+    console.log(`Client đã kết nối: ${socket.id} (User: ${username}) (Role: ${role})`);
 
     if (socket.user.role_id == 2 || socket.user.role === 'admin') {
         console.log('Đây là kết nối của admin, tham gia admin-room');
