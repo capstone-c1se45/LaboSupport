@@ -368,6 +368,19 @@ async analyzeContract(req, res) {
     );
     await contractModel.updateContractStatus(contractId, "ANALYZED");
 
+    if(req.io){
+      const notificationData = {
+        id: Date.now(),
+        type: 'CONTRACT_COMPLETED',
+        title: 'Phân tích hoàn tất',
+        message: 'Hợp đồng của bạn đã được phân tích xong. Nhấn để xem các điều khoản rủi ro.',
+        link: `/contract-analysis/${contractId}`,
+        isRead: false,
+        createdAt: new Date()
+    };
+    req.io.to(`user_${userId}`).emit('NOTIFICATION', notificationData);
+    }
+
     // 7. Trả kết quả chi tiết cho client
     return responseHandler.success(res, "Phân tích hợp đồng thành công.", {
       contract_id: contractId,
@@ -482,6 +495,19 @@ async analyzeContract(req, res) {
 
       await contractOcrModel.saveOcrResult(contractId, ocr_text, analysis, tomTat, danhGia, phanTichFinal, deXuat);
       await contractModel.updateContractStatus(contractId, "ANALYZED");
+
+      if(req.io){
+        const notificationData = {
+          id: Date.now(),
+          type: 'CONTRACT_COMPLETED',
+          title: 'Phân tích hoàn tất',
+          message: 'Hợp đồng của bạn đã được phân tích xong. Nhấn để xem các điều khoản rủi ro.',
+          link: `/contract-analysis/${contractId}`,
+          isRead: false,
+          createdAt: new Date()
+      };
+      req.io.to(`user_${userId}`).emit('NOTIFICATION', notificationData);
+      }
       
 
       // 7. TRẢ KẾT QUẢ VỀ CLIENT

@@ -20,7 +20,7 @@ export default function ReportManagement() {
     useEffect(() => {
         const socket = createSocketConnection();
         socket.on('report:new', (newReport) => {
-            const audio = new Audio('/notification.mp3'); 
+            const audio = new Audio('../../assets/sound/notification-admin.mp3'); 
             audio.play().catch(() => {}); 
             alert(`🔔 Có báo cáo mới: ${newReport.category}`);
             

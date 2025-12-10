@@ -76,6 +76,19 @@ export const reportController = {
       res.status(500).json({ message: "Lỗi cập nhật." });
     }
   },
+  async getAllReportsByUser(req, res) {
+    try {
+      const user_id = req.user?.user_id;
+      if (!user_id) {
+        return res.status(401).json({ message: "Unauthorized" });
+      } 
+      const reports = await reportModel.getReportsByUserId(user_id);
+      res.json({ data: reports });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Lỗi khi lấy báo cáo của bạn." });
+    }
+  },
 
   // Admin xóa báo cáo
   async deleteReport(req, res) {

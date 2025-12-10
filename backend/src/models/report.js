@@ -58,6 +58,21 @@ export const reportModel = {
     await pool.query(sql, [status, report_id]);
     return true;
   },
+  async getReportById(report_id) {
+    const sql = `SELECT * FROM Report WHERE report_id = ?`;
+    const [rows] = await pool.query(sql, [report_id]);
+    return rows[0];
+  }
+  ,
+  async getReportsByUserId(user_id) {
+    const sql = `
+      SELECT * FROM Report
+      WHERE user_id = ?
+    `;
+    const [rows] = await pool.query(sql, [user_id]);
+    return rows;
+  }
+  ,
 
   // Xóa báo cáo
   async delete(report_id) {

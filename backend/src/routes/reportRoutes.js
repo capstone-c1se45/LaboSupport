@@ -12,5 +12,6 @@ router.post("/", authMiddleware.verifyToken, reportController.createReport);
 router.get("/admin", authMiddleware.verifyToken, isAdmin, reportController.getAllReports);
 router.put("/admin/:id", authMiddleware.verifyToken, isAdmin, reportController.updateStatus);
 router.delete("/admin/:id", authMiddleware.verifyToken, isAdmin, reportController.deleteReport);
+router.get("/my", authMiddleware.verifyToken, reportController.getAllReportsByUser);
 
 export default router;

@@ -41,6 +41,10 @@ export const initializeSocket = (io) => {
         console.log(`Admin [${socket.user.username}] đã tham gia admin-room`);
     }
 
+    const userRoom = `user_${socket.user.user_id}`;
+        socket.join(userRoom);
+        console.log(`User [${socket.user.username}] đã join room: ${userRoom}`);
+
     // Lắng nghe sự kiện "chat:send" từ client
     socket.on('chat:send', async (data) => {
       const { prompt, conversation_id } = data;
