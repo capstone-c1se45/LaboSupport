@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS User_Profile (
   occupation VARCHAR(100),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
+-- lưu thông tin các văn bản luật
+CREATE TABLE IF NOT EXISTS laws (
+  law_id VARCHAR(50) PRIMARY KEY,
+  code VARCHAR(100) UNIQUE NOT NULL, -- Số hiệu văn bản (VD: 45/2019/QH14)
+  summary TEXT,                      -- Trích yếu nội dung
+  effective_date DATE,               -- Ngày hiệu lực
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- kho kiến thức pháp luật lao động để AI chatbot tra cứu, trả lời người dùng.
 CREATE TABLE IF NOT EXISTS Handbook_Section (

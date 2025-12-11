@@ -36,20 +36,20 @@ export const initializeSocket = (io) => {
     const role = socket.user?.role || "N/A";
     console.log(`Client đã kết nối: ${socket.id} (User: ${username}) (Role: ${role})`);
 
-    if (socket.user.role_id == 2 || socket.user.role === 'admin') {
+    if (socket.user?.role_id == 2 || socket.user?.role === 'admin') {
         console.log('Đây là kết nối của admin, tham gia admin-room');
         socket.join('admin-room');
         console.log(`Admin [${socket.user.username}] đã tham gia admin-room`);
     }
 
-    const userRoom = `user_${socket.user.user_id}`;
+    const userRoom = `user_${socket.user?.user_id}`;
         socket.join(userRoom);
-        console.log(`User [${socket.user.username}] đã join room: ${userRoom}`);
+        console.log(`User [${socket.user?.username}] đã join room: ${userRoom}`);
 
     // Lắng nghe sự kiện "chat:send" từ client
     socket.on('chat:send', async (data) => {
       const { prompt, conversation_id } = data;
-      const userId = socket.user.user_id;
+      const userId = socket.user?.user_id;
 
       if (!prompt) {
         return socket.emit('chat:error', { message: "Vui lòng nhập câu hỏi." });

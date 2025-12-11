@@ -8,7 +8,7 @@ export const handbookModel = {
 
   async search(keyword) {
     const sql = `
-      SELECT * FROM Handbook_Section 
+      SELECT * FROM Handbook_Section
       WHERE law_name LIKE ? OR article_title LIKE ? OR content LIKE ?
       LIMIT 50
     `;
@@ -20,8 +20,8 @@ export const handbookModel = {
   async create(data) {
     const sql = `
       INSERT INTO Handbook_Section 
-      (section_id, law_name, chapter, law_reference, category, article_title, chunk_index, content)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (section_id, law_name, chapter, law_reference, category,law_id ,article_title, chunk_index, content)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       data.section_id, 
@@ -29,6 +29,7 @@ export const handbookModel = {
       data.chapter, 
       data.law_reference, 
       data.category, 
+      data.law_id,
       data.article_title, 
       data.chunk_index || 0, 
       data.content
@@ -39,7 +40,7 @@ export const handbookModel = {
 
   async update(id, data) {
     const sql = `
-      UPDATE Handbook_Section 
+      UPDATE Handbook_Section
       SET law_name=?, chapter=?, law_reference=?, category=?, article_title=?, content=?
       WHERE section_id=?
     `;
@@ -77,31 +78,30 @@ export const handbookModel = {
   },
 
   // Đếm tổng (có hỗ trợ tìm kiếm)
-  async countAll(search = "") {
-    let sql = "SELECT COUNT(*) as total FROM Handbook_Section";
-    let params = [];
-    if (search) {
-      sql += " WHERE article_title LIKE ? OR content LIKE ?";
-      params = [`%${search}%`, `%${search}%`];
-    }
-    const [rows] = await pool.query(sql, params);
+ async countAll(search) {
+    const searchQuery = `%${search}%`;
+    const sql = `
+      SELECT COUNT(*) as total 
+      FROM Handbook_Section  h
+      LEFT JOIN laws l ON h.law_id = l.law_id
+      WHERE h.article_title LIKE ? OR h.content LIKE ? OR l.code LIKE ?
+    `;
+    const [rows] = await pool.query(sql, [searchQuery, searchQuery, searchQuery]);
     return rows[0].total;
   },
 
   // Lấy danh sách (có hỗ trợ tìm kiếm + phân trang)
-  async getPaginated(limit, offset, search = "") {
-    let sql = "SELECT * FROM Handbook_Section";
-    let params = [];
-    
-    if (search) {
-      sql += " WHERE article_title LIKE ? OR content LIKE ?";
-      params.push(`%${search}%`, `%${search}%`);
-    }
-    
-    sql += " ORDER BY chunk_index ASC LIMIT ? OFFSET ?";
-    params.push(limit, offset);
-
-    const [rows] = await pool.query(sql, params);
+  async getPaginated(limit, offset, search) {
+    const searchQuery = `%${search}%`;
+    const sql = `
+      SELECT h.*, l.code as law_code, l.summary as law_summary, l.effective_date
+      FROM Handbook_Section h
+      LEFT JOIN laws l ON h.law_id = l.law_id
+      WHERE h.article_title LIKE ? OR h.content LIKE ? OR l.code LIKE ?
+      ORDER BY l.code DESC, h.chunk_index ASC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await pool.query(sql, [searchQuery, searchQuery, searchQuery, limit, parseInt(offset)]);
     return rows;
   },
 

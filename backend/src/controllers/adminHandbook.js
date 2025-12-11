@@ -1,7 +1,8 @@
 import { handbookModel } from "../models/handbook.js";
-import { nanoid } from "nanoid"; // Hoặc dùng crypto.randomUUID()
+import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import { redisClient } from "../config/redis.js";
 import { parseLaborLawDocx } from "../utils/docxParser.js";
+import { lawModel } from "../models/law.js";
 
 const REDIS_CACHE_KEY = "handbook_list";
 const CACHE_TIME = 3600;
@@ -60,18 +61,7 @@ export const adminHandbookController = {
   },
 
   async create(req, res) {
-    try {
-      const newItem = {
-        section_id: nanoid(10),
-        ...req.body,
-        chunk_index: Date.now() // Tạm thời dùng timestamp làm index
-      };
-      await handbookModel.create(newItem);
-      await clearHandbookCache(); // Xóa cache để cập nhật mới
-      res.json({ message: "Thêm thành công", data: newItem });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
+    res.status(400).json({ message: "Vui lòng sử dụng chức năng Import File để thêm văn bản luật mới." });
   },
   async update(req, res) {
     try {
@@ -97,9 +87,7 @@ export const adminHandbookController = {
   async deleteAll(req, res) {
     try {
       await handbookModel.deleteAll();
-
       await clearHandbookCache();
-
       res.json({ message: "Đã xóa toàn bộ dữ liệu luật thành công." });
     } catch (error) {
       console.error("Error deleteAll handbook:", error);
@@ -107,19 +95,64 @@ export const adminHandbookController = {
     }
   },
 
-  // IMPORT (Giữ nguyên, nhớ thêm clearCache)
+  // IMPORT TỪ FILE .DOCX
   async importDocx(req, res) {
     try {
-        if (!req.file) return res.status(400).json({ message: "Vui lòng upload file .docx" });
-        const dataList = await parseLaborLawDocx(req.file.buffer);
-        if (dataList.length === 0) return res.status(400).json({ message: "Không tìm thấy nội dung hợp lệ trong file." });
+        // 1. Kiểm tra File
+        if (!req.file) {
+            return res.status(400).json({ message: "Vui lòng upload file .docx" });
+        }
 
+        // 2. Lấy thông tin Luật từ req.body
+        const { law_code, law_summary, law_effective_date } = req.body;
+        
+        if (!law_code || !law_summary || !law_effective_date) {
+            return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin Văn bản luật (Số hiệu, Trích yếu, Ngày hiệu lực)" });
+        }
+
+        console.log(`Processing Import: ${law_code} - ${req.file.originalname}`);
+
+        // 3. Xử lý Luật: Tìm hoặc Tạo mới
+        let law = await lawModel.findByCode(law_code);
+        if (!law) {
+            law = await lawModel.create({
+                code: law_code,
+                summary: law_summary,
+                effective_date: law_effective_date
+            });
+        } 
+
+        // 4. Parse nội dung từ File Docx
+        const rawDataList = await parseLaborLawDocx(req.file.buffer);
+        if (rawDataList.length === 0) {
+            return res.status(400).json({ message: "Không tìm thấy nội dung hợp lệ trong file." });
+        }
+
+        // 5. Gán law_id cho từng điều khoản và tạo ID mới
+        const dataList = rawDataList.map(item => ({
+            section_id: nanoid(10),
+            article_title: item.article_title, // docxParser cần trả về field này
+            law_name: law_code,
+            category: item.category || "luat lao dong",
+            law_reference: item.law_reference,
+            chapter: item.chapter || "",
+            content: item.content,             // docxParser cần trả về field này
+            law_id: law.law_id,                // QUAN TRỌNG: Link FK
+            chunk_index: Date.now()
+        }));
+
+        // 6. Lưu vào DB
         await handbookModel.createMany(dataList);
-        await clearHandbookCache(); // Xóa cache
-        res.json({ message: `Import thành công ${dataList.length} điều.` });
+        await clearHandbookCache();
+
+        res.json({ 
+            message: `Thêm thành công bộ luật "${law_code}" với ${dataList.length} điều khoản.`,
+            count: dataList.length 
+        });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Lỗi xử lý file" });
+        console.error("Import Error:", error);
+        res.status(500).json({ message: "Lỗi xử lý import: " + error.message });
     }
-  }
+  },
 };
