@@ -53,8 +53,23 @@ export const handbookModel = {
     return true;
   },
   async createMany(items) {
-    const sql = `INSERT INTO Handbook_Section (section_id, law_name, chapter, law_reference, category, article_title, chunk_index, content) VALUES ?`;
-    const values = items.map(i => [i.section_id, i.law_name, i.chapter, i.law_reference, i.category, i.article_title, i.chunk_index, i.content]);
+    if (!items || items.length === 0) return;
+    const sql = `
+      INSERT INTO Handbook_Section 
+      (section_id, article_title, chapter, content, law_id, chunk_index, law_name, law_reference, category) 
+      VALUES ?
+    `;
+    const values = items.map(i => [
+      i.section_id, 
+      i.article_title, 
+      i.chapter, 
+      i.content, 
+      i.law_id,      
+      i.chunk_index,
+      i.law_name,
+      i.law_reference,
+      i.category
+    ]);
     await pool.query(sql, [values]);
   },
 

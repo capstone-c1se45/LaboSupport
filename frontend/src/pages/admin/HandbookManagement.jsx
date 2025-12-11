@@ -119,6 +119,8 @@ export default function HandbookManagement() {
         setLoading(false);
     }
   };
+  // debug items
+  console.log(items[0]);
 
   // --- MODAL HANDLERS ---
   const openModal = (item = null) => {

@@ -110,27 +110,30 @@ export const adminHandbookController = {
             return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin Văn bản luật (Số hiệu, Trích yếu, Ngày hiệu lực)" });
         }
 
-        console.log(`Processing Import: ${law_code} - ${req.file.originalname}`);
+     //   console.log(`Processing Import: ${law_code} - ${req.file.originalname}`);
 
         // 3. Xử lý Luật: Tìm hoặc Tạo mới
         let law = await lawModel.findByCode(law_code);
+      //  const law_id = nanoidNumbersOnly(10);
         if (!law) {
+          console.log(`Creating new law record: ${law_code}`);
             law = await lawModel.create({
                 code: law_code,
                 summary: law_summary,
                 effective_date: law_effective_date
             });
+            console.log(`Created law with ID: ${law.law_id}`);
         } 
 
         // 4. Parse nội dung từ File Docx
         const rawDataList = await parseLaborLawDocx(req.file.buffer);
-        if (rawDataList.length === 0) {
+        if (!rawDataList || rawDataList.length === 0) {
             return res.status(400).json({ message: "Không tìm thấy nội dung hợp lệ trong file." });
         }
 
         // 5. Gán law_id cho từng điều khoản và tạo ID mới
-        const dataList = rawDataList.map(item => ({
-            section_id: nanoid(10),
+        const dataList = rawDataList.map((item) => ({
+            section_id: nanoidNumbersOnly(10),
             article_title: item.article_title, // docxParser cần trả về field này
             law_name: law_code,
             category: item.category || "luat lao dong",
@@ -138,7 +141,7 @@ export const adminHandbookController = {
             chapter: item.chapter || "",
             content: item.content,             // docxParser cần trả về field này
             law_id: law.law_id,                // QUAN TRỌNG: Link FK
-            chunk_index: Date.now()
+            chunk_index: item.chunk_index
         }));
 
         // 6. Lưu vào DB
