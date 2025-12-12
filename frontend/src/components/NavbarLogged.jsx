@@ -94,7 +94,7 @@ export default function NavbarLogged() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/salary?calc=bhxh" className="block rounded-lg px-3 py-2 hover:bg-gray-50">
+                  <Link to="/bhxh" className="block rounded-lg px-3 py-2 hover:bg-gray-50">
                     Tính bảo hiểm xã hội
                   </Link>
                 </li>
