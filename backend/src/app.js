@@ -154,7 +154,7 @@ const newUser = {
 //const created = await userModel.createUser(newUser);
 
 const seedFAQs = async () => {
-    const CREATED_BY_USER_ID = adminID; 
+    const CREATED_BY_USER_ID = adminID; // Thay bằng user_id thực tế của bạn
 
     const faqData = [
         {
