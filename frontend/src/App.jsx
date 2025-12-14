@@ -16,6 +16,7 @@ import { ProtectedAdmin } from "./components/ui/protected-admin";
 import HandbookManagement from "./pages/admin/HandbookManagement";
 import ReportPage from "./pages/ReportPage";
 import ReportManagement from "./pages/admin/ReportManagement";
+import BhxhCalculator from "./pages/BhxhCalculator";
 
 const PageLoader = () => <div className="flex justify-center items-center h-screen">Đang tải...</div>;
 
@@ -42,6 +43,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/bhxh" element={<BhxhCalculator />} />
           <Route 
             path="/admin" 
             element={

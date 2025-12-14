@@ -20,6 +20,7 @@ export const parseLaborLawDocx = async (buffer) => {
     // Regex nhận diện
     const chapterRegex = /^CHƯƠNG\s+[IVXLCDM]+\b/i; // Bắt: Chương I, Chương II...
     const articleRegex = /^Điều\s+(\d+)[\.:]\s*(.*)/i; // Bắt: Điều 1. Tên..., Điều 2: Tên...
+   // const lawNameRegex = 
 
     // 2. Duyệt qua từng dòng
     for (const line of lines) {
