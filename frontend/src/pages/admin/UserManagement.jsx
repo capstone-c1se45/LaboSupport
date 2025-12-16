@@ -403,7 +403,7 @@ export default function UserManagement() {
                           : 'bg-gray-100 text-gray-700'
                       }`}
                     >
-                      {String(u.role_id) === '1' ? 'admin' : 'user'}
+                      {String(u.role_id) === '2' ? 'admin' : 'user'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
