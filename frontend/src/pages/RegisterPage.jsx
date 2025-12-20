@@ -235,11 +235,7 @@ export default function RegisterPage() {
         Bạn đã có tài khoản? <a href="/login" className="text-blue-600 font-semibold hover:underline">Đăng nhập</a>
       </div>
 
-      <div className="flex items-center gap-2 mt-5 mb-2">
-        <hr className="flex-1 border-t border-gray-200" />
-        <span className="px-1 text-gray-400 text-xs tracking-wide">Hoặc tiếp tục với</span>
-        <hr className="flex-1 border-t border-gray-200" />
-      </div>
+      
      
     </form>
   );

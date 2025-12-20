@@ -39,7 +39,7 @@ export default function UserManagement() {
       console.error(err);
       setError(
         err?.response?.data?.message ||
-          'Khong tai duoc danh sach nguoi dung.'
+          'Không tải được danh sách người dùng.'
       );
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export default function UserManagement() {
     } catch (err) {
       console.error(err);
       setError(
-        err?.response?.data?.message || 'Co loi xay ra khi luu nguoi dung.'
+        err?.response?.data?.message || 'Có lỗi xảy ra khi lưu người dùng.'
       );
     } finally {
       setSaving(false);
@@ -133,7 +133,7 @@ export default function UserManagement() {
   async function handleDelete(user) {
     if (
       !window.confirm(
-        `Xoa tai khoan "${user.username}"? Hanh dong nay khong the hoan tac.`
+        `Xóa tài khoản "${user.username}"? Hành động này không thể hoàn tác.`
       )
     ) {
       return;
@@ -144,7 +144,7 @@ export default function UserManagement() {
     } catch (err) {
       console.error(err);
       alert(
-        err?.response?.data?.message || 'Khong xoa duoc nguoi dung.'
+        err?.response?.data?.message || 'Không xóa được người dùng.'
       );
     }
   }
@@ -154,10 +154,10 @@ export default function UserManagement() {
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Quan ly Nguoi dung
+            Quản lý Người dùng
           </h2>
           <p className="mt-1 text-sm text-gray-600">
-            Quan ly tai khoan nguoi dung, vai tro va trang thai truy cap.
+            Quản lý tài khoản người dùng, vai trò và trạng thái truy cập.
           </p>
         </div>
         <button
@@ -166,14 +166,14 @@ export default function UserManagement() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
         >
           <span className="text-base leading-none">＋</span>
-          <span>Them nguoi dung</span>
+          <span>Thêm người dùng</span>
         </button>
       </header>
 
       {/* Form create / edit */}
       <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">
-          {editing ? 'Chinh sua nguoi dung' : 'Them nguoi dung moi'}
+          {editing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
         </h3>
         {error && (
           <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
@@ -187,7 +187,7 @@ export default function UserManagement() {
           {!editing && (
             <div>
               <label className="block text-gray-700 mb-1">
-                Ten dang nhap *
+                Tên đăng nhập *
               </label>
               <input
                 name="username"
@@ -199,7 +199,7 @@ export default function UserManagement() {
             </div>
           )}
           <div>
-            <label className="block text-gray-700 mb-1">Ho ten</label>
+            <label className="block text-gray-700 mb-1">Họ tên</label>
             <input
               name="full_name"
               value={form.full_name}
@@ -220,7 +220,7 @@ export default function UserManagement() {
           </div>
           {!editing && (
             <div>
-              <label className="block text-gray-700 mb-1">Mat khau *</label>
+              <label className="block text-gray-700 mb-1">Mật khẩu *</label>
               <input
                 type="password"
                 name="password"
@@ -232,7 +232,7 @@ export default function UserManagement() {
             </div>
           )}
           <div>
-            <label className="block text-gray-700 mb-1">Vai tro</label>
+            <label className="block text-gray-700 mb-1">Vai trò</label>
             <select
               name="role_id"
               value={form.role_id}
@@ -243,20 +243,9 @@ export default function UserManagement() {
               <option value="2">User</option>
             </select>
           </div>
+         
           <div>
-            <label className="block text-gray-700 mb-1">Trang thai</label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="active">Hoat dong</option>
-              <option value="banned">Bi khoa</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-gray-700 mb-1">So dien thoai</label>
+            <label className="block text-gray-700 mb-1">Số điện thoại</label>
             <input
               name="phone"
               value={form.phone}
@@ -265,7 +254,7 @@ export default function UserManagement() {
             />
           </div>
           <div>
-            <label className="block text-gray-700 mb-1">Ngay sinh</label>
+            <label className="block text-gray-700 mb-1">Ngày sinh</label>
             <input
               type="date"
               name="dob"
@@ -275,17 +264,17 @@ export default function UserManagement() {
             />
           </div>
           <div>
-            <label className="block text-gray-700 mb-1">Gioi tinh</label>
+            <label className="block text-gray-700 mb-1">Giới tính</label>
             <select
               name="gender"
               value={form.gender}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Chua chon</option>
+              <option value="">Chưa chọn</option>
               <option value="male">Nam</option>
-              <option value="female">Nu</option>
-              <option value="other">Khac</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
             </select>
           </div>
 
@@ -299,7 +288,7 @@ export default function UserManagement() {
                 }}
                 className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 text-sm hover:bg-gray-50"
               >
-                Huy
+                Hủy
               </button>
             )}
             <button
@@ -308,10 +297,10 @@ export default function UserManagement() {
               className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
             >
               {saving
-                ? 'Dang luu...'
+                ? 'Đang lưu...'
                 : editing
-                ? 'Luu thay doi'
-                : 'Tao moi'}
+                ? 'Lưu thay đổi'
+                : 'Tạo mới'}
             </button>
           </div>
         </form>
@@ -334,7 +323,7 @@ export default function UserManagement() {
           </div>
         </div>
         <div className="text-xs text-gray-500">
-          {filteredUsers.length} nguoi dung
+          {filteredUsers.length} người dùng
         </div>
       </div>
 
@@ -344,22 +333,22 @@ export default function UserManagement() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
-                Nguoi dung
+                Người dùng
               </th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
                 Email
               </th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
-                Vai tro
+                Vai trò
               </th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
-                Trang thai
+                Trạng thái
               </th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
-                Ngay tao
+                Ngày tạo
               </th>
               <th className="px-4 py-2 text-right text-gray-600 font-medium">
-                Hanh dong
+                Hành động
               </th>
             </tr>
           </thead>
@@ -370,7 +359,7 @@ export default function UserManagement() {
                   colSpan={6}
                   className="px-4 py-6 text-center text-sm text-gray-500"
                 >
-                  Dang tai du lieu...
+                  Đang tải dữ liệu...
                 </td>
               </tr>
             )}
@@ -450,7 +439,7 @@ export default function UserManagement() {
                   colSpan={6}
                   className="px-4 py-6 text-center text-sm text-gray-500"
                 >
-                  Khong tim thay nguoi dung nao.
+                  Không tìm thấy người dùng nào.
                 </td>
               </tr>
             )}

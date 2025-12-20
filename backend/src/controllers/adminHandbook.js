@@ -29,7 +29,7 @@ export const adminHandbookController = {
       const offset = (page - 1) * limit;
 
       // Tạo key cache bao gồm cả từ khóa tìm kiếm
-      const cacheKey = `${REDIS_CACHE_KEY}:page:${page}:limit:${limit}`;      
+      const cacheKey = `${REDIS_CACHE_KEY}:page:${page}:limit:${limit}:search:${search}`;    
       // 1. Thử lấy từ Redis
       const cachedData = await redisClient.get(cacheKey);
       if (cachedData) {
@@ -123,7 +123,7 @@ export const adminHandbookController = {
                 code: law_code,
                 summary: law_summary,
                 effective_date: law_effective_date,
-                created_by: created_by
+              //  created_by: created_by
             });
             console.log(`Created law with ID: ${law.law_id}`);
         } 
@@ -137,13 +137,13 @@ export const adminHandbookController = {
         // 5. Gán law_id cho từng điều khoản và tạo ID mới
         const dataList = rawDataList.map((item) => ({
             section_id: nanoidNumbersOnly(10),
-            article_title: item.article_title, // docxParser cần trả về field này
+            article_title: item.article_title, 
             law_name: law_code,
             category: item.category || "luat lao dong",
             law_reference: item.law_reference,
             chapter: item.chapter || "",
-            content: item.content,             // docxParser cần trả về field này
-            law_id: law.law_id,                // QUAN TRỌNG: Link FK
+            content: item.content,           
+            law_id: law.law_id,                
             chunk_index: item.chunk_index
         }));
 

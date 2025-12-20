@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, Fragment } from "react";
 import { api } from "../../lib/api-client";
 import { adminService } from "../../services/adminService";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
 
 // Helper định dạng ngày
 const formatDate = (isoString) => {
@@ -10,7 +9,7 @@ const formatDate = (isoString) => {
   return new Date(isoString).toLocaleDateString('vi-VN');
 };
 
-// Dữ liệu Mức lương tối thiểu vùng
+// Dữ liệu Mức lương tối thiểu vùng (Giữ nguyên)
 const REGION_SALARY = [
   { region: 'Vùng I', salary: '4.680.000 ₫', effective: '01/07/2023' },
   { region: 'Vùng II', salary: '4.160.000 ₫', effective: '01/07/2023' },
@@ -18,7 +17,7 @@ const REGION_SALARY = [
   { region: 'Vùng IV', salary: '3.250.000 ₫', effective: '01/07/2023' },
 ];
 
-// Dữ liệu Biểu thuế TNCN
+// Dữ liệu Biểu thuế TNCN (Giữ nguyên)
 const TAX_TABLE = [
   { level: 1, income: '0 ₫ - 5.000.000 ₫', rate: '5%' },
   { level: 2, income: '5.000.000 ₫ - 10.000.000 ₫', rate: '10%' },
@@ -41,36 +40,33 @@ export default function HandbookManagement() {
   // State xử lý form & upload
   const [uploading, setUploading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null); // null = Thêm mới, object = Sửa
+  const [editingItem, setEditingItem] = useState(null);
   
-  // Form Data tổng hợp
+  // Form Data
   const [formData, setFormData] = useState({ 
-      // Thông tin Luật (Dùng cho cả Thêm & Sửa)
-      law_code: "",        
-      law_summary: "",     
-      law_effective_date: "",
-      
-      // Thông tin Điều khoản (Chỉ dùng khi Sửa)
-      article_title: "", 
-      chapter: "", 
-      content: "",
-
-      // File (Chỉ dùng khi Thêm mới)
+      law_code: "", law_summary: "", law_effective_date: "",
+      article_title: "", chapter: "", content: "",
       file: null 
   });
 
-  // --- LOGIC FETCH DATA (Chỉ chạy khi ở tab 'law') ---
-  const loadData = async (page = 1, search = searchTerm) => {
-    if (tab !== 'law') return;
-
+  // --- 1. HÀM FETCH DỮ LIỆU DUY NHẤT ---
+  // Sử dụng useCallback để tránh tạo lại hàm không cần thiết
+  const fetchHandbooks = useCallback(async (page, search) => {
+    if (tab !== 'law') return; // Chỉ fetch khi ở tab law
+    
     setLoading(true);
     try {
-      const res = await api.get(`/admin/handbooks?page=${page}&limit=${pagination.limit}&search=${search}`);
+      // Đảm bảo truyền đúng tham số search vào API
+      const res = await api.get(
+        `/admin/handbooks?page=${page}&limit=${pagination.limit}&search=${search}`
+      );
+
       if (res.data && res.data.data) {
         setItems(res.data.data);
         setPagination(res.data.pagination);
       } else {
         setItems([]);
+        setPagination(prev => ({ ...prev, total: 0, totalPages: 1 }));
       }
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
@@ -78,18 +74,41 @@ export default function HandbookManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, tab]);
 
-  useEffect(() => { loadData(pagination.page); }, [pagination.page, tab]);
+  // --- 2. EFFECT: DEBOUNCE SEARCH & TAB CHANGE ---
+  // Chạy khi người dùng gõ tìm kiếm HOẶC chuyển tab
+  useEffect(() => {
+    if (tab !== 'law') return;
 
+    // Đặt delay 500ms để chờ người dùng gõ xong
+    const delayDebounceFn = setTimeout(() => {
+      // Luôn reset về trang 1 khi tìm kiếm mới
+      fetchHandbooks(1, searchTerm);
+      // Cập nhật lại state page về 1 (nếu đang ở trang khác)
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, tab, fetchHandbooks]);
+
+  // --- 3. EFFECT: PAGINATION ---
+  // Chỉ chạy khi người dùng bấm chuyển trang (page > 1)
+  useEffect(() => {
+    if (tab !== 'law') return;
+    
+    // Nếu page = 1 thì effect Debounce ở trên đã xử lý rồi, không cần gọi lại
+    if (pagination.page > 1) {
+        fetchHandbooks(pagination.page, searchTerm);
+    }
+  }, [pagination.page, fetchHandbooks, tab, searchTerm]);
+
+
+  // --- XÓA BỎ HÀM loadData() VÀ useEffect() CŨ Ở ĐÂY ---
+  // Đã xóa loadData để tránh xung đột
+  
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 }));
-    loadData(1, searchTerm);
   };
 
   // --- HANDLERS ACTIONS ---
@@ -98,7 +117,8 @@ export default function HandbookManagement() {
     try {
       await api.delete(`/admin/handbooks/${sectionId}`); 
       alert("Xóa thành công!");
-      loadData(pagination.page, searchTerm);
+      // Gọi lại fetchHandbooks để cập nhật danh sách
+      fetchHandbooks(pagination.page, searchTerm);
     } catch (error) {
       alert("Có lỗi xảy ra khi xóa: " + (error.response?.data?.message || error.message));
     }
@@ -112,21 +132,18 @@ export default function HandbookManagement() {
         setLoading(true);
         await adminService.deleteAllHandbooks(); 
         alert("Đã xóa toàn bộ dữ liệu luật.");
-        loadData(1, searchTerm);
+        fetchHandbooks(1, ""); // Load lại trang 1 sạch
+        setSearchTerm("");     // Reset ô tìm kiếm
     } catch (error) {
         alert("Lỗi khi xóa dữ liệu: " + (error.response?.data?.message || "Lỗi server"));
-    } finally {
         setLoading(false);
     }
   };
-  // debug items
-  console.log(items[0]);
 
   // --- MODAL HANDLERS ---
   const openModal = (item = null) => {
     setEditingItem(item);
     if (item) {
-      // Chế độ Sửa: Điền thông tin cũ
       setFormData({ 
           law_code: item.law_code || "",
           law_summary: item.law_summary || "",
@@ -137,7 +154,6 @@ export default function HandbookManagement() {
           file: null
       });
     } else {
-      // Chế độ Thêm mới: Reset form
       setFormData({ 
           law_code: "", law_summary: "", law_effective_date: "", 
           article_title: "", chapter: "", content: "",
@@ -155,8 +171,6 @@ export default function HandbookManagement() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate chung
     if (!formData.law_code || !formData.law_effective_date || !formData.law_summary) {
         alert("Vui lòng nhập đầy đủ thông tin Văn bản luật (*)");
         return;
@@ -165,11 +179,10 @@ export default function HandbookManagement() {
     setUploading(true);
     try {
       if (editingItem) {
-        // --- CHẾ ĐỘ SỬA (Update text) ---
+        // Edit logic
         if (!formData.article_title || !formData.content) {
             alert("Vui lòng nhập Tiêu đề và Nội dung điều khoản.");
-            setUploading(false);
-            return;
+            setUploading(false); return;
         }
         await api.put(`/admin/handbooks/${editingItem.section_id}`, {
             article_title: formData.article_title,
@@ -177,15 +190,12 @@ export default function HandbookManagement() {
             content: formData.content,
         });
         alert("Cập nhật thành công!");
-
       } else {
-        // --- CHẾ ĐỘ THÊM MỚI (Upload File) ---
+        // Add logic (Import)
         if (!formData.file) {
             alert("Vui lòng chọn file .docx để tải lên.");
-            setUploading(false);
-            return;
+            setUploading(false); return;
         }
-
         const submitData = new FormData();
         submitData.append("law_code", formData.law_code);
         submitData.append("law_summary", formData.law_summary);
@@ -199,7 +209,8 @@ export default function HandbookManagement() {
       }
 
       setIsModalOpen(false);
-      loadData(pagination.page, searchTerm); 
+      // Load lại dữ liệu hiện tại
+      fetchHandbooks(pagination.page, searchTerm);
     } catch (error) {
       alert("Lỗi: " + (error.response?.data?.message || error.message));
     } finally {
@@ -225,16 +236,24 @@ export default function HandbookManagement() {
         <section className="space-y-4">
           {/* Controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <form onSubmit={handleSearch} className="flex-1 max-w-lg relative">
+            <div className="flex-1 max-w-lg relative">
                 <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
                 <input
                     type="text"
                     className="w-full border border-gray-300 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tìm kiếm điều khoản, mã luật..."
+                    placeholder="Tìm kiếm theo tiêu đề, nội dung, số hiệu luật..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-            </form>
+                {searchTerm && (
+                    <button 
+                        onClick={() => setSearchTerm("")}
+                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
             
             <div className="flex gap-2">
                 <button type="button" onClick={() => openModal(null)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 whitespace-nowrap shadow-sm">
@@ -248,7 +267,7 @@ export default function HandbookManagement() {
 
           {/* List Items */}
           <div className="space-y-3">
-            {loading && items.length === 0 ? (
+            {loading ? (
                 <div className="text-center py-10 text-gray-500">Đang tải dữ liệu...</div>
             ) : (
                 <>
@@ -285,7 +304,7 @@ export default function HandbookManagement() {
                         ))
                     ) : (
                         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-sm text-gray-500 text-center flex flex-col items-center justify-center gap-2">
-                            <span className="text-4xl">📭</span><p>Không tìm thấy điều khoản nào.</p>
+                            <span className="text-4xl">📭</span><p>Không tìm thấy kết quả nào.</p>
                         </div>
                     )}
                 </>
@@ -303,76 +322,77 @@ export default function HandbookManagement() {
         </section>
       )}
 
-      {/* --- TAB CÀI ĐẶT LƯƠNG --- */}
+      {/* --- TAB CÀI ĐẶT LƯƠNG (Giữ nguyên) --- */}
       {tab === 'salary' && (
         <section className="space-y-6">
-          {/* Bảng Mức lương tối thiểu vùng */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            {/* ... Giữ nguyên phần cài đặt lương ... */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-3">Mức lương tối thiểu vùng</h3>
-            <div className="overflow-hidden rounded-xl border border-gray-100">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Vùng</th>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Mức lương</th>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Ngày có hiệu lực</th>
-                    <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {REGION_SALARY.map((row) => (
-                    <tr key={row.region} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-2 text-gray-800">{row.region}</td>
-                      <td className="px-4 py-2 text-gray-800 font-medium">{row.salary}</td>
-                      <td className="px-4 py-2 text-gray-700">{row.effective}</td>
-                      <td className="px-4 py-2 text-right">
-                        <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
-                      </td>
+             {/* ... Copy phần Salary Table từ code cũ vào đây ... */}
+             <div className="overflow-hidden rounded-xl border border-gray-100">
+               <table className="min-w-full text-sm">
+                 <thead className="bg-gray-50">
+                   <tr>
+                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Vùng</th>
+                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Mức lương</th>
+                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Ngày có hiệu lực</th>
+                     <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {REGION_SALARY.map((row) => (
+                     <tr key={row.region} className="border-t border-gray-100 hover:bg-gray-50">
+                       <td className="px-4 py-2 text-gray-800">{row.region}</td>
+                       <td className="px-4 py-2 text-gray-800 font-medium">{row.salary}</td>
+                       <td className="px-4 py-2 text-gray-700">{row.effective}</td>
+                       <td className="px-4 py-2 text-right">
+                         <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+           </div>
+           
+           {/* ... Copy phần Tax Table từ code cũ vào đây ... */}
+             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Biểu thuế thu nhập cá nhân (TNCN)</h3>
+                <div className="overflow-hidden rounded-xl border border-gray-100">
+                <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Bậc</th>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thu nhập tính thuế / tháng (VND)</th>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thuế suất (%)</th>
+                        <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                    {TAX_TABLE.map((row) => (
+                        <tr key={row.level} className="border-t border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-2 text-gray-800">Bậc {row.level}</td>
+                        <td className="px-4 py-2 text-gray-800">{row.income}</td>
+                        <td className="px-4 py-2 text-gray-800 font-bold text-blue-600">{row.rate}</td>
+                        <td className="px-4 py-2 text-right">
+                            <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
+                        </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+                </div>
             </div>
-          </div>
-
-          {/* Bảng Biểu thuế TNCN */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Biểu thuế thu nhập cá nhân (TNCN)</h3>
-            <div className="overflow-hidden rounded-xl border border-gray-100">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Bậc</th>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Thu nhập tính thuế / tháng (VND)</th>
-                    <th className="px-4 py-2 text-left text-gray-600 font-medium">Thuế suất (%)</th>
-                    <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {TAX_TABLE.map((row) => (
-                    <tr key={row.level} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-4 py-2 text-gray-800">Bậc {row.level}</td>
-                      <td className="px-4 py-2 text-gray-800">{row.income}</td>
-                      <td className="px-4 py-2 text-gray-800 font-bold text-blue-600">{row.rate}</td>
-                      <td className="px-4 py-2 text-right">
-                        <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </section>
       )}
 
-      {/* --- MODAL ADD/EDIT --- */}
+      {/* --- MODAL ADD/EDIT (Giữ nguyên) --- */}
       <Transition appear show={isModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={() => !uploading && setIsModalOpen(false)}>
+        {/* ... Giữ nguyên code Modal ... */}
+         <Dialog as="div" className="relative z-10" onClose={() => !uploading && setIsModalOpen(false)}>
           <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
           </Transition.Child>
-
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
@@ -381,15 +401,14 @@ export default function HandbookManagement() {
                     {editingItem ? "✏️ Chỉnh sửa Nội dung" : "📂 Import Văn bản Luật mới"}
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
                   </Dialog.Title>
-                  
                   <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Cột Trái: Thông tin Luật */}
+                    {/* ... Copy Form content from your code ... */}
+                    {/* Cột Trái */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                             <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
                             <h4 className="font-bold text-blue-800 text-sm uppercase">Thông tin Văn bản</h4>
                         </div>
-                        
                         <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Số hiệu văn bản <span className="text-red-500">*</span></label>
                             <input type="text" name="law_code" value={formData.law_code} onChange={handleFormChange} placeholder="VD: 45/2019/QH14" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition bg-blue-50/50" required />
@@ -403,14 +422,12 @@ export default function HandbookManagement() {
                             <textarea name="law_summary" rows="4" value={formData.law_summary} onChange={handleFormChange} placeholder="Mô tả ngắn gọn..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required />
                         </div>
                     </div>
-
-                    {/* Cột Phải: Thay đổi giao diện dựa trên Mode */}
+                     {/* Cột Phải */}
                     <div className="space-y-4 md:border-l md:pl-6 border-gray-100">
                          <div className="flex items-center gap-2 mb-2">
                             <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">2</span>
                             <h4 className="font-bold text-green-800 text-sm uppercase">{editingItem ? "Chi tiết Điều khoản" : "Nội dung chi tiết (File)"}</h4>
                         </div>
-
                         {editingItem ? (
                             <>
                                 <div>
@@ -442,7 +459,7 @@ export default function HandbookManagement() {
                             </div>
                         )}
                     </div>
-
+                    {/* Footer */}
                     <div className="md:col-span-2 mt-2 pt-4 border-t border-gray-100 flex justify-end gap-3">
                       <button type="button" className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none transition" onClick={() => setIsModalOpen(false)} disabled={uploading}>Hủy bỏ</button>
                       <button type="submit" className={`px-6 py-2.5 rounded-lg border border-transparent text-sm font-bold text-white shadow-sm focus:outline-none transition flex items-center gap-2 ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`} disabled={uploading}>
