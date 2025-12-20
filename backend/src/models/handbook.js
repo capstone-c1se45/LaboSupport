@@ -6,7 +6,7 @@ export const handbookModel = {
     return rows;
   },
 
-  async search(keyword) {
+  async search(keyword = "") {
     const sql = `
       SELECT * FROM Handbook_Section
       WHERE law_name LIKE ? OR article_title LIKE ? OR content LIKE ?
@@ -94,13 +94,22 @@ export const handbookModel = {
 
   // Đếm tổng (có hỗ trợ tìm kiếm)
  async countAll(search = "") {
-    let sql = "SELECT COUNT(*) as total FROM Handbook_Section";
-    let params = [];
-    if (search) {
-      sql += " WHERE law_name LIKE ? OR article_title LIKE ? OR content LIKE ?";
-      params = [`%${search}%`, `%${search}%`, `%${search}%`];
+    if (!search) {
+      const [rows] = await pool.query("SELECT COUNT(*) as total FROM Handbook_Section");
+      return rows[0].total;
     }
-    const [rows] = await pool.query(sql, params);
+
+    const sql = `
+      SELECT COUNT(*) as total 
+      FROM Handbook_Section h
+      LEFT JOIN laws l ON h.law_id = l.law_id
+      WHERE h.article_title LIKE ? 
+         OR h.content LIKE ? 
+         OR l.code LIKE ? 
+         OR l.summary LIKE ?
+    `;
+    const searchStr = `%${search}%`;
+    const [rows] = await pool.query(sql, [searchStr, searchStr, searchStr, searchStr]);
     return rows[0].total;
   },
 
@@ -111,11 +120,22 @@ export const handbookModel = {
       SELECT h.*, l.code as law_code, l.summary as law_summary, l.effective_date
       FROM Handbook_Section h
       LEFT JOIN laws l ON h.law_id = l.law_id
-      WHERE h.article_title LIKE ? OR h.content LIKE ? OR l.code LIKE ?
+      WHERE h.article_title LIKE ? 
+         OR h.content LIKE ? 
+         OR l.code LIKE ? 
+         OR l.summary LIKE ?
       ORDER BY l.code DESC, h.chunk_index ASC
       LIMIT ? OFFSET ?
     `;
-    const [rows] = await pool.query(sql, [searchQuery, searchQuery, searchQuery, limit, parseInt(offset)]);
+    // Thêm tham số search thứ 4 cho l.summary
+    const [rows] = await pool.query(sql, [
+        searchQuery, 
+        searchQuery, 
+        searchQuery, 
+        searchQuery, 
+        limit, 
+        parseInt(offset)
+    ]);
     return rows;
   },
 

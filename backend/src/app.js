@@ -181,8 +181,8 @@ const newUser = {
       phone,
       role_id: role_id, // mặc định role user
     };
-// khi tạo lại user thì bỏ comment đoạn này
-const created = await userModel.createUser(newUser);
+// khi tạo lại admin thì bỏ comment đoạn này
+//const created = await userModel.createUser(newUser);
 
 const seedFAQs = async () => {
     const CREATED_BY_USER_ID = adminID; // Thay bằng user_id thực tế của bạn
@@ -237,7 +237,7 @@ const seedFAQs = async () => {
 };
 
 
-seedFAQs();
+//seedFAQs();
 
 swaggerDocs(app, PORT);
 
