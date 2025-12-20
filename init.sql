@@ -38,14 +38,15 @@ CREATE TABLE IF NOT EXISTS User_Profile (
 CREATE TABLE IF NOT EXISTS laws (
   law_id VARCHAR(50) PRIMARY KEY,
   code VARCHAR(100) UNIQUE NOT NULL, -- Số hiệu văn bản (VD: 45/2019/QH14)
-  summary TEXT,                      -- Trích yếu nội dung
-  effective_date DATE,               -- Ngày hiệu lực
+  summary TEXT NOT NULL,                      -- Trích yếu nội dung
+  effective_date DATE NOT NULL,               -- Ngày hiệu lực
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- kho kiến thức pháp luật lao động để AI chatbot tra cứu, trả lời người dùng.
 CREATE TABLE IF NOT EXISTS Handbook_Section (
   section_id CHAR(36) PRIMARY KEY,       -- UUID
+  law_id VARCHAR(50) NOT NULL,          -- liên kết đến bảng laws
   law_name VARCHAR(200) NOT NULL,        -- "Bộ luật Lao động 2019"
   chapter VARCHAR(100),                  -- "Chương I"
   law_reference VARCHAR(100), -- ví dụ: "Điều 14 - Bộ luật Lao động 2019"
@@ -56,7 +57,8 @@ CREATE TABLE IF NOT EXISTS Handbook_Section (
   created_by CHAR(36),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES User(user_id)
+  FOREIGN KEY (created_by) REFERENCES User(user_id),
+  FOREIGN KEY (law_id) REFERENCES laws(law_id)
 );
 
 CREATE TABLE IF NOT EXISTS Conversation (
@@ -93,8 +95,8 @@ CREATE TABLE IF NOT EXISTS FAQ (
 CREATE TABLE IF NOT EXISTS Contract (
   contract_id CHAR(36) PRIMARY KEY,
   user_id CHAR(36) NOT NULL,
-  file_path VARCHAR(255) NOT NULL,
-  original_name VARCHAR(200),
+  file_path LONGTEXT NOT NULL,
+  original_name LONGTEXT,
   is_group BOOLEAN DEFAULT FALSE,
   uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

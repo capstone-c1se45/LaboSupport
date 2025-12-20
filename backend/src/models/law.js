@@ -9,14 +9,14 @@ export const lawModel = {
   },
 
   // Tạo luật mới
-  async create({ code, summary, effective_date }) {
+  async create({ code, summary, effective_date, created_by }) {
     const law_id = nanoidNumbersOnly(10);
-    const sql = `INSERT INTO laws (law_id, code, summary, effective_date) VALUES (?, ?, ?, ?)`;
-    await pool.execute(sql, [law_id, code, summary, effective_date]);
-    return { law_id, code, summary, effective_date };
+    const sql = `INSERT INTO laws (law_id, code, summary, effective_date, created_by) VALUES (?, ?, ?, ?, ?)`;
+    await pool.execute (sql, [law_id, code, summary, effective_date]);
+    return { law_id, code, summary, effective_date, created_by };
   },
   
-  // Lấy tất cả luật (để làm dropdown chọn nếu cần)
+  // Lấy tất cả luật 
   async getAll() {
     const [rows] = await pool.execute("SELECT * FROM laws ORDER BY created_at DESC");
     return rows;

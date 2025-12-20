@@ -93,15 +93,14 @@ export const handbookModel = {
   },
 
   // Đếm tổng (có hỗ trợ tìm kiếm)
- async countAll(search) {
-    const searchQuery = `%${search}%`;
-    const sql = `
-      SELECT COUNT(*) as total 
-      FROM Handbook_Section  h
-      LEFT JOIN laws l ON h.law_id = l.law_id
-      WHERE h.article_title LIKE ? OR h.content LIKE ? OR l.code LIKE ?
-    `;
-    const [rows] = await pool.query(sql, [searchQuery, searchQuery, searchQuery]);
+ async countAll(search = "") {
+    let sql = "SELECT COUNT(*) as total FROM Handbook_Section";
+    let params = [];
+    if (search) {
+      sql += " WHERE law_name LIKE ? OR article_title LIKE ? OR content LIKE ?";
+      params = [`%${search}%`, `%${search}%`, `%${search}%`];
+    }
+    const [rows] = await pool.query(sql, params);
     return rows[0].total;
   },
 

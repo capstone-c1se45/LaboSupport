@@ -109,6 +109,10 @@ app.get("/", async (req, res) => {
   res.send("Hello World! this is backend server c1se45");
 });
 
+
+
+
+
 const userName = "user"
 const roleId = "1" // role user
 const decription = "Nguời dùng thường"
@@ -128,8 +132,35 @@ const roleAdmin = {
   description: decriptionAdmin
 }
 // tạo 2 role user và admin nếu chưa có
-const [rowsRoleUser] = await pool.query('SELECT role_id FROM Role WHERE role_id = ?', [roleId]);
+const createRolesIfNotExist = async () => {
+  try {
+    const [rows] = await pool.query('SELECT COUNT(*) AS count FROM Role WHERE role_id IN (?, ?)', [roleId, roleAdminId]);
+    const existingCount = rows[0].count;
+    if (existingCount < 2) {
+      const insertValues = [];
+      if (existingCount === 0) {
+        insertValues.push([roleUser.role_id, roleUser.role_name, roleUser.description]);
+        insertValues.push([roleAdmin.role_id, roleAdmin.role_name, roleAdmin.description]);
+      } else if (existingCount === 1) {
+        const [existingRows] = await pool.query('SELECT role_id FROM Role WHERE role_id IN (?, ?)', [roleId, roleAdminId]);
+        const existingRoleId = existingRows[0].role_id; 
+        if (existingRoleId === roleId) {
+          insertValues.push([roleAdmin.role_id, roleAdmin.role_name, roleAdmin.description]);
+        } else {
+          insertValues.push([roleUser.role_id, roleUser.role_name, roleUser.description]);
+        }
+      }
+      await pool.query('INSERT INTO Role (role_id, role_name, description) VALUES ?', [insertValues]);
+      console.log('✅ Đã tạo các vai trò mặc định trong bảng Role.');
+    } else {
+      console.log('✅ Vai trò mặc định đã tồn tại trong bảng Role.');
+    }
+  } catch (error) {
+    console.error('❌ Lỗi khi tạo vai trò mặc định:', error.message);
+  }
+};
 
+await createRolesIfNotExist();
 // //test other account
 const username = "admindz";
 const password = "admin123";
@@ -151,7 +182,7 @@ const newUser = {
       role_id: role_id, // mặc định role user
     };
 // khi tạo lại user thì bỏ comment đoạn này
-//const created = await userModel.createUser(newUser);
+const created = await userModel.createUser(newUser);
 
 const seedFAQs = async () => {
     const CREATED_BY_USER_ID = adminID; // Thay bằng user_id thực tế của bạn
@@ -206,7 +237,7 @@ const seedFAQs = async () => {
 };
 
 
-//seedFAQs();
+seedFAQs();
 
 swaggerDocs(app, PORT);
 

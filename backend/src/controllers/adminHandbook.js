@@ -105,6 +105,8 @@ export const adminHandbookController = {
 
         // 2. Lấy thông tin Luật từ req.body
         const { law_code, law_summary, law_effective_date } = req.body;
+
+        const created_by = req.user ? (req.user.user_id || req.user.id) : null;
         
         if (!law_code || !law_summary || !law_effective_date) {
             return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin Văn bản luật (Số hiệu, Trích yếu, Ngày hiệu lực)" });
@@ -120,7 +122,8 @@ export const adminHandbookController = {
             law = await lawModel.create({
                 code: law_code,
                 summary: law_summary,
-                effective_date: law_effective_date
+                effective_date: law_effective_date,
+                created_by: created_by
             });
             console.log(`Created law with ID: ${law.law_id}`);
         } 
