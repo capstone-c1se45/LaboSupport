@@ -17,6 +17,7 @@ import HandbookManagement from "./pages/admin/HandbookManagement";
 import ReportPage from "./pages/ReportPage";
 import ReportManagement from "./pages/admin/ReportManagement";
 import BhxhCalculator from "./pages/BhxhCalculator";
+import AuditLogManagement from "./pages/admin/AuditLogManagement";
 
 const PageLoader = () => <div className="flex justify-center items-center h-screen">Đang tải...</div>;
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="handbooks" element={<HandbookManagement />} />
             <Route path="reports" element={<ReportManagement />} />
+            <Route path="audit-logs" element={<AuditLogManagement />} />
           </Route>
         <Route path="*" element={<NotFound />} /> 
       </Routes>

@@ -19,6 +19,8 @@ export default function NavbarLogged() {
        const audio = new Audio('/src/assets/sound/notification-admin.mp3');
        audio.play().catch(e => console.log('Audio play blocked'));
 
+       console.log("Received notification via socket:", data);
+
       setNotifications(prev => [data, ...prev]);
     });
 

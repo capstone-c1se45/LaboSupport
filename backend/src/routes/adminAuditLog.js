@@ -5,6 +5,6 @@ import { isAdmin } from "../middlewares/isAdmin.js";
 
 const router = Router();
 
-router.get("/", authMiddleware, isAdmin, adminAuditLogController.getAll);
+router.get("/", authMiddleware.verifyToken, isAdmin, adminAuditLogController.getAll);
 
 export default router;

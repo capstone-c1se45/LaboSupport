@@ -149,8 +149,7 @@ export const contractController = {
     });
   },
 
- // Dán code này vào file backend/src/controllers/contractController.js
-// Hãy XÓA hàm uploadMultiContracts cũ và thay bằng hàm này
+
 
 async uploadMultiContracts(req, res) {
   try {
@@ -162,7 +161,7 @@ async uploadMultiContracts(req, res) {
     // 1. Dùng memoryStorage để xử lý file sau khi có contractId
     const multiUpload = multer({
       storage: multer.memoryStorage(), // <-- Giữ file trong RAM
-      fileFilter: imageFileFilter, // (Giữ nguyên fileFilter của bạn)
+      fileFilter: imageFileFilter, 
       limits: { fileSize: 10 * 1024 * 1024, files: 20 },
     }).array("contractFiles", 20);
 
@@ -220,7 +219,6 @@ async uploadMultiContracts(req, res) {
       } catch (dbError) {
         console.error("Error processing files after upload:", dbError);
         if (contractId) {
-          // (Tùy chọn: Xóa contract tạm nếu lỗi)
           // await contractModel.deleteContract(contractId).catch(delErr => console.error("Failed to delete temp contract", delErr));
         }
         return responseHandler.internalServerError(res, "Lỗi khi xử lý file sau khi upload.");
@@ -314,9 +312,6 @@ async analyzeContract(req, res) {
       return responseHandler.internalServerError(res, "Không thể đọc file hợp đồng đã upload.");
     }
 
-    // 2a. Chuyển file thành text UTF-8
-    // Nếu file PDF/DOCX, bạn cần dùng thư viện parse text (ví dụ pdf-parse, mammoth) 
-    // Dưới đây ví dụ file text thuần:
 
     // 3. Cập nhật trạng thái sang ANALYZING
     await contractModel.updateContractStatus(contractId, "ANALYZING");
@@ -347,6 +342,15 @@ async analyzeContract(req, res) {
 
     // 5. Xử lý dữ liệu phân tích
     const fullSummary = aiResponse.data?.summary || "";
+
+    console.log("AI SUMMARY RETRIEVE:", fullSummary);
+
+
+    if(fullSummary.trim() === "" || fullSummary.includes("Hãy tải file hợp đồng chính xác")){
+      await contractModel.updateContractStatus(contractId, "ERROR_AI");
+      return responseHandler.badRequest(res, "Nội dung hợp đồng không hợp lệ hoặc không phải hợp đồng lao động.");
+    }
+
     const fileText = aiResponse.data?.content || "";
 
     const tomTat = extractSection(fullSummary, "Tóm tắt nội dung");
@@ -374,7 +378,7 @@ async analyzeContract(req, res) {
         type: 'CONTRACT_COMPLETED',
         title: 'Phân tích hoàn tất',
         message: 'Hợp đồng của bạn đã được phân tích xong. Nhấn để xem các điều khoản rủi ro.',
-        link: `/contract-analysis/${contractId}`,
+        link: `/contract-analysis?id=${contractId}`,
         isRead: false,
         createdAt: new Date()
     };

@@ -24,7 +24,7 @@ const CloseIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColo
 const MinusIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>;
 const TrashIcon = () => <svg className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 const DownloadIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>; 
-
+const RefreshIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
 const customScrollbarStyle = `
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
@@ -393,11 +393,14 @@ export default function ContractAnalysis() {
       } else {
         throw new Error(`Định dạng file không được hỗ trợ (${fileName})`);
       }
+      
       const response = await api.post(endpoint);
+
       const analysisResult = {
         ...response.data.data,
         processed_at: new Date().toISOString(),
       };
+      
       setContracts(prev =>
         prev.map(c =>
           c.contract_id === contractId
@@ -414,7 +417,17 @@ export default function ContractAnalysis() {
       }
     } catch (err) {
       console.error("Analysis failed:", err);
+
+      
+      const status = err.response?.status;
+      const errorMessage = err.response?.data?.message || "";
+
+      if (status === 400 && errorMessage.includes("Nội dung hợp đồng không hợp lệ")) {
+        alert("Hãy tải file hợp đồng chính xác");
+      }
+
       setError(err.response?.data?.message || err.message || "Phân tích thất bại.");
+      
       setContracts(prev => prev.map(c => c.contract_id === contractId ? { ...c, status: "ERROR" } : c));
       if (selectedContract?.id === contractId) {
         setSelectedContract(prev => ({ ...prev, data: { ...(prev.data || {}), status: "ERROR" } }));
@@ -559,8 +572,25 @@ export default function ContractAnalysis() {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    {/* Menu Xuất File */}
                     {selectedContract?.data?.status === 'ANALYZED' && (
+                      <>
+                          <button 
+                              onClick={() => {
+                                  // Thêm confirm để tránh bấm nhầm làm mất dữ liệu cũ
+                                  if(window.confirm("Bạn có chắc chắn muốn phân tích lại? Dữ liệu phân tích hiện tại sẽ bị ghi đè.")) {
+                                      handleAnalyze(selectedContract.id);
+                                  }
+                              }}
+                              disabled={isLoadingAnalysis === selectedContract.id}
+                              className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+                              title="Chạy lại phân tích AI"
+                          >
+                              <span className={isLoadingAnalysis === selectedContract.id ? "animate-spin" : ""}>
+                                  {isLoadingAnalysis === selectedContract.id ? <ProcessingIcon /> : <RefreshIcon />}
+                              </span>
+                              <span className="hidden sm:inline">Phân tích lại</span>
+                          </button>
+                                
                         <div className="relative">
                             <button 
                                 onClick={() => setShowExportMenu(!showExportMenu)}
@@ -593,6 +623,7 @@ export default function ContractAnalysis() {
                                 </>
                             )}
                         </div>
+                      </>
                     )}
 
                     {(selectedContract?.data?.status === 'PENDING' || selectedContract?.data?.status?.startsWith('ERROR')) && (

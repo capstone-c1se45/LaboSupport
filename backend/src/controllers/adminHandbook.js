@@ -67,6 +67,14 @@ export const adminHandbookController = {
   async update(req, res) {
     try {
       await handbookModel.update(req.params.id, req.body);
+      if (req.user) {
+          await auditLogModel.create({
+              user_id: req.user.user_id, 
+              action: "UPDATE_HANDBOOK",
+              details: `Đã cập nhật điều khoản ID: ${req.params.id}`
+          });
+      }
+
       await clearHandbookCache(); // Xóa cache
       res.json({ message: "Cập nhật thành công" });
     } catch (error) {

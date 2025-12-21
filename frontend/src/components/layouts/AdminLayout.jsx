@@ -10,12 +10,15 @@ export default function AdminLayout() {
     { label: 'Quản lý người dùng', path: '/admin/users' },
     { label: 'Cài đặt Lao động', path: '/admin/handbooks' },
     { label: 'Báo cáo & Thống kê', path: '/admin/reports' },
+    { label: 'Nhật ký hoạt động', path: '/admin/audit-logs' },
   ];
 
   const getPageTitle = () => {
     if (pathname.startsWith('/admin/users')) return 'Quản lý người dùng';
     if (pathname.startsWith('/admin/handbooks')) return 'Cài đặt Lao động';
     if (pathname.startsWith('/admin/reports')) return 'Báo cáo & Thống kê';
+    if (pathname.startsWith('/admin/audit-logs')) return 'Nhật ký hoạt động';
+
     return 'Tổng quan Bảng điều khiển';
   };
 
