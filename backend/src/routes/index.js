@@ -12,6 +12,7 @@ import bhxhRoutes from "./bhxh.js";
 import bhxhTuNguyenRoutes from "./bhxhTuNguyen.js";
 import reportRouter from "./reportRoutes.js";
 import adminHistoryRoutes from "./adminBHXH.js";
+import adminAuditLogRouter from "./adminAuditLog.js";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/bhxh", bhxhRoutes); // route công cụ tính BHXH một lần
 router.use("/bhxh", bhxhTuNguyenRoutes); // route công cụ tính BHXH tự nguyện
 router.use("/reports", reportRouter); // route báo cáo
 router.use("/admin/history", adminHistoryRoutes);// Route Lịch sử BHXH bởi Admin
+router.use("/admin/audit-logs", adminAuditLogRouter); // Route Audit Logs bởi Admin
 
 export default router;

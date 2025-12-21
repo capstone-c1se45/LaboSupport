@@ -1,4 +1,3 @@
-// src/controllers/adminUser.js
 import bcrypt from "bcrypt";
 import { userModel } from "../models/user.js";
 import { profileModel } from "../models/profile.js";

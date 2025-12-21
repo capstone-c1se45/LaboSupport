@@ -1,4 +1,3 @@
-// src/routes/adminHistory.js
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.js";
 import { isAdmin } from "../middlewares/isAdmin.js";

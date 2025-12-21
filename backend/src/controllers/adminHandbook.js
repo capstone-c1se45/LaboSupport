@@ -3,6 +3,7 @@ import { nanoidNumbersOnly } from "../utils/nanoid.js";
 import { redisClient } from "../config/redis.js";
 import { parseLaborLawDocx } from "../utils/docxParser.js";
 import { lawModel } from "../models/law.js";
+import { auditLogModel } from "../models/auditLog.js";
 
 const REDIS_CACHE_KEY = "handbook_list";
 const CACHE_TIME = 3600;
@@ -77,6 +78,15 @@ export const adminHandbookController = {
   async delete(req, res) {
     try {
       await handbookModel.delete(req.params.id);
+
+      if (req.user) {
+          await auditLogModel.create({
+              user_id: req.user.user_id, // Lấy ID người đang thao tác
+              action: "DELETE_HANDBOOK",
+              details: `Đã xóa điều khoản ID: ${req.params.id}`
+          });
+      }
+
       await clearHandbookCache(); // Xóa cache
       res.json({ message: "Xóa thành công" });
     } catch (error) {
@@ -87,6 +97,16 @@ export const adminHandbookController = {
   async deleteAll(req, res) {
     try {
       await handbookModel.deleteAll();
+
+      if (req.user) {
+          await auditLogModel.create({
+              user_id: req.user.user_id, 
+              action: "DELETE_ALL_HANDBOOK",
+              details: `Đã xóa toàn bộ dữ liệu luật.`
+          });
+      }
+
+
       await clearHandbookCache();
       res.json({ message: "Đã xóa toàn bộ dữ liệu luật thành công." });
     } catch (error) {
@@ -149,6 +169,15 @@ export const adminHandbookController = {
 
         // 6. Lưu vào DB
         await handbookModel.createMany(dataList);
+
+        if (req.user) {
+            await auditLogModel.create({
+                user_id: req.user.user_id,
+                action: "IMPORT_HANDBOOK_DOCX",
+                details: `Đã import luật "${law_code}" với ${dataList.length} điều khoản từ file "${req.file.originalname}"`
+            });
+        }
+
         await clearHandbookCache();
 
         res.json({ 

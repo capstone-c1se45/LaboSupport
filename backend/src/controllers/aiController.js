@@ -6,6 +6,7 @@ import { contractModel } from '../models/contract.js';
 import { contractOcrModel } from '../models/contractOcr.js';
 import responseHandler from "../utils/response.js"; 
 import dotenvFlow from "dotenv-flow";
+import { auditLogModel } from '../models/auditLog.js';
 
 dotenvFlow.config();
 
@@ -80,6 +81,16 @@ export const aiController = {
       // 6. Cập nhật timestamp (để đưa lên đầu sidebar)
       await conversationModel.updateTimestamp(convId);
 
+      if(req.user) {
+          await auditLogModel.create({
+              user_id: req.user.user_id,
+              action: "AI_CHAT",
+              details: `Đã chat với AI trong cuộc trò chuyện ID: ${convId}`
+          });
+      }
+
+
+
       // 7. Trả lời frontend
       return responseHandler.success(res, "AI đã trả lời.", {
         answer: aiResult.answer,
@@ -149,6 +160,14 @@ export const aiController = {
       
       await contractOcrModel.updateContractChatHistory(contract_id, newHistory);
 
+      if(req.user) {
+          await auditLogModel.create({
+              user_id: req.user.user_id,
+              action: "CONTRACT_AI_CHAT",
+              details: `Đã chat với AI về hợp đồng ID: ${contract_id}`
+          });
+      }
+
       return responseHandler.success(res, "AI đã trả lời dựa trên ngữ cảnh.", {
         answer: aiAnswer
       });
@@ -201,7 +220,15 @@ export const aiController = {
     if (!userId) {
       return responseHandler.unauthorized(res, "Yêu cầu đăng nhập.");
     }
-    
+
+    if (req.user) {
+        await auditLogModel.create({
+            user_id: req.user.user_id,
+            action: "DELETE_CONVERSATION",
+            details: `Đã xóa cuộc trò chuyện ID: ${conversationId}`
+        });
+    }
+
     try {
       const deleted = await conversationModel.deleteById(conversationId, userId);
       if (!deleted) {
@@ -243,6 +270,8 @@ export const aiController = {
       const formData = new URLSearchParams();
       formData.append('message', message);
       formData.append('session_id', session_id);
+
+      
 
       const aiResponse = await axios.post(`${AI_SERVICE_URL}/chat`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
