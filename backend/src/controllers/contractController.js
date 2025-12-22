@@ -102,8 +102,7 @@ const uploadImages = multer({
   storage: imageStorage,
   fileFilter: imageFileFilter,
   limits: { fileSize: 10 * 1024 * 1024, files: 10 } // Tối đa 10MB/file, 10 files
-}).array('contractImages', 10); // Tên field frontend gửi lên là 'contractImages'
-// ---------------------------------------------------
+}).array('contractImages', 10); 
 
 
 export const contractController = {
@@ -484,6 +483,11 @@ async analyzeContract(req, res) {
 
       console.log("OCR and Analysis received from AI Service." + analysis);
 
+      // if(analysis.trim() === "" || analysis.includes("Hãy tải file hợp đồng chính xác")){
+      //   await contractModel.updateContractStatus(contractId, "ERROR_AI");
+      //   return responseHandler.badRequest(res, "Nội dung hợp đồng không hợp lệ hoặc không phải hợp đồng lao động.");
+      // }
+
       // 6. TÁCH NỘI DUNG VÀ LƯU DB
       const tomTat = extractSection(analysis, "Tóm tắt");
       const danhGia = extractSection(analysis, "Đánh giá");
@@ -506,7 +510,7 @@ async analyzeContract(req, res) {
           type: 'CONTRACT_COMPLETED',
           title: 'Phân tích hoàn tất',
           message: 'Hợp đồng của bạn đã được phân tích xong. Nhấn để xem các điều khoản rủi ro.',
-          link: `/contract-analysis/${contractId}`,
+          link: `/contract-analysis?id=${contractId}`,
           isRead: false,
           createdAt: new Date()
       };
@@ -533,6 +537,11 @@ async analyzeContract(req, res) {
         } catch (e) {
           console.error("Failed to update status to ERROR:", e);
         }
+      }
+      if (error.response && error.response.status === 400) {
+          const aiMessage = error.response.data?.detail || "Hãy tải file hợp đồng chính xác";
+          // Trả về đúng mã 400 cho Frontend
+          return responseHandler.badRequest(res, aiMessage);
       }
       const msg = error?.response?.data?.detail || "Lỗi trong quá trình phân tích ảnh.";
       return responseHandler.internalServerError(res, msg);

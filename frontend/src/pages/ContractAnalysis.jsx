@@ -422,7 +422,15 @@ export default function ContractAnalysis() {
       const status = err.response?.status;
       const errorMessage = err.response?.data?.message || "";
 
-      if (status === 400 && errorMessage.includes("Nội dung hợp đồng không hợp lệ")) {
+      // if (status === 400 && errorMessage.includes("Nội dung hợp đồng không hợp lệ")) {
+      //   alert("Hãy tải file hợp đồng chính xác");
+      // }
+
+      if (status === 400 && (
+          errorMessage.includes("không hợp lệ") || 
+          errorMessage.includes("chính xác") ||
+          errorMessage.includes("hãy tải file")
+      )) {
         alert("Hãy tải file hợp đồng chính xác");
       }
 
