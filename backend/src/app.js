@@ -7,13 +7,13 @@ import swaggerDocs from "./swagger.js";
 import { createServer } from "http";
 import cookieParser from "cookie-parser"
 import { pool } from "./config/mysql.js";
-import main from "./utils/init_handbook.js";
 import { Server } from 'socket.io';
 import { initializeSocket } from './socket/chatHandler.js';
 import { userModel } from "./models/user.js";
 import { nanoidNumbersOnly } from "./utils/nanoid.js";
 import bcrypt from "bcryptjs";
 import { redisClient } from "./config/redis.js";
+import { importLaborLaw } from "./utils/init_handbook.js";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
@@ -61,10 +61,8 @@ const connectDB = async () => {
 // Gọi hàm
 connectDB();
 
-// chèn luật
-// (async () => {
-//   await main();
-// })();
+//chen luật lao động vào handbook
+//await importLaborLaw();
 
 
 app.use(cookieParser());

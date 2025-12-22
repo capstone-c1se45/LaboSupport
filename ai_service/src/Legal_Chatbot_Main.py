@@ -1,28 +1,43 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
 import requests, os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from typing import List, Dict, Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import json
-from untils.internal_analysis import generate_internal_report
-from untils.compliance import run_compliance_check 
-from untils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
+from src.utils.internal_analysis import rag_engine, generate_internal_report
+from utils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
+from src.models import ContractChatRequest
 import time 
 import random
-GEMINI_API_KEY = "" 
+import google.generativeai as genai
 
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
 MODEL_NAME_COMPLEX = "gemini-2.5-pro"
 MODEL_NAME_CHAT = "gemini-2.5-flash" 
 # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
 # GEMINI_CHAT_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_CHAT}:generateContent?key={GEMINI_API_KEY}"
 
-
-app = FastAPI()
+genai.configure(api_key=GEMINI_API_KEY)
+app = FastAPI(title="AI Legal Service", version="2.0")
 executor = ThreadPoolExecutor()
 chat_sessions: Dict[str, List[Dict[str, str]]] = {}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
@@ -135,6 +150,10 @@ async def analyze_contract(file: UploadFile = File(...)):
     --- HỢP ĐỒNG ---
     {contract_excerpt}
 
+    Hãy phân tích xem nội dung trên có phải là "Hợp đồng lao động" hoặc các văn bản pháp lý liên quan đến quan hệ lao động (Thỏa thuận thử việc, Phụ lục hợp đồng...) hay không.
+    - Nếu nội dung là RÁC (kí tự ngẫu nhiên), CODE lập trình, bài báo không liên quan, công thức nấu ăn, hoặc bất cứ thứ gì KHÔNG PHẢI VĂN BẢN HỢP ĐỒNG: Hãy trả lời duy nhất cụm từ: "Hãy tải file hợp đồng chính xác".
+    - Nếu nội dung là hợp đồng lao động hoặc văn bản pháp lý liên quan thì tiến hành phân tích và trả lời các yêu cầu bên dưới.
+
     Hãy thực hiện các yêu cầu sau:
     1. Tóm tắt nội dung hợp đồng ngắn gọn, dễ hiểu.
     2. Đánh giá quyền lợi và nghĩa vụ của người lao động trong hợp đồng này.
@@ -147,7 +166,7 @@ async def analyze_contract(file: UploadFile = File(...)):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-
+    # Gọi Gemini API để phân tích hợp đồng
     try:
         loop = asyncio.get_event_loop()
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
@@ -169,7 +188,7 @@ def call_gemini_api_sync(messages: List[Dict[str, str]]):
     
     return call_gemini_api(messages, model_url)
 
-# API chat (hỏi đáp luật)
+#API chat (hỏi đáp luật)
 @app.post("/chat")
 async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
 
@@ -186,7 +205,7 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
                     "Nhiệm vụ của bạn chỉ là trả lời các câu hỏi liên quan đến Luật Lao động. "
                     "Nếu người dùng hỏi về bất kỳ chủ đề nào khác (ví dụ: công thức nấu ăn, tin tức, lịch sử, toán học, luật dân sự, luật hình sự, v.v.), "
                     "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động. "
-                    "'.Nếu mà người dùng nhắn là hi, chào thì trả lời **chính xác** câu sau: 'Chào, tôi có thể giúp gì cho bạn về luật Lao Động không ?' " # THAY ĐỔI LỚN
+                    "'.Nếu mà người dùng nhắn là hi, chào thì trả lời **chính xác** câu sau: 'Chào, tôi có thể giúp gì cho bạn về luật Lao Động không ?' "
                     
                     "Hãy chú ý phân tích các thông tin được cung cấp trong phần 'PHÂN TÍCH NỘI BỘ' và 'Điều luật liên quan' để trả lời. "
                     "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "
@@ -240,6 +259,7 @@ async def chat_with_ai(message: str = Form(...), session_id: str = Form("default
         "history_count": len(chat_sessions[session_id]),
     }
 
+
 # API reset chat (xóa lịch sử phiên)
 @app.post("/reset_chat")
 def reset_chat(session_id: str = Form("default")):
@@ -257,9 +277,21 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
         ocr_text = "\n\n".join(texts).strip()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi OCR ảnh: {e}")
+    
+    if len(ocr_text) < 50:
+        raise HTTPException(
+            status_code=400, 
+            detail="Hãy tải file hợp đồng chính xác. (Không tìm thấy đủ nội dung văn bản)"
+        )
+    
+    keywords = ["hợp đồng", "lao động", "cộng hòa", "độc lập", "bên a", "bên b", "quyền lợi", "nghĩa vụ", "lương", "điều khoản"]
+    found_keywords = [word for word in keywords if word in ocr_text.lower()]
 
-    if not ocr_text:
-        raise HTTPException(status_code=400, detail="Không thể đọc được văn bản từ ảnh.")
+    if len(found_keywords) < 1:
+        print("⚠️ Cảnh báo: Văn bản OCR không chứa từ khóa pháp lý cơ bản.")
+
+    # if not ocr_text:
+    #     raise HTTPException(status_code=400, detail="Không thể đọc được văn bản từ ảnh.")
 
     contract_excerpt = (
         ocr_text[:8000].rsplit('.', 1)[0] + '.'
@@ -273,6 +305,12 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
 
     --- NỘI DUNG HỢP ĐỒNG ---
     {contract_excerpt}
+
+    Hãy phân tích xem nội dung OCR trên có mang dáng dấp của "Hợp đồng lao động" hoặc các văn bản pháp lý liên quan (Thỏa thuận, Quyết định tuyển dụng...) hay không.
+    
+    - Nếu nội dung là KÝ TỰ NGẪU NHIÊN (do OCR lỗi nặng), CODE LẬP TRÌNH, BÀI BÁO, TRUYỆN, CÔNG THỨC NẤU ĂN, hoặc hình ảnh KHÔNG PHẢI VĂN BẢN PHÁP LÝ: Hãy trả lời duy nhất cụm từ: "Hãy tải file hợp đồng chính xác".
+    - Lưu ý: Vì là văn bản OCR nên có thể bị sai chính tả đôi chút, hãy cố gắng hiểu ngữ cảnh. Chỉ từ chối nếu nội dung hoàn toàn lạc đề hoặc vô nghĩa.
+    - Nếu nội dung là hợp đồng lao động hoặc văn bản pháp lý liên quan thì tiến hành phân tích và trả lời các yêu cầu bên dưới.
 
     Hãy thực hiện các yêu cầu sau:
     1. Tóm tắt nội dung hợp đồng ngắn gọn, dễ hiểu.
@@ -300,13 +338,13 @@ async def ocr_endpoint(files: List[UploadFile] = File(...)):
         "analysis": analysis_result
     }
 
-class ContractChatRequest(BaseModel):
-    """
-    Định nghĩa Pydantic model cho JSON payload
-    """
-    prompt: str
-    context: str
-    chat_history: Optional[List[Dict[str, str]]] = []
+# class ContractChatRequest(BaseModel):
+#     """
+#     Định nghĩa Pydantic model cho JSON payload
+#     """
+#     prompt: str
+#     context: str
+#     chat_history: Optional[List[Dict[str, str]]] = []
 
 @app.post("/chat_with_context")
 async def chat_with_contract_context(request: ContractChatRequest):
