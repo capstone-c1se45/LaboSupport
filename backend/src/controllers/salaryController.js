@@ -15,28 +15,33 @@ export const calculateSalary = async (req, res) => {
     }
 
     const parsedSalary = parseFloat(salary);
-    const parsedInsuranceSalary = insuranceSalary ? parseFloat(insuranceSalary) : null;
+    const parsedInsuranceSalary = insuranceSalary
+      ? parseFloat(insuranceSalary)
+      : null;
     const parsedDependents = parseInt(dependents) || 0;
     const regionCode = region || "I";
 
     let result;
 
+    // 🔧 FIX QUAN TRỌNG: thêm await
     if (type === "grossToNet") {
-      result = salaryCalculator.grossToNet({
+      result = await salaryCalculator.grossToNet({
         grossSalary: parsedSalary,
         insuranceSalary: parsedInsuranceSalary,
         dependents: parsedDependents,
         region: regionCode,
       });
     } else if (type === "netToGross") {
-      result = salaryCalculator.netToGross({
+      result = await salaryCalculator.netToGross({
         netSalary: parsedSalary,
         insuranceSalary: parsedInsuranceSalary,
         dependents: parsedDependents,
         region: regionCode,
       });
     } else {
-      return res.status(400).json({ message: "Invalid type (grossToNet | netToGross)" });
+      return res
+        .status(400)
+        .json({ message: "Invalid type (grossToNet | netToGross)" });
     }
 
     // Save history
@@ -54,7 +59,6 @@ export const calculateSalary = async (req, res) => {
       ...result,
       historyId,
     });
-
   } catch (error) {
     console.error("Salary calculation error:", error);
     res.status(500).json({ message: "Internal Server Error" });

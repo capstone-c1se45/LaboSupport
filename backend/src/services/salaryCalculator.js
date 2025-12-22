@@ -1,62 +1,52 @@
 // services/salaryCalculator.js
+import { loadSalaryConfig } from "./configService.js";
 
-const BASE_SALARY = 2340000; // Lương cơ sở
-const PERSONAL_DEDUCTION = 11000000; // Giảm trừ bản thân
-const DEPENDENT_DEDUCTION = 4400000; // Giảm trừ người phụ thuộc
+const BASE_SALARY = 2340000; // vẫn có thể hardcode hoặc đưa DB sau
+const PERSONAL_DEDUCTION = 11000000;
+const DEPENDENT_DEDUCTION = 4400000;
 
-// Lương tối thiểu vùng
-const REGION_MIN_WAGE = {
-  I: 4960000,
-  II: 4410000,
-  III: 3860000,
-  IV: 3450000,
-};
-
-// Bảo hiểm bắt buộc (phần người lao động)
+// Bảo hiểm bắt buộc (NLĐ)
 const INSURANCE_RATES = {
-  BHXH: 0.08, // Bảo hiểm xã hội
-  BHYT: 0.015, // Bảo hiểm y tế
-  BHTN: 0.01, // Bảo hiểm thất nghiệp
-};
-
-// Bảo hiểm phần doanh nghiệp trả
-const EMPLOYER_INSURANCE_RATES = {
-  BHXH: 0.17,
-  BHYT: 0.03,
+  BHXH: 0.08,
+  BHYT: 0.015,
   BHTN: 0.01,
-  TNLDBNN: 0.005, // Tai nạn lao động - bệnh nghề nghiệp
 };
 
-// Bậc thuế thu nhập cá nhân (TNCN)
-const TAX_BRACKETS = [
-  { max: 5000000, rate: 0.05 },
-  { max: 10000000, rate: 0.1 },
-  { max: 18000000, rate: 0.15 },
-  { max: 32000000, rate: 0.2 },
-  { max: 52000000, rate: 0.25 },
-  { max: 80000000, rate: 0.3 },
-  { max: Infinity, rate: 0.35 },
-];
-
-// Tính thuế TNCN theo thu nhập chịu thuế
-function calculatePersonalIncomeTax(taxableIncome) {
+// =======================
+// TÍNH THUẾ TNCN (DÙNG DB)
+// =======================
+function calculatePersonalIncomeTax(taxableIncome, taxBrackets) {
   let remaining = taxableIncome;
   let totalTax = 0;
 
-  for (const bracket of TAX_BRACKETS) {
-    const taxableAmount = Math.min(remaining, bracket.max);
-    totalTax += taxableAmount * bracket.rate;
-    remaining -= taxableAmount;
+  for (const b of taxBrackets) {
+    const min = b.min_income;
+    const max = b.max_income ?? Infinity;
+
+    const taxablePart = Math.min(remaining, max - min);
+    if (taxablePart > 0) {
+      totalTax += taxablePart * b.rate;
+      remaining -= taxablePart;
+    }
+
     if (remaining <= 0) break;
   }
 
   return totalTax;
 }
 
-// Hàm tính lương Gross -> Net
-function grossToNet({ grossSalary, insuranceSalary, dependents = 0, region = "I" }) {
+// =======================
+// GROSS → NET
+// =======================
+async function grossToNet({
+  grossSalary,
+  insuranceSalary,
+  dependents = 0,
+  region = "I",
+}) {
+  const { REGION_MIN_WAGE, TAX_BRACKETS } = await loadSalaryConfig();
 
-  // Nếu không nhập thì mặc định = gross
+  // Lương đóng BH
   const insSalary = insuranceSalary || grossSalary;
 
   const insurances = {
@@ -66,13 +56,21 @@ function grossToNet({ grossSalary, insuranceSalary, dependents = 0, region = "I"
   };
 
   const totalInsurance = Object.values(insurances).reduce((a, b) => a + b, 0);
+
   const taxableIncomeBeforeDeduction = grossSalary - totalInsurance;
 
   const totalDeduction =
     PERSONAL_DEDUCTION + dependents * DEPENDENT_DEDUCTION;
 
-  const taxableIncome = Math.max(0, taxableIncomeBeforeDeduction - totalDeduction);
-  const incomeTax = calculatePersonalIncomeTax(taxableIncome);
+  const taxableIncome = Math.max(
+    0,
+    taxableIncomeBeforeDeduction - totalDeduction
+  );
+
+  const incomeTax = calculatePersonalIncomeTax(
+    taxableIncome,
+    TAX_BRACKETS
+  );
 
   const netSalary = taxableIncomeBeforeDeduction - incomeTax;
 
@@ -85,17 +83,24 @@ function grossToNet({ grossSalary, insuranceSalary, dependents = 0, region = "I"
     taxableIncomeBeforeDeduction,
     taxableIncome,
     incomeTax,
+    regionMinWage: REGION_MIN_WAGE[region],
   };
 }
 
-
-// Hàm tính lương Net -> Gross
-function netToGross({ netSalary, insuranceSalary, dependents = 0, region = "I" }) {
+// =======================
+// NET → GROSS
+// =======================
+async function netToGross({
+  netSalary,
+  insuranceSalary,
+  dependents = 0,
+  region = "I",
+}) {
   let estimatedGross = netSalary;
   let result = {};
 
   for (let i = 0; i < 25; i++) {
-    result = grossToNet({
+    result = await grossToNet({
       grossSalary: estimatedGross,
       insuranceSalary,
       dependents,
@@ -111,11 +116,9 @@ function netToGross({ netSalary, insuranceSalary, dependents = 0, region = "I" }
   return result;
 }
 
-
 export default {
   grossToNet,
   netToGross,
-  REGION_MIN_WAGE,
   BASE_SALARY,
   PERSONAL_DEDUCTION,
   DEPENDENT_DEDUCTION,
