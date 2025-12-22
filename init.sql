@@ -195,3 +195,17 @@ CREATE TABLE IF NOT EXISTS BHXH_TuNguyen_History (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 );
+
+CREATE TABLE tax_brackets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  min_income BIGINT NOT NULL,
+  max_income BIGINT,
+  rate DECIMAL(5,4) NOT NULL,
+  sort_order INT NOT NULL
+);
+
+CREATE TABLE region_min_wage (
+  region_code VARCHAR(5) PRIMARY KEY,
+  wage INT NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
