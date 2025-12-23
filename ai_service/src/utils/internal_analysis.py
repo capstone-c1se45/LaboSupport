@@ -6,7 +6,11 @@ from src.models import AIResponse, LawReference
 from src.utils.compliance import ComplianceAnalyzer
 from typing import List, Dict
 import re
+from dotenv import load_dotenv
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, '..', '..', '.env')
+load_dotenv(env_path)
 
 LEGAL_ENTITY_PATTERNS = {
     "LUAT": r"(bộ\s*luật|luật|nghị\s*định|thông\s*tư|hiến\s*pháp)\s*[a-zA-Z0-9\s]*",
@@ -67,80 +71,82 @@ def generate_internal_report(query: str) -> str:
     
     return "\n".join(report_lines)
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
 class RAGEngine:
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-pro')
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("⚠️ Warning: GEMINI_API_KEY is missing in .env")
+        
+        # Khởi tạo Client theo SDK mới
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = 'gemini-2.0-flash-exp'
 
     async def process_query(self, query_text: str) -> AIResponse:
-        # 1. Tim kiếm các đoạn luật tương tự trong Chroma
+        # 1. Search ChromaDB
         search_results = chroma_db.query_similar_chunks(query_text)
         
         if not search_results:
             return AIResponse(
-                answer="Hiện tại hệ thống không tìm thấy cơ sở pháp lý phù hợp.",
+                answer="Xin lỗi, tôi không tìm thấy văn bản luật nào liên quan trong cơ sở dữ liệu.",
                 references=[]
             )
 
-        # 2. Lấy nội dung luật từ MySQL dựa trên chunk_ids
+        # 2. Get full content from MySQL
         chunk_ids = [hit['chunk_id'] for hit in search_results]
         db_records = mysql_db.get_law_content(chunk_ids)
 
         if not db_records:
             return AIResponse(
-                answer="Hiện tại hệ thống không tìm thấy cơ sở pháp lý phù hợp trong cơ sở dữ liệu.",
+                answer="Có lỗi khi truy xuất dữ liệu chi tiết từ hệ thống.",
                 references=[]
             )
 
-        # 3. Tạo ngữ cảnh cho LLM
+        # 3. Create Context
         context_str = ""
         references_list = []
         
         for i, record in enumerate(db_records):
-            # Nhận điểm tương đồng từ kết quả tìm kiếm
             score = next((x['score'] for x in search_results if x['chunk_id'] == record['section_id']), 0)
             
-            # Tạo đối tượng tham chiếu luật
             full_title = f"{record.get('law_reference', '')} - {record.get('article_title', '')}"
             
             ref_obj = LawReference(
-                law_id=str(record.get('law_id', 'Unknown')),
-                article_id=str(record.get('section_id', 'Unknown')),
-                title=full_title.strip(),
-                content=record.get('content', '')[:300] + "...", # Snippet for preview
+                law_id=str(record.get('law_id', '')),
+                section_id=str(record.get('section_id', '')),
+                title=full_title,
+                content=record.get('content', '')[:200] + "...",
                 relevance_score=score
             )
             references_list.append(ref_obj)
             
-            # Tạo ngữ cảnh văn bản
             context_str += (
-                f"Nguồn {i+1}:\n"
-                f"- Văn bản: {record.get('law_name')}\n"
-                f"- Điều khoản: {record.get('law_reference')}\n"
-                f"- Tiêu đề: {record.get('article_title')}\n"
-                f"- Nội dung: {record.get('content')}\n\n"
+                f"--- Nguồn {i+1} ---\n"
+                f"Văn bản: {record.get('law_name')}\n"
+                f"Điều: {record.get('law_reference')}\n"
+                f"Nội dung: {record.get('content')}\n\n"
             )
 
-        # 4. Tạo prompt cho LLM
+        # 4. Generate Answer
         system_prompt = (
-            "Bạn là trợ lý AI chuyên về Luật Lao động Việt Nam. "
-            "Nhiệm vụ của bạn là trả lời câu hỏi dựa CHÍNH XÁC vào các văn bản pháp luật được cung cấp dưới đây. "
-            "1. Tuyệt đối KHÔNG bịa đặt thông tin. "
-            "2. Nếu thông tin không có trong ngữ cảnh, hãy trả lời là không tìm thấy quy định cụ thể. "
-            "3. Trích dẫn cụ thể (VD: Theo Điều 14...) khi trả lời."
+            "Bạn là trợ lý pháp lý ảo. Nhiệm vụ: Trả lời câu hỏi dựa CHÍNH XÁC vào thông tin được cung cấp bên dưới. "
+            "Tuyệt đối không bịa đặt luật. Nếu không có thông tin, hãy nói không biết. "
+            "Trích dẫn điều luật cụ thể khi trả lời."
         )
         
-        full_prompt = f"{system_prompt}\n\nTHÔNG TIN PHÁP LÝ ĐƯỢC CUNG CẤP:\n{context_str}\n\nCÂU HỎI CỦA NGƯỜI DÙNG:\n{query_text}"
+        full_prompt = f"{system_prompt}\n\nTHÔNG TIN PHÁP LÝ:\n{context_str}\n\nCÂU HỎI:\n{query_text}"
         
         try:
-            response = self.model.generate_content(full_prompt)
+            # Gọi API theo cú pháp mới (client.models.generate_content)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt
+            )
             generated_text = response.text
         except Exception as e:
-            generated_text = "Xin lỗi, đã xảy ra lỗi khi xử lý câu trả lời."
+            print(f"Gemini API Error: {e}")
+            generated_text = "Hệ thống AI đang bận hoặc gặp lỗi kết nối, vui lòng thử lại sau."
 
-        # 5. Chạy kiểm tra tuân thủ
+        # 5. Compliance Check
         compliance_result = ComplianceAnalyzer.validate_response(generated_text, db_records)
 
         return AIResponse(
@@ -149,5 +155,5 @@ class RAGEngine:
             compliance_check=compliance_result
         )
 
-# Khởi tạo RAG Engine toàn cục
+# Singleton
 rag_engine = RAGEngine()

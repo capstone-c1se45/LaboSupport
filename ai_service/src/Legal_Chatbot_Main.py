@@ -28,7 +28,8 @@ MODEL_NAME_CHAT = "gemini-2.5-flash"
 # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_COMPLEX}:generateContent?key={GEMINI_API_KEY}"
 # GEMINI_CHAT_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME_CHAT}:generateContent?key={GEMINI_API_KEY}"
 
-genai.configure(api_key=GEMINI_API_KEY)
+#genai.configure(api_key=GEMINI_API_KEY)
+#client = genai.Client(api_key=GEMINI_API_KEY)
 app = FastAPI(title="AI Legal Service", version="2.0")
 executor = ThreadPoolExecutor()
 chat_sessions: Dict[str, List[Dict[str, str]]] = {}
