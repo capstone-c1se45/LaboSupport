@@ -14,6 +14,7 @@ import reportRouter from "./reportRoutes.js";
 import adminHistoryRoutes from "./adminBHXH.js";
 import adminAuditLogRouter from "./adminAuditLog.js";
 import adminSalaryConfigRoutes from "./adminSalaryConfig.js";
+import adminBhxhPriceIndexRoutes from "./adminBhxhPriceIndex.js";
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use("/reports", reportRouter); // route báo cáo
 router.use("/admin/history", adminHistoryRoutes);// Route Lịch sử BHXH bởi Admin
 router.use("/admin/audit-logs", adminAuditLogRouter); // Route Audit Logs bởi Admin
 router.use("/admin/salary-config", adminSalaryConfigRoutes); // Route cấu hình lương bởi Admin
+router.use("/admin/bhxh-price-index",adminBhxhPriceIndexRoutes); // Route hệ số trượt giá BHXH bởi Admin
 
 export default router;
