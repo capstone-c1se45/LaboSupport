@@ -132,6 +132,7 @@ export const userModel = {
     FROM User u
     LEFT JOIN Role r ON u.role_id = r.role_id
     LEFT JOIN User_Profile p ON u.user_id = p.user_id
+    WHERE u.role_id = 1
   `);
   return rows;
 },
