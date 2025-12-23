@@ -13,7 +13,7 @@ import { userModel } from "./models/user.js";
 import { nanoidNumbersOnly } from "./utils/nanoid.js";
 import bcrypt from "bcryptjs";
 import { redisClient } from "./config/redis.js";
-import { importLaborLaw } from "./utils/init_handbook.js";
+//import { importLaborLaw } from "./utils/init_handbook.js";
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);

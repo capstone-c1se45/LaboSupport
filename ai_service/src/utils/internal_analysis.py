@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 from src.db.chroma_client import chroma_db
 from src.db.mysql_client import mysql_db

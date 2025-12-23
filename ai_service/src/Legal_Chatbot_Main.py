@@ -10,12 +10,14 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import json
 from src.utils.internal_analysis import rag_engine, generate_internal_report
+from src.utils.compliance import run_compliance_check 
+
 from utils.text_extract import extract_text_from_pdf_bytes, extract_text_from_docx 
 from ocr.ocr_utils_main import ocr_image
 from src.models import ContractChatRequest
 import time 
 import random
-import google.generativeai as genai
+from google import genai
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 load_dotenv(dotenv_path)
