@@ -12,6 +12,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = os.path.join(current_dir, '..', '..', '.env')
 load_dotenv(env_path)
 
+GREETING_PATTERN = r"^(xin\s+)?(chào|hi|hello|hallo|hey|holla)(\s+.*)?$"
+
 LEGAL_ENTITY_PATTERNS = {
     "LUAT": r"(bộ\s*luật|luật|nghị\s*định|thông\s*tư|hiến\s*pháp)\s*[a-zA-Z0-9\s]*",
     "DIEU_KHOAN": r"(điều\s*\d+|khoản\s*\d+|mục\s*\d+)",
@@ -82,6 +84,14 @@ class RAGEngine:
         self.model_name = 'gemini-2.0-flash-exp'
 
     async def process_query(self, query_text: str) -> AIResponse:
+
+
+        if re.match(GREETING_PATTERN, query_text.strip(), re.IGNORECASE):
+            return AIResponse(
+                answer="Chào, tôi có thể giúp gì cho bạn về vấn đề gì không?",
+                references=[],
+                compliance_check={"is_compliant": True, "note": "Greeting detected"}
+            )
         # 1. Search ChromaDB
         vector_results = chroma_db.query_similar_chunks(query_text, n_results=10)
         vector_ids = [hit['chunk_id'] for hit in vector_results]
@@ -101,7 +111,7 @@ class RAGEngine:
         
         if not final_records:
             return AIResponse(
-                answer="Xin lỗi, tôi không tìm thấy văn bản luật nào liên quan.",
+                answer="Xin lỗi, tôi không tìm thấy thông tin pháp lý liên quan . Vui lòng đặt câu hỏi cụ thể về Luật Lao động.",
                 references=[]
             )
 
@@ -136,9 +146,14 @@ class RAGEngine:
 
         # 4. Generate Answer
         system_prompt = (
-            "Bạn là trợ lý pháp lý ảo. Nhiệm vụ: Trả lời câu hỏi dựa CHÍNH XÁC vào thông tin được cung cấp bên dưới. "
-            "Tuyệt đối không bịa đặt luật. Nếu không có thông tin, hãy nói không biết. "
-            "Trích dẫn điều luật cụ thể khi trả lời."
+            "Bạn là trợ lý pháp lý ảo chuyên về Luật Lao động Việt Nam. "
+            "QUY TẮC TRẢ LỜI QUAN TRỌNG:\n"
+            "1. Dựa CHÍNH XÁC vào 'THÔNG TIN PHÁP LÝ' được cung cấp bên dưới để trả lời.\n"
+            "2. Tuyệt đối không bịa đặt luật.\n"
+            "3. XỬ LÝ CÂU HỎI LẠC ĐỀ: Nếu câu hỏi của người dùng KHÔNG LIÊN QUAN đến pháp luật, lao động, hợp đồng (ví dụ: hỏi về động vật, chó mèo, nấu ăn, tình cảm, thời tiết, code...), "
+            "hãy trả lời lịch sự: 'Xin lỗi, tôi chỉ là trợ lý pháp lý và không thể hỗ trợ các vấn đề ngoài phạm vi Luật Lao động'.\n"
+            "4. Nếu thông tin được cung cấp không đủ để trả lời, hãy nói không biết.\n"
+            "5. Trích dẫn điều luật cụ thể khi trả lời."
         )
         
         full_prompt = f"{system_prompt}\n\nTHÔNG TIN PHÁP LÝ:\n{context_str}\n\nCÂU HỎI:\n{query_text}"
