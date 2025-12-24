@@ -1,4 +1,3 @@
-// src/routes/adminReport.js
 import { Router } from "express";
 import { adminReportController } from "../controllers/adminReport.js";
 import { authMiddleware } from "../middlewares/auth.js";

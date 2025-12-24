@@ -83,30 +83,37 @@ class RAGEngine:
 
     async def process_query(self, query_text: str) -> AIResponse:
         # 1. Search ChromaDB
-        search_results = chroma_db.query_similar_chunks(query_text)
+        vector_results = chroma_db.query_similar_chunks(query_text, n_results=10)
+        vector_ids = [hit['chunk_id'] for hit in vector_results]
+
+        keyword_records = mysql_db.search_by_keyword(query_text, limit=3)
+
+        vector_records = mysql_db.get_law_content(vector_ids)
+
+        combined_map = {rec['section_id']: rec for rec in vector_records}
+
+        for rec in keyword_records:
+            if rec['section_id'] not in combined_map:
+                print(f"➕ Bổ sung từ Keyword Search: {rec['article_title']}")
+                combined_map[rec['section_id']] = rec
+
+        final_records = list(combined_map.values())
         
-        if not search_results:
+        if not final_records:
             return AIResponse(
-                answer="Xin lỗi, tôi không tìm thấy văn bản luật nào liên quan trong cơ sở dữ liệu.",
+                answer="Xin lỗi, tôi không tìm thấy văn bản luật nào liên quan.",
                 references=[]
             )
 
-        # 2. Get full content from MySQL
-        chunk_ids = [hit['chunk_id'] for hit in search_results]
-        db_records = mysql_db.get_law_content(chunk_ids)
-
-        if not db_records:
-            return AIResponse(
-                answer="Có lỗi khi truy xuất dữ liệu chi tiết từ hệ thống.",
-                references=[]
-            )
+    
 
         # 3. Create Context
         context_str = ""
         references_list = []
         
-        for i, record in enumerate(db_records):
-            score = next((x['score'] for x in search_results if x['chunk_id'] == record['section_id']), 0)
+        for i, record in enumerate(final_records[:12]):  # Giới hạn tối đa 12 nguồn
+            # Lấy điểm số từ vector_results
+            score = next((x['score'] for x in vector_results if x['chunk_id'] == record['section_id']), 0.5)
             
             full_title = f"{record.get('law_reference', '')} - {record.get('article_title', '')}"
             
@@ -125,6 +132,7 @@ class RAGEngine:
                 f"Điều: {record.get('law_reference')}\n"
                 f"Nội dung: {record.get('content')}\n\n"
             )
+            print(context_str)
 
         # 4. Generate Answer
         system_prompt = (
@@ -147,7 +155,7 @@ class RAGEngine:
             generated_text = "Hệ thống AI đang bận hoặc gặp lỗi kết nối, vui lòng thử lại sau."
 
         # 5. Compliance Check
-        compliance_result = ComplianceAnalyzer.validate_response(generated_text, db_records)
+        compliance_result = ComplianceAnalyzer.validate_response(generated_text, vector_records)
 
         return AIResponse(
             answer=generated_text,

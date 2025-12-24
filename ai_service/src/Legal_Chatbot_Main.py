@@ -192,76 +192,108 @@ def call_gemini_api_sync(messages: List[Dict[str, str]]):
     return call_gemini_api(messages, model_url)
 
 #API chat (hỏi đáp luật)
-@app.post("/chat")
-async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
+# @app.post("/chat")
+# async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
 
-    message = message.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="Tin nhắn không được để trống.")
+#     message = message.strip()
+#     if not message:
+#         raise HTTPException(status_code=400, detail="Tin nhắn không được để trống.")
 
-    if session_id not in chat_sessions:
-        chat_sessions[session_id] = [
-            {
-                "role": "system",
-                "content": (
-                    "Bạn là chuyên gia pháp lý Việt Nam, am hiểu **duy nhất về Bộ luật Lao động 2019**. "
-                    "Nhiệm vụ của bạn chỉ là trả lời các câu hỏi liên quan đến Luật Lao động. "
-                    "Nếu người dùng hỏi về bất kỳ chủ đề nào khác (ví dụ: công thức nấu ăn, tin tức, lịch sử, toán học, luật dân sự, luật hình sự, v.v.), "
-                    "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động. "
-                    "'.Nếu mà người dùng nhắn là hi, chào thì trả lời **chính xác** câu sau: 'Chào, tôi có thể giúp gì cho bạn về luật Lao Động không ?' "
+#     if session_id not in chat_sessions:
+#         chat_sessions[session_id] = [
+#             {
+#                 "role": "system",
+#                 "content": (
+#                     "Bạn là chuyên gia pháp lý Việt Nam, am hiểu **duy nhất về Bộ luật Lao động 2019**. "
+#                     "Nhiệm vụ của bạn chỉ là trả lời các câu hỏi liên quan đến Luật Lao động. "
+#                     "Nếu người dùng hỏi về bất kỳ chủ đề nào khác (ví dụ: công thức nấu ăn, tin tức, lịch sử, toán học, luật dân sự, luật hình sự, v.v.), "
+#                     "bạn phải trả lời **chính xác** câu sau: 'Xin lỗi, tôi chỉ có thể hỗ trợ các vấn đề liên quan đến Bộ luật Lao động 2019. Vui lòng hỏi tôi về luật lao động. "
+#                     "'.Nếu mà người dùng nhắn là hi, chào thì trả lời **chính xác** câu sau: 'Chào, tôi có thể giúp gì cho bạn về luật Lao Động không ?' "
                     
-                    "Hãy chú ý phân tích các thông tin được cung cấp trong phần 'PHÂN TÍCH NỘI BỘ' và 'Điều luật liên quan' để trả lời. "
-                    "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "
-                    "Chỉ dẫn điều luật khi thật sự cần thiết."
-                )
-            }
-        ]
+#                     "Hãy chú ý phân tích các thông tin được cung cấp trong phần 'PHÂN TÍCH NỘI BỘ' và 'Điều luật liên quan' để trả lời. "
+#                     "Khi trả lời, hãy trình bày NGẮN GỌN, XÚC TÍCH, dễ hiểu với người dân. "
+#                     "Chỉ dẫn điều luật khi thật sự cần thiết."
+#                 )
+#             }
+#         ]
 
-    # Phân tích Nội bộ: Nhận dạng các thực thể pháp lý trong câu hỏi người dùng
-    internal_report = generate_internal_report(message)
+#     # Phân tích Nội bộ: Nhận dạng các thực thể pháp lý trong câu hỏi người dùng
+#     internal_report = generate_internal_report(message)
 
 
 
-    rag_prompt = f"""
-    Câu hỏi người dùng: {message}
+#     rag_prompt = f"""
+#     Câu hỏi người dùng: {message}
 
-    {internal_report}
+#     {internal_report}
     
  
 
-    Yêu cầu:
-    - Dựa vào các điều luật và thông tin phân tích nội bộ để trả lời câu hỏi người dùng.
-    - Trả lời bằng tiếng Việt dễ hiểu, không lặp lại nguyên văn luật, và không cần lặp lại "Điều luật liên quan" hay "PHÂN TÍCH NỘI BỘ".
-    """
+#     Yêu cầu:
+#     - Dựa vào các điều luật và thông tin phân tích nội bộ để trả lời câu hỏi người dùng.
+#     - Trả lời bằng tiếng Việt dễ hiểu, không lặp lại nguyên văn luật, và không cần lặp lại "Điều luật liên quan" hay "PHÂN TÍCH NỘI BỘ".
+#     """
     
-    chat_sessions[session_id].append({"role": "user", "content": rag_prompt})
+#     chat_sessions[session_id].append({"role": "user", "content": rag_prompt})
 
+#     try:
+#         loop = asyncio.get_event_loop()
+#         answer = await loop.run_in_executor(executor, call_gemini_api_sync, chat_sessions[session_id])
+#     except requests.exceptions.HTTPError as http_err:
+#         error_detail = f"Lỗi HTTP khi gọi Gemini API (Chat): {http_err}. Kiểm tra API Key và URL."
+#         raise HTTPException(
+#             status_code=http_err.response.status_code if http_err.response else 500,
+#             detail=error_detail,
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API (Chat): {e}")
+
+#     answer = answer.strip()
+#     # if len(answer) > 800:
+#     #     answer = answer[:800].rsplit('.', 1)[0] + "."
+
+#     chat_sessions[session_id].append({"role": "assistant", "content": answer})
+
+#     return {
+#         "session_id": session_id,
+#         "user_message": message,
+#         "ai_reply": answer,
+#         "internal_entities": internal_report.splitlines()[1:-1] if internal_report else [],
+#         "history_count": len(chat_sessions[session_id]),
+#     }
+
+
+@app.post("/chat")
+async def chat_with_ai(message: str = Form(...), session_id: str = Form("default")):
+    message = message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Tin nhắn rỗng.")
+
+    # Gọi RAG Engine: Search ChromaDB -> Get MySQL -> Ask Gemini
     try:
-        loop = asyncio.get_event_loop()
-        answer = await loop.run_in_executor(executor, call_gemini_api_sync, chat_sessions[session_id])
-    except requests.exceptions.HTTPError as http_err:
-        error_detail = f"Lỗi HTTP khi gọi Gemini API (Chat): {http_err}. Kiểm tra API Key và URL."
-        raise HTTPException(
-            status_code=http_err.response.status_code if http_err.response else 500,
-            detail=error_detail,
-        )
+        rag_response = await rag_engine.process_query(message)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi gọi Gemini API (Chat): {e}")
+         print(f"RAG Error: {e}")
+         # Fallback nếu RAG lỗi: trả lời bằng kiến thức chung (tùy chọn)
+         raise HTTPException(status_code=500, detail=f"Lỗi hệ thống tra cứu luật: {str(e)}")
 
-    answer = answer.strip()
-    # if len(answer) > 800:
-    #     answer = answer[:800].rsplit('.', 1)[0] + "."
+    # Lưu lịch sử đơn giản
+    if session_id not in chat_sessions:
+        chat_sessions[session_id] = []
+    
+    chat_sessions[session_id].append({"role": "user", "content": message})
+    chat_sessions[session_id].append({"role": "assistant", "content": rag_response.answer})
 
-    chat_sessions[session_id].append({"role": "assistant", "content": answer})
+    # Chuyển đổi references sang dict để trả về JSON
+    refs_json = [ref.dict() for ref in rag_response.references]
 
     return {
         "session_id": session_id,
         "user_message": message,
-        "ai_reply": answer,
-        "internal_entities": internal_report.splitlines()[1:-1] if internal_report else [],
-        "history_count": len(chat_sessions[session_id]),
+        "ai_reply": rag_response.answer,
+        "references": refs_json, 
+        "compliance": rag_response.compliance_check
     }
-
 
 # API reset chat (xóa lịch sử phiên)
 @app.post("/reset_chat")

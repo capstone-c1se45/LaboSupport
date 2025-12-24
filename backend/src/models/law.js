@@ -9,8 +9,8 @@ export const lawModel = {
   },
 
   // Tạo luật mới
-  async create({ code, summary, effective_date }) {
-    const law_id = nanoidNumbersOnly(10);
+  async create({ law_id, code, summary, effective_date }) {
+    //const law_id = nanoidNumbersOnly(10);
     const sql = `INSERT INTO laws (law_id, code, summary, effective_date) VALUES (?, ?, ?, ?)`;
     await pool.execute (sql, [law_id, code, summary, effective_date]);
     return { law_id, code, summary, effective_date };

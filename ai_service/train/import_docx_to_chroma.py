@@ -73,9 +73,10 @@ def parse_docx_to_sections(docx_path):
                 "law_name": LAW_NAME,
                 "chapter": current_chapter,
                 "law_reference": f"Điều {article_number} - {LAW_NAME}",
-                "article_title": text, # Dòng đầu tiên là tiêu đề (VD: Điều 1. Phạm vi...)
+           #     "law_reference": LAW_ID,
+                "article_title": text, 
                 "chunk_index": 1,
-                "content": text,       # Bắt đầu nội dung
+                "content": text,       
                 "category": "Lao động"
             }
         else:
@@ -183,8 +184,6 @@ if __name__ == "__main__":
         # 3. Lưu JSON
         save_json_for_admin_seed(sections)
         
-        print("\n🚀 BƯỚC TIẾP THEO:")
-        print(f"1. Copy '{JSON_OUTPUT_PATH}' sang backend/src/")
-        print("2. Chạy 'npm run seed' ở Backend để đồng bộ MySQL.")
+        
     else:
         print("⚠️ Không lấy được dữ liệu. Hãy kiểm tra lại file Word.")

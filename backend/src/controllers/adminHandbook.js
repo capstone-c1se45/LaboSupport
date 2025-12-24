@@ -148,6 +148,7 @@ export const adminHandbookController = {
         if (!law) {
           console.log(`Creating new law record: ${law_code}`);
             law = await lawModel.create({
+                law_id: law_code,
                 code: law_code,
                 summary: law_summary,
                 effective_date: law_effective_date,
@@ -163,12 +164,12 @@ export const adminHandbookController = {
         }
 
         // 5. Gán law_id cho từng điều khoản và tạo ID mới
-        const dataList = rawDataList.map((item) => ({
-            section_id: nanoidNumbersOnly(10),
+        const dataList = rawDataList.map((item, i) => ({
+            section_id: law_code + "_dieu_" + (i + 1), // Tạo ID riêng cho từng điều khoản
             article_title: item.article_title, 
             law_name: law_code,
-            category: item.category || "luat lao dong",
-            law_reference: item.law_reference,
+            category: item.category || "luat lao don  g",
+            law_reference: "Điều " + (i + 1) + "- Bộ luật Lao động 2019",
             chapter: item.chapter || "",
             content: item.content,           
             law_id: law.law_id,                
