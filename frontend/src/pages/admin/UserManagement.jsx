@@ -239,8 +239,8 @@ export default function UserManagement() {
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="1">Admin</option>
-              <option value="2">User</option>
+              <option value="1">User</option>
+              <option value="2">Admin</option>
             </select>
           </div>
          
@@ -344,9 +344,6 @@ export default function UserManagement() {
               <th className="px-4 py-2 text-left text-gray-600 font-medium">
                 Trạng thái
               </th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">
-                Ngày tạo
-              </th>
               <th className="px-4 py-2 text-right text-gray-600 font-medium">
                 Hành động
               </th>
@@ -396,20 +393,9 @@ export default function UserManagement() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                        u.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-red-50 text-red-600'
-                      }`}
-                    >
-                      {u.status === 'active' ? 'Hoat dong' : 'Bi khoa'}
+                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                      Hoạt động
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {u.created_at
-                      ? new Date(u.created_at).toLocaleDateString('vi-VN')
-                      : '-'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2 text-gray-500">
