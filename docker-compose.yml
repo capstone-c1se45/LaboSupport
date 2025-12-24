@@ -20,21 +20,33 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   redis:
     image: redis:alpine
     container_name: labosupport-redis
     restart: always
     ports:
       - "6379:6379"
-  # ai-service:
-  #   build: ./ai_service
-  #   container_name: ai_service_container
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - ./ai_service:/app
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
+
+  # --- PHẦN ĐÃ SỬA (UNCOMMENT) ---
+  ai-service:
+    build: ./ai_service
+    container_name: ai_service_container
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai_service:/app
+     
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MYSQL_HOST=mysql     
+      - MYSQL_PORT=3306 
+      - MYSQL_USER=se45
+      - MYSQL_PASSWORD=captone1@se45
+      - MYSQL_ROOT_PASSWORD=captone1@se45
+      - MYSQL_DATABASE=db_labosupport
+  # -------------------------------
+
   backend:
     build: ./backend
     container_name: backend_container
@@ -53,12 +65,19 @@ services:
       - MYSQL_DATABASE=db_labosupport
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - AI_SERVICE_URL=http://host.docker.internal:8000
+      # --- SỬA DÒNG NÀY ---
+      # Đổi từ host.docker.internal thành tên service 'ai-service'
+      - AI_SERVICE_URL=http://ai-service:8000
+      # --------------------
     depends_on:
       mysql:
         condition: service_healthy 
       redis:
         condition: service_started
+      # Thêm phụ thuộc vào ai-service để backend chờ AI chạy xong
+      ai-service:
+         condition: service_started
+
   frontend:
     build: ./frontend
     container_name: frontend_container
