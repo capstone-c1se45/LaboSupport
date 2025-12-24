@@ -85,4 +85,43 @@ export const adminReportModel = {
     `);
     return rows;
   },
+  async getTotalContracts() {
+    const [rows] = await pool.query('SELECT COUNT(*) AS total FROM Contract');
+    return rows[0].total;
+  },
+  
+  async getTotalReports() {
+    const [rows] = await pool.query('SELECT COUNT(*) AS total FROM Report');
+    return rows[0].total;
+  },
+
+  async getTotalMessages() {
+    const [rows] = await pool.query('SELECT COUNT(*) AS total FROM Message');
+    return rows[0].total;
+  },
+
+  async getContractsByMonth() {
+     const [rows] = await pool.query(`
+      SELECT 
+        DATE_FORMAT(uploaded_at, '%Y-%m') AS month,
+        COUNT(*) AS total
+      FROM Contract
+      GROUP BY DATE_FORMAT(uploaded_at, '%Y-%m')
+      ORDER BY month ASC
+    `);
+    return rows;
+  },
+
+  async getMessagesByMonth() {
+     const [rows] = await pool.query(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') AS month,
+        COUNT(*) AS total
+      FROM Message
+      WHERE role = 'user' 
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month ASC
+    `);
+    return rows;
+  }
 };
