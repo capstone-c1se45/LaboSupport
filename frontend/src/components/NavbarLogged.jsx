@@ -105,7 +105,7 @@ export default function NavbarLogged() {
           </div>
         </div>
 
-        <a href="/#about" className="text-gray-700 hover:text-gray-900">Giới thiệu</a>
+        
       </nav>
 
       {/* Right Side: Notification + Avatar */}
