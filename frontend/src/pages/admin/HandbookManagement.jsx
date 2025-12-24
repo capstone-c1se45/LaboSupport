@@ -9,58 +9,40 @@ const formatDate = (isoString) => {
   return new Date(isoString).toLocaleDateString('vi-VN');
 };
 
-// Dữ liệu Mức lương tối thiểu vùng (Giữ nguyên)
-const REGION_SALARY = [
-  { region: 'Vùng I', salary: '4.680.000 ₫', effective: '01/07/2023' },
-  { region: 'Vùng II', salary: '4.160.000 ₫', effective: '01/07/2023' },
-  { region: 'Vùng III', salary: '3.640.000 ₫', effective: '01/07/2023' },
-  { region: 'Vùng IV', salary: '3.250.000 ₫', effective: '01/07/2023' },
-];
-
-// Dữ liệu Biểu thuế TNCN (Giữ nguyên)
-const TAX_TABLE = [
-  { level: 1, income: '0 ₫ - 5.000.000 ₫', rate: '5%' },
-  { level: 2, income: '5.000.000 ₫ - 10.000.000 ₫', rate: '10%' },
-  { level: 3, income: '10.000.000 ₫ - 18.000.000 ₫', rate: '15%' },
-  { level: 4, income: '18.000.000 ₫ - 32.000.000 ₫', rate: '20%' },
-  { level: 5, income: '32.000.000 ₫ - 52.000.000 ₫', rate: '25%' },
-  { level: 6, income: '52.000.000 ₫ - 80.000.000 ₫', rate: '30%' },
-  { level: 7, income: 'Trên 80.000.000 ₫', rate: '35%' },
-];
-
 export default function HandbookManagement() {
-  const [tab, setTab] = useState('law'); 
+  const [tab, setTab] = useState('law');
 
   // --- STATE QUẢN LÝ LUẬT ---
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // State xử lý form & upload
   const [uploading, setUploading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   // Form Data
-  const [formData, setFormData] = useState({ 
-      law_code: "", law_summary: "", law_effective_date: "",
-      article_title: "", chapter: "", content: "",
-      file: null 
+  const [formData, setFormData] = useState({
+    law_code: "", law_summary: "", law_effective_date: "",
+    article_title: "", chapter: "", content: "",
+    file: null
   });
 
+  // --- STATE RIÊNG CHO LƯƠNG & THUẾ ---
+  const [regionWages, setRegionWages] = useState([]);
+  const [taxBrackets, setTaxBrackets] = useState([]);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+
   // --- 1. HÀM FETCH DỮ LIỆU DUY NHẤT ---
-  // Sử dụng useCallback để tránh tạo lại hàm không cần thiết
   const fetchHandbooks = useCallback(async (page, search) => {
-    if (tab !== 'law') return; // Chỉ fetch khi ở tab law
-    
+    if (tab !== 'law') return;
     setLoading(true);
     try {
-      // Đảm bảo truyền đúng tham số search vào API
       const res = await api.get(
         `/admin/handbooks?page=${page}&limit=${pagination.limit}&search=${search}`
       );
-
       if (res.data && res.data.data) {
         setItems(res.data.data);
         setPagination(res.data.pagination);
@@ -77,36 +59,23 @@ export default function HandbookManagement() {
   }, [pagination.limit, tab]);
 
   // --- 2. EFFECT: DEBOUNCE SEARCH & TAB CHANGE ---
-  // Chạy khi người dùng gõ tìm kiếm HOẶC chuyển tab
   useEffect(() => {
     if (tab !== 'law') return;
-
-    // Đặt delay 500ms để chờ người dùng gõ xong
     const delayDebounceFn = setTimeout(() => {
-      // Luôn reset về trang 1 khi tìm kiếm mới
       fetchHandbooks(1, searchTerm);
-      // Cập nhật lại state page về 1 (nếu đang ở trang khác)
       setPagination(prev => ({ ...prev, page: 1 }));
     }, 500);
-
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, tab, fetchHandbooks]);
 
   // --- 3. EFFECT: PAGINATION ---
-  // Chỉ chạy khi người dùng bấm chuyển trang (page > 1)
   useEffect(() => {
     if (tab !== 'law') return;
-    
-    // Nếu page = 1 thì effect Debounce ở trên đã xử lý rồi, không cần gọi lại
     if (pagination.page > 1) {
-        fetchHandbooks(pagination.page, searchTerm);
+      fetchHandbooks(pagination.page, searchTerm);
     }
   }, [pagination.page, fetchHandbooks, tab, searchTerm]);
 
-
-  // --- XÓA BỎ HÀM loadData() VÀ useEffect() CŨ Ở ĐÂY ---
-  // Đã xóa loadData để tránh xung đột
-  
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
@@ -115,9 +84,8 @@ export default function HandbookManagement() {
   const handleDelete = async (sectionId) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa điều khoản này?")) return;
     try {
-      await api.delete(`/admin/handbooks/${sectionId}`); 
+      await api.delete(`/admin/handbooks/${sectionId}`);
       alert("Xóa thành công!");
-      // Gọi lại fetchHandbooks để cập nhật danh sách
       fetchHandbooks(pagination.page, searchTerm);
     } catch (error) {
       alert("Có lỗi xảy ra khi xóa: " + (error.response?.data?.message || error.message));
@@ -127,16 +95,15 @@ export default function HandbookManagement() {
   const handleDeleteAll = async () => {
     if (!window.confirm("CẢNH BÁO: Hành động này sẽ xóa TOÀN BỘ dữ liệu luật.\nBạn có chắc chắn không?")) return;
     if (!window.confirm("Xác nhận lần cuối?")) return;
-
     try {
-        setLoading(true);
-        await adminService.deleteAllHandbooks(); 
-        alert("Đã xóa toàn bộ dữ liệu luật.");
-        fetchHandbooks(1, ""); // Load lại trang 1 sạch
-        setSearchTerm("");     // Reset ô tìm kiếm
+      setLoading(true);
+      await adminService.deleteAllHandbooks();
+      alert("Đã xóa toàn bộ dữ liệu luật.");
+      fetchHandbooks(1, "");
+      setSearchTerm("");
     } catch (error) {
-        alert("Lỗi khi xóa dữ liệu: " + (error.response?.data?.message || "Lỗi server"));
-        setLoading(false);
+      alert("Lỗi khi xóa dữ liệu: " + (error.response?.data?.message || "Lỗi server"));
+      setLoading(false);
     }
   };
 
@@ -144,25 +111,25 @@ export default function HandbookManagement() {
   const openModal = (item = null) => {
     setEditingItem(item);
     if (item) {
-      setFormData({ 
-          law_code: item.law_code || "",
-          law_summary: item.law_summary || "",
-          law_effective_date: item.effective_date ? item.effective_date.split('T')[0] : "",
-          article_title: item.article_title || "", 
-          chapter: item.chapter || "", 
-          content: item.content || "",
-          file: null
+      setFormData({
+        law_code: item.law_code || "",
+        law_summary: item.law_summary || "",
+        law_effective_date: item.effective_date ? item.effective_date.split('T')[0] : "",
+        article_title: item.article_title || "",
+        chapter: item.chapter || "",
+        content: item.content || "",
+        file: null
       });
     } else {
-      setFormData({ 
-          law_code: "", law_summary: "", law_effective_date: "", 
-          article_title: "", chapter: "", content: "",
-          file: null 
+      setFormData({
+        law_code: "", law_summary: "", law_effective_date: "",
+        article_title: "", chapter: "", content: "",
+        file: null
       });
     }
     setIsModalOpen(true);
   };
-  
+
   const handleFormChange = (e) => {
     const value = e.target.type === 'file' ? e.target.files[0] : e.target.value;
     const name = e.target.name;
@@ -172,29 +139,26 @@ export default function HandbookManagement() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.law_code || !formData.law_effective_date || !formData.law_summary) {
-        alert("Vui lòng nhập đầy đủ thông tin Văn bản luật (*)");
-        return;
+      alert("Vui lòng nhập đầy đủ thông tin Văn bản luật (*)");
+      return;
     }
-
     setUploading(true);
     try {
       if (editingItem) {
-        // Edit logic
         if (!formData.article_title || !formData.content) {
-            alert("Vui lòng nhập Tiêu đề và Nội dung điều khoản.");
-            setUploading(false); return;
+          alert("Vui lòng nhập Tiêu đề và Nội dung điều khoản.");
+          setUploading(false); return;
         }
         await api.put(`/admin/handbooks/${editingItem.section_id}`, {
-            article_title: formData.article_title,
-            chapter: formData.chapter,
-            content: formData.content,
+          article_title: formData.article_title,
+          chapter: formData.chapter,
+          content: formData.content,
         });
         alert("Cập nhật thành công!");
       } else {
-        // Add logic (Import)
         if (!formData.file) {
-            alert("Vui lòng chọn file .docx để tải lên.");
-            setUploading(false); return;
+          alert("Vui lòng chọn file .docx để tải lên.");
+          setUploading(false); return;
         }
         const submitData = new FormData();
         submitData.append("law_code", formData.law_code);
@@ -203,18 +167,65 @@ export default function HandbookManagement() {
         submitData.append("file", formData.file);
 
         const res = await api.post("/admin/handbooks/import-docx", submitData, {
-            headers: { "Content-Type": "multipart/form-data" },
+          headers: { "Content-Type": "multipart/form-data" },
         });
         alert(res.data.message || "Import thành công!");
       }
-
       setIsModalOpen(false);
-      // Load lại dữ liệu hiện tại
       fetchHandbooks(pagination.page, searchTerm);
     } catch (error) {
       alert("Lỗi: " + (error.response?.data?.message || error.message));
     } finally {
-        setUploading(false);
+      setUploading(false);
+    }
+  };
+
+  // --- LƯƠNG & THUẾ ---
+  const fetchSalaryConfig = async () => {
+    if (tab !== 'salary') return;
+    setSalaryLoading(true);
+    try {
+      const [wages, taxes] = await Promise.all([
+        adminService.getRegionWages(),
+        adminService.getTaxBrackets()
+      ]);
+      setRegionWages(wages);
+      setTaxBrackets(taxes);
+    } catch (error) {
+      console.error("Lỗi tải cấu hình lương:", error);
+    } finally {
+      setSalaryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'salary') {
+      fetchSalaryConfig();
+    }
+    // eslint-disable-next-line
+  }, [tab]);
+
+  const handleEditWage = async (row) => {
+    const newWage = prompt(`Nhập mức lương mới cho Vùng ${row.region_code}:`, row.wage);
+    if (newWage === null || isNaN(newWage) || newWage === "") return;
+    try {
+      await adminService.updateRegionWage(row.region_code, Number(newWage));
+      alert("Cập nhật thành công!");
+      fetchSalaryConfig();
+    } catch (err) {
+      alert("Lỗi cập nhật lương");
+    }
+  };
+
+  const handleEditTax = async (row) => {
+    const newRate = prompt(`Nhập thuế suất mới cho Bậc ${row.sort_order} (VD: 0.1 cho 10%):`, row.rate);
+    if (newRate === null || isNaN(newRate)) return;
+    try {
+      await adminService.updateTaxBracket(row.id, { ...row, rate: Number(newRate) });
+      alert("Cập nhật thành công!");
+      fetchSalaryConfig();
+    } catch (err) {
+      alert("Lỗi cập nhật thuế");
     }
   };
 
@@ -237,159 +248,161 @@ export default function HandbookManagement() {
           {/* Controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
             <div className="flex-1 max-w-lg relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
-                <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Tìm kiếm theo tiêu đề, nội dung, số hiệu luật..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchTerm && (
-                    <button 
-                        onClick={() => setSearchTerm("")}
-                        className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-                    >
-                        ✕
-                    </button>
-                )}
+              <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-full pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Tìm kiếm theo tiêu đề, nội dung, số hiệu luật..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            
             <div className="flex gap-2">
-                <button type="button" onClick={() => openModal(null)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 whitespace-nowrap shadow-sm">
-                    <span className="text-lg leading-none">+</span><span>Thêm Luật (File)</span>
-                </button>
-                <button type="button" onClick={handleDeleteAll} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 whitespace-nowrap border border-red-200">
-                    <span>🗑 Xóa tất cả</span>
-                </button>
+              <button type="button" onClick={() => openModal(null)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 whitespace-nowrap shadow-sm">
+                <span className="text-lg leading-none">+</span><span>Thêm Luật (File)</span>
+              </button>
+              <button type="button" onClick={handleDeleteAll} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 whitespace-nowrap border border-red-200">
+                <span>🗑 Xóa tất cả</span>
+              </button>
             </div>
           </div>
-
           {/* List Items */}
           <div className="space-y-3">
             {loading ? (
-                <div className="text-center py-10 text-gray-500">Đang tải dữ liệu...</div>
+              <div className="text-center py-10 text-gray-500">Đang tải dữ liệu...</div>
             ) : (
-                <>
-                    {items.length > 0 ? (
-                        items.map((item, idx) => (
-                        <div key={item.section_id || idx} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-5 hover:shadow-md transition duration-200">
-                           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3 border-b border-gray-100 pb-3">
-                                <div className="flex-1">
-                                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                            📄 {item.law_code || "N/A"}
-                                         </span>
-                                         <span className="text-xs text-gray-500 flex items-center gap-1">
-                                            🕒 Hiệu lực: {formatDate(item.effective_date)}
-                                         </span>
-                                     </div>
-                                     <h3 className="text-sm font-semibold text-gray-800 leading-snug">{item.law_summary}</h3>
-                                </div>
-                                <div className="flex items-center gap-1 text-sm whitespace-nowrap">
-                                    <button type="button" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" onClick={() => openModal(item)} title="Chỉnh sửa">✏️</button>
-                                    <button type="button" className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition" onClick={() => handleDelete(item.section_id)} title="Xóa">🗑</button>
-                                </div>
-                           </div>
-                           <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-indigo-700 font-bold text-sm bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{item.article_title}</span>
-                                    {item.chapter && <span className="text-xs font-medium text-gray-500">— {item.chapter}</span>}
-                                </div>
-                                <div className="text-sm text-gray-600 leading-relaxed line-clamp-3 pl-1 border-l-2 border-gray-200">
-                                    {item.content || "Nội dung đang cập nhật..."}
-                                </div>
-                           </div>
+              <>
+                {items.length > 0 ? (
+                  items.map((item, idx) => (
+                    <div key={item.section_id || idx} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-5 hover:shadow-md transition duration-200">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3 border-b border-gray-100 pb-3">
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                              📄 {item.law_code || "N/A"}
+                            </span>
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              🕒 Hiệu lực: {formatDate(item.effective_date)}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-800 leading-snug">{item.law_summary}</h3>
                         </div>
-                        ))
-                    ) : (
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-sm text-gray-500 text-center flex flex-col items-center justify-center gap-2">
-                            <span className="text-4xl">📭</span><p>Không tìm thấy kết quả nào.</p>
+                        <div className="flex items-center gap-1 text-sm whitespace-nowrap">
+                          <button type="button" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" onClick={() => openModal(item)} title="Chỉnh sửa">✏️</button>
+                          <button type="button" className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition" onClick={() => handleDelete(item.section_id)} title="Xóa">🗑</button>
                         </div>
-                    )}
-                </>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-indigo-700 font-bold text-sm bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{item.article_title}</span>
+                          {item.chapter && <span className="text-xs font-medium text-gray-500">— {item.chapter}</span>}
+                        </div>
+                        <div className="text-sm text-gray-600 leading-relaxed line-clamp-3 pl-1 border-l-2 border-gray-200">
+                          {item.content || "Nội dung đang cập nhật..."}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-sm text-gray-500 text-center flex flex-col items-center justify-center gap-2">
+                    <span className="text-4xl">📭</span><p>Không tìm thấy kết quả nào.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
-          
           {/* Pagination */}
           {pagination.totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-6 items-center">
-                <button disabled={pagination.page === 1} onClick={() => handlePageChange(pagination.page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition">&lt; Trước</button>
-                <span className="px-3 py-1.5 text-sm text-gray-600 font-medium">Trang {pagination.page} / {pagination.totalPages}</span>
-                <button disabled={pagination.page === pagination.totalPages} onClick={() => handlePageChange(pagination.page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition">Sau &gt;</button>
+              <button disabled={pagination.page === 1} onClick={() => handlePageChange(pagination.page - 1)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition">&lt; Trước</button>
+              <span className="px-3 py-1.5 text-sm text-gray-600 font-medium">Trang {pagination.page} / {pagination.totalPages}</span>
+              <button disabled={pagination.page === pagination.totalPages} onClick={() => handlePageChange(pagination.page + 1)} className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50 disabled:opacity-50 transition">Sau &gt;</button>
             </div>
           )}
         </section>
       )}
 
-      {/* --- TAB CÀI ĐẶT LƯƠNG (Giữ nguyên) --- */}
+      {/* --- TAB CÀI ĐẶT LƯƠNG --- */}
       {tab === 'salary' && (
         <section className="space-y-6">
-            {/* ... Giữ nguyên phần cài đặt lương ... */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Mức lương tối thiểu vùng</h3>
-             {/* ... Copy phần Salary Table từ code cũ vào đây ... */}
-             <div className="overflow-hidden rounded-xl border border-gray-100">
-               <table className="min-w-full text-sm">
-                 <thead className="bg-gray-50">
-                   <tr>
-                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Vùng</th>
-                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Mức lương</th>
-                     <th className="px-4 py-2 text-left text-gray-600 font-medium">Ngày có hiệu lực</th>
-                     <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {REGION_SALARY.map((row) => (
-                     <tr key={row.region} className="border-t border-gray-100 hover:bg-gray-50">
-                       <td className="px-4 py-2 text-gray-800">{row.region}</td>
-                       <td className="px-4 py-2 text-gray-800 font-medium">{row.salary}</td>
-                       <td className="px-4 py-2 text-gray-700">{row.effective}</td>
-                       <td className="px-4 py-2 text-right">
-                         <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
-                       </td>
-                     </tr>
-                   ))}
-                 </tbody>
-               </table>
-             </div>
-           </div>
-           
-           {/* ... Copy phần Tax Table từ code cũ vào đây ... */}
-             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Biểu thuế thu nhập cá nhân (TNCN)</h3>
+          {salaryLoading ? (
+            <div className="text-center py-10 text-gray-500">Đang tải cấu hình lương...</div>
+          ) : (
+            <>
+              {/* Bảng Lương vùng */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Mức lương tối thiểu vùng</h3>
                 <div className="overflow-hidden rounded-xl border border-gray-100">
-                <table className="min-w-full text-sm">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Bậc</th>
-                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thu nhập tính thuế / tháng (VND)</th>
-                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thuế suất (%)</th>
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Vùng</th>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Mức lương</th>
                         <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
-                    </tr>
+                      </tr>
                     </thead>
                     <tbody>
-                    {TAX_TABLE.map((row) => (
-                        <tr key={row.level} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-2 text-gray-800">Bậc {row.level}</td>
-                        <td className="px-4 py-2 text-gray-800">{row.income}</td>
-                        <td className="px-4 py-2 text-gray-800 font-bold text-blue-600">{row.rate}</td>
-                        <td className="px-4 py-2 text-right">
-                            <button type="button" className="text-blue-600 hover:text-blue-800 text-xs font-medium">✏️ Sửa</button>
-                        </td>
+                      {regionWages.map((row) => (
+                        <tr key={row.region_code} className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="px-4 py-2 text-gray-800">Vùng {row.region_code}</td>
+                          <td className="px-4 py-2 text-gray-800 font-medium">
+                            {Number(row.wage).toLocaleString()} ₫
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button onClick={() => handleEditWage(row)} className="text-blue-600 hover:underline">✏️ Sửa</button>
+                          </td>
                         </tr>
-                    ))}
+                      ))}
                     </tbody>
-                </table>
+                  </table>
                 </div>
-            </div>
+              </div>
+              {/* Bảng Thuế TNCN */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Biểu thuế TNCN</h3>
+                <div className="overflow-hidden rounded-xl border border-gray-100">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Bậc</th>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thu nhập tính thuế</th>
+                        <th className="px-4 py-2 text-left text-gray-600 font-medium">Thuế suất</th>
+                        <th className="px-4 py-2 text-right text-gray-600 font-medium">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {taxBrackets.map((row) => (
+                        <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="px-4 py-2">Bậc {row.sort_order}</td>
+                          <td className="px-4 py-2">
+                            {row.min_income.toLocaleString()} - {row.max_income ? row.max_income.toLocaleString() : "Trở lên"}
+                          </td>
+                          <td className="px-4 py-2 font-bold text-blue-600">{(row.rate * 100)}%</td>
+                          <td className="px-4 py-2 text-right">
+                            <button onClick={() => handleEditTax(row)} className="text-blue-600 hover:underline">✏️ Sửa</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </section>
       )}
 
-      {/* --- MODAL ADD/EDIT (Giữ nguyên) --- */}
+      {/* --- MODAL ADD/EDIT --- */}
       <Transition appear show={isModalOpen} as={Fragment}>
-        {/* ... Giữ nguyên code Modal ... */}
-         <Dialog as="div" className="relative z-10" onClose={() => !uploading && setIsModalOpen(false)}>
+        <Dialog as="div" className="relative z-10" onClose={() => !uploading && setIsModalOpen(false)}>
           <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
           </Transition.Child>
@@ -402,62 +415,61 @@ export default function HandbookManagement() {
                     <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
                   </Dialog.Title>
                   <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* ... Copy Form content from your code ... */}
                     {/* Cột Trái */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
-                            <h4 className="font-bold text-blue-800 text-sm uppercase">Thông tin Văn bản</h4>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Số hiệu văn bản <span className="text-red-500">*</span></label>
-                            <input type="text" name="law_code" value={formData.law_code} onChange={handleFormChange} placeholder="VD: 45/2019/QH14" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition bg-blue-50/50" required />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Ngày hiệu lực <span className="text-red-500">*</span></label>
-                            <input type="date" name="law_effective_date" value={formData.law_effective_date} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">Trích yếu nội dung <span className="text-red-500">*</span></label>
-                            <textarea name="law_summary" rows="4" value={formData.law_summary} onChange={handleFormChange} placeholder="Mô tả ngắn gọn..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required />
-                        </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
+                        <h4 className="font-bold text-blue-800 text-sm uppercase">Thông tin Văn bản</h4>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Số hiệu văn bản <span className="text-red-500">*</span></label>
+                        <input type="text" name="law_code" value={formData.law_code} onChange={handleFormChange} placeholder="VD: 45/2019/QH14" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition bg-blue-50/50" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Ngày hiệu lực <span className="text-red-500">*</span></label>
+                        <input type="date" name="law_effective_date" value={formData.law_effective_date} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Trích yếu nội dung <span className="text-red-500">*</span></label>
+                        <textarea name="law_summary" rows="4" value={formData.law_summary} onChange={handleFormChange} placeholder="Mô tả ngắn gọn..." className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" required />
+                      </div>
                     </div>
-                     {/* Cột Phải */}
+                    {/* Cột Phải */}
                     <div className="space-y-4 md:border-l md:pl-6 border-gray-100">
-                         <div className="flex items-center gap-2 mb-2">
-                            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">2</span>
-                            <h4 className="font-bold text-green-800 text-sm uppercase">{editingItem ? "Chi tiết Điều khoản" : "Nội dung chi tiết (File)"}</h4>
-                        </div>
-                        {editingItem ? (
-                            <>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Tiêu đề Điều khoản <span className="text-red-500">*</span></label>
-                                    <input type="text" name="article_title" value={formData.article_title} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" required />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Chương</label>
-                                    <input type="text" name="chapter" value={formData.chapter} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Nội dung <span className="text-red-500">*</span></label>
-                                    <textarea name="content" rows="5" value={formData.content} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" required />
-                                </div>
-                            </>
-                        ) : (
-                            <div className="h-full flex flex-col justify-center">
-                                <label className="block w-full cursor-pointer group">
-                                    <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-green-300 border-dashed rounded-xl bg-green-50 group-hover:bg-green-100 transition">
-                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <span className="text-4xl mb-2">📂</span>
-                                            <p className="mb-2 text-sm text-green-700 font-semibold">Nhấn để chọn file .docx</p>
-                                            <p className="text-xs text-green-600">Hệ thống sẽ tự động tách các điều khoản</p>
-                                        </div>
-                                        <input type="file" name="file" accept=".docx" className="hidden" onChange={handleFormChange} />
-                                    </div>
-                                </label>
-                                {formData.file && <div className="mt-3 p-2 bg-gray-100 rounded text-sm flex items-center gap-2 text-gray-700">📎 {formData.file.name}</div>}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">2</span>
+                        <h4 className="font-bold text-green-800 text-sm uppercase">{editingItem ? "Chi tiết Điều khoản" : "Nội dung chi tiết (File)"}</h4>
+                      </div>
+                      {editingItem ? (
+                        <>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Tiêu đề Điều khoản <span className="text-red-500">*</span></label>
+                            <input type="text" name="article_title" value={formData.article_title} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" required />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Chương</label>
+                            <input type="text" name="chapter" value={formData.chapter} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Nội dung <span className="text-red-500">*</span></label>
+                            <textarea name="content" rows="5" value={formData.content} onChange={handleFormChange} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 transition" required />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="h-full flex flex-col justify-center">
+                          <label className="block w-full cursor-pointer group">
+                            <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-green-300 border-dashed rounded-xl bg-green-50 group-hover:bg-green-100 transition">
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <span className="text-4xl mb-2">📂</span>
+                                <p className="mb-2 text-sm text-green-700 font-semibold">Nhấn để chọn file .docx</p>
+                                <p className="text-xs text-green-600">Hệ thống sẽ tự động tách các điều khoản</p>
+                              </div>
+                              <input type="file" name="file" accept=".docx" className="hidden" onChange={handleFormChange} />
                             </div>
-                        )}
+                          </label>
+                          {formData.file && <div className="mt-3 p-2 bg-gray-100 rounded text-sm flex items-center gap-2 text-gray-700">📎 {formData.file.name}</div>}
+                        </div>
+                      )}
                     </div>
                     {/* Footer */}
                     <div className="md:col-span-2 mt-2 pt-4 border-t border-gray-100 flex justify-end gap-3">

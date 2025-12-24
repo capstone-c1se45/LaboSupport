@@ -46,7 +46,21 @@ export const adminService = {
     return await api.delete(`/admin/handbooks/${id}`);
   },
   deleteAllHandbooks: () => api.delete("/admin/handbooks/action/delete-all").then(res => res.data),
-
+  // --- QUẢN LÝ LƯƠNG & THUẾ (API MỚI) ---
+  getRegionWages: async () => {
+    const res = await api.get("/admin/salary-config/region-wage");
+    return res.data;
+  },
+  updateRegionWage: async (region, wage) => {
+    return await api.put(`/admin/salary-config/region-wage/${region}`, { wage });
+  },
+  getTaxBrackets: async () => {
+    const res = await api.get("/admin/salary-config/tax-brackets");
+    return res.data;
+  },
+  updateTaxBracket: async (id, data) => {
+    return await api.put(`/admin/salary-config/tax-brackets/${id}`, data);
+  },
   getAllReports: (page = 1, limit = 10, status = 'ALL') => 
     api.get(`/reports/admin?page=${page}&limit=${limit}&status=${status}`).then(res => res.data),  
   updateReportStatus: (id, status) => api.put(`/reports/admin/${id}`, { status }).then(res => res.data),
