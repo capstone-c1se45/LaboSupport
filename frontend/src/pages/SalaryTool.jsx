@@ -50,17 +50,18 @@ export default function SalaryTool() {
 
   // Fetch salary history from backend
   async function fetchHistory() {
-    setHistoryLoading(true);
-    try {
-      const res = await api.get('/salary/history');
-      const list = res?.data?.data || res?.data || [];
-      setHistory(Array.isArray(list) ? list : []);
-    } catch (e) {
-      console.error('Failed to load salary history', e);
-    } finally {
-      setHistoryLoading(false);
-    }
+  setHistoryLoading(true);
+  try {
+    const res = await api.get('/salary/history');
+    // Sửa dòng này: backend trả về mảng trực tiếp trong res.data
+    const list = res?.data || []; 
+    setHistory(Array.isArray(list) ? list : []);
+  } catch (e) {
+    console.error('Failed to load salary history', e);
+  } finally {
+    setHistoryLoading(false);
   }
+}
 
   useEffect(() => {
     fetchHistory();
@@ -440,56 +441,48 @@ export default function SalaryTool() {
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map((item, idx) => {
-                      const key = item.id || item._id || item.history_id || idx;
-                      const created =
-                        item.createdAt || item.at || item.created_at || null;
-                      const type = item.type || item.inputs?.type;
-                      const gross =
-                        item.grossSalary ||
-                        item.outputs?.gross ||
-                        item.resultGross ||
-                        0;
-                      const net =
-                        item.netSalary ||
-                        item.outputs?.net ||
-                        item.resultNet ||
-                        0;
-                      return (
-                        <tr key={key} className="border-t">
-                          <td className="px-4 py-2">
-                            {created
-                              ? new Date(created).toLocaleString('vi-VN')
-                              : '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            {type === 'grossToNet'
-                              ? 'GROSS → NET'
-                              : type === 'netToGross'
-                              ? 'NET → GROSS'
-                              : type || '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            {item.region || item.inputs?.region || '-'}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {fmtVND(gross)}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {fmtVND(net)}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteHistoryItem(item)}
-                              className="text-xs text-red-600 hover:text-red-700"
-                            >
-                              Xoá
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                  {history.map((item, idx) => {
+  // 1. Lấy ID chính xác từ cột 'history_id' trong Database
+  const key = item.history_id || idx;
+  
+  // 2. GIẢI MÃ JSON: Vì backend lưu kết quả vào cột result_json
+  let resultData = {};
+  try {
+    resultData = typeof item.result_json === 'string' 
+      ? JSON.parse(item.result_json) 
+      : (item.result_json || {});
+  } catch (e) {
+    console.error("Lỗi đọc dữ liệu result_json:", e);
+  }
+
+  // 3. Trích xuất giá trị để hiển thị
+  const gross = resultData.grossSalary || 0;
+  const net = resultData.netSalary || 0;
+  const regionVal = item.region || '-'; // Cột 'region' trong DB
+  const typeLabel = item.type === 'grossToNet' ? 'GROSS → NET' : 'NET → GROSS';
+  const created = item.created_at; // Cột 'created_at' trong DB
+
+  return (
+    <tr key={key} className="border-t">
+      <td className="px-4 py-2">
+        {created ? new Date(created).toLocaleString('vi-VN') : '-'}
+      </td>
+      <td className="px-4 py-2">{typeLabel}</td>
+      <td className="px-4 py-2">{regionVal}</td>
+      <td className="px-4 py-2 text-right">{fmtVND(gross)}</td>
+      <td className="px-4 py-2 text-right">{fmtVND(net)}</td>
+      <td className="px-4 py-2 text-right">
+        <button
+          type="button"
+          onClick={() => handleDeleteHistoryItem(item)}
+          className="text-xs text-red-600 hover:text-red-700"
+        >
+          Xoá
+        </button>
+      </td>
+    </tr>
+  );
+})}
                   </tbody>
                 </table>
               </div>
