@@ -14,6 +14,8 @@ import { nanoidNumbersOnly } from "./utils/nanoid.js";
 import bcrypt from "bcryptjs";
 import { redisClient } from "./config/redis.js";
 //import { importLaborLaw } from "./utils/init_handbook.js";
+import { loadHeSoTruotGia } from "./services/bhxhPriceIndex.service.js";
+
 dotenvFlow.config();
 const app = express();
 const server = createServer(app);
@@ -60,6 +62,8 @@ const connectDB = async () => {
 
 // Gọi hàm
 connectDB();
+// ✅ Load hệ số trượt giá BHXH từ DB
+await loadHeSoTruotGia();
 
 //chen luật lao động vào handbook
 //await importLaborLaw();
