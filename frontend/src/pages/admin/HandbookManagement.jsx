@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, Fragment } from "react";
+import BhxhPriceIndexManagement from "./BhxhPriceIndexManagement";
 import { api } from "../../lib/api-client";
 import { adminService } from "../../services/adminService";
 import { Dialog, Transition } from "@headlessui/react";
@@ -240,7 +241,9 @@ export default function HandbookManagement() {
       <div className="inline-flex p-1 rounded-full bg-gray-100 border border-gray-200 text-sm">
         <button onClick={() => setTab('law')} className={`px-4 py-1.5 rounded-full transition ${tab === 'law' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}>Quản lý Luật</button>
         <button onClick={() => setTab('salary')} className={`px-4 py-1.5 rounded-full transition ${tab === 'salary' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}>Cài đặt lương</button>
+        <button onClick={() => setTab('bhxh')} className={`px-4 py-1.5 rounded-full transition ${tab === 'bhxh' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}>Cài đặt BHXH</button>
       </div>
+  {tab === 'bhxh' && <BhxhPriceIndexManagement />}
 
       {/* --- TAB QUẢN LÝ LUẬT --- */}
       {tab === 'law' && (
