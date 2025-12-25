@@ -1,3 +1,13 @@
+export const createHistory = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { inputData, resultData } = req.body;
+    const historyId = await BhxhTuNguyenHistoryModel.createHistory(userId, inputData, resultData);
+    res.json({ success: true, history_id: historyId });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};
 import { tinhBHXHTuNguyen } from "../services/bhxhTuNguyenService.js";
 import BhxhTuNguyenHistoryModel from "../models/bhxhTuNguyenHistory.model.js";
 

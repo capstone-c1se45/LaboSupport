@@ -5,13 +5,17 @@ import {
   getHistoryList,
   getHistoryDetail,
   deleteHistory,
-  deleteAllHistory
+  deleteAllHistory,
+  createHistory
 } from "../controllers/bhxhTuNguyen.js";
 
 const router = Router();
 
 // Tính BHXH tự nguyện
 router.post("/tu-nguyen", auth.verifyToken, tinhBHXHTuNguyenController);
+
+// Lưu lịch sử tính BHXH tự nguyện
+router.post("/tu-nguyen/history", auth.verifyToken, createHistory);
 
 // Lấy lịch sử
 router.get("/tu-nguyen/history", auth.verifyToken, getHistoryList);

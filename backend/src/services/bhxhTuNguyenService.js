@@ -62,6 +62,20 @@ function tinhHoTro(doiTuong, year) {
  * Tính BHXH một lần + hỗ trợ Nhà nước (TỰ NGUYỆN)
  */
 export function tinhBHXHTuNguyen(giaiDoans) {
+  // Debug log để kiểm tra dữ liệu đầu vào và kết quả tính toán
+  console.log('==== [DEBUG] tinhBHXHTuNguyen ====');
+  console.log('Input giaiDoans:', JSON.stringify(giaiDoans));
+
+  // Ép kiểu dữ liệu đầu vào thành số để tránh lỗi tính toán
+  giaiDoans = giaiDoans.map(gd => ({
+    ...gd,
+    startYear: Number(gd.startYear),
+    startMonth: Number(gd.startMonth),
+    endYear: Number(gd.endYear),
+    endMonth: Number(gd.endMonth),
+    luong: Number(gd.luong)
+  }));
+
   let tongTien = 0;
   let tongThang = 0;
   let tongSupport = 0;
@@ -92,6 +106,9 @@ export function tinhBHXHTuNguyen(giaiDoans) {
   // MBQTL
   const mbqtl = tongTien / tongThang;
 
+  // Debug log kết quả tổng
+  console.log('tongTien:', tongTien, 'tongThang:', tongThang, 'mbqtl:', mbqtl);
+
   let mucHuong = 0;
 
   // ===============================
@@ -113,6 +130,9 @@ export function tinhBHXHTuNguyen(giaiDoans) {
 
   const thucNhan = mucHuong - tongSupport;
 
+  // Debug log kết quả cuối cùng
+  console.log('mucHuong:', mucHuong, 'tongSupport:', tongSupport, 'thucNhan:', thucNhan);
+
   return {
     chiTietGiaiDoan,
     tongThang,
@@ -121,4 +141,5 @@ export function tinhBHXHTuNguyen(giaiDoans) {
     tongSupport,
     thucNhan
   };
+  // ==== END DEBUG ====
 }

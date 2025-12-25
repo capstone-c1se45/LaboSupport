@@ -5,13 +5,17 @@ import {
   getHistoryList,
   getHistoryDetail,
   deleteHistory,
-  deleteAllHistory
+  deleteAllHistory,
+  createHistory
 } from "../controllers/bhxh.js";
 
 const router = Router();
 
 // Tính BHXH một lần
 router.post("/mot-lan", auth.verifyToken, tinhBHXHController);
+
+// Lưu lịch sử tính BHXH một lần
+router.post("/mot-lan/history", auth.verifyToken, createHistory);
 
 // Lấy lịch sử user
 router.get("/mot-lan/history", auth.verifyToken, getHistoryList);

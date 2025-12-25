@@ -43,11 +43,19 @@ function BhxhResultTable({ result }) {
     thoiGianTruoc2014 = 0,
     thoiGianSau2014 = 0,
     bhxh1Lan = 0,
+    mucHuong = 0,
+    thucNhan = 0,
+    tongSupport = 0,
     govSupport
   } = result;
 
   const namHưởng = Math.floor(tongThang / 12);
   const thangLe = tongThang % 12;
+
+  // Ưu tiên hiển thị thucNhan nếu có (BHXH tự nguyện), nếu không thì bhxh1Lan (bắt buộc)
+  const soTienHienThi = typeof thucNhan === 'number' && thucNhan > 0
+    ? thucNhan
+    : (bhxh1Lan || mucHuong || 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -57,7 +65,7 @@ function BhxhResultTable({ result }) {
           Số tiền BHXH một lần ước tính
         </p>
         <div className="text-4xl font-black">
-          {fmtVND(bhxh1Lan)} <span className="text-xl font-light">VNĐ</span>
+          {fmtVND(soTienHienThi)} <span className="text-xl font-light">VNĐ</span>
         </div>
       </div>
 
@@ -207,10 +215,31 @@ export default function BhxhCalculator() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  function formatInputNumber(value) {
+    // Chỉ giữ lại số, loại bỏ ký tự khác
+    const raw = value.toString().replace(/[^\d]/g, '');
+    if (!raw) return '';
+    return Number(raw).toLocaleString('vi-VN');
+  }
+
+  function parseInputNumber(value) {
+    // Loại bỏ dấu chấm, trả về số
+    return value.toString().replace(/\./g, '');
+  }
+
   function updateGiaiDoan(id, field, value) {
-    setGiaiDoans((prev) =>
-      prev.map((gd) => (gd.id === id ? { ...gd, [field]: value } : gd))
-    );
+    // Nếu là trường lương thì parse lại số
+    if (field === 'luong') {
+      setGiaiDoans((prev) =>
+        prev.map((gd) =>
+          gd.id === id ? { ...gd, [field]: parseInputNumber(value) } : gd
+        )
+      );
+    } else {
+      setGiaiDoans((prev) =>
+        prev.map((gd) => (gd.id === id ? { ...gd, [field]: value } : gd))
+      );
+    }
   }
 
   function addGiaiDoan(isThaiSan = false) {
@@ -230,6 +259,10 @@ export default function BhxhCalculator() {
         setError('Thời gian bắt đầu không được lớn hơn thời gian kết thúc ở một giai đoạn!');
         return;
       }
+      if (!gd.luong || isNaN(Number(gd.luong)) || Number(gd.luong) <= 0) {
+        setError('Vui lòng nhập mức lương hợp lệ (> 0) cho tất cả các giai đoạn!');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -239,7 +272,7 @@ export default function BhxhCalculator() {
           startMonth: Number(gd.startMonth),
           endYear: Number(gd.endYear),
           endMonth: Number(gd.endMonth),
-          luong: Number(gd.luong) || 0,
+          luong: Number(gd.luong),
           ...(isTuNguyen
             ? { doiTuong: gd.doiTuong }
             : { thaiSan: Boolean(gd.thaiSan) }),
@@ -403,11 +436,12 @@ export default function BhxhCalculator() {
                     <div className="md:col-span-4 space-y-1">
                       <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Mức lương đóng BHXH</label>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         className="w-full bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-blue-500"
-                        value={gd.luong}
+                        value={formatInputNumber(gd.luong)}
                         onChange={(e) => updateGiaiDoan(gd.id, 'luong', e.target.value)}
-                        placeholder="VD: 6000000"
+                        placeholder="VD: 6.000.000"
                       />
                     </div>
 
@@ -531,7 +565,11 @@ export default function BhxhCalculator() {
                           {new Date(item.created_at).toLocaleString('vi-VN')}
                         </td>
                         <td className="px-6 py-4 text-sm font-bold text-amber-600">
-                          {fmtVND(item.resultData?.tongTien)} ₫
+                          {Number(
+                            typeof item.resultData?.thucNhan === 'number' && item.resultData?.thucNhan > 0
+                              ? item.resultData?.thucNhan
+                              : (item.resultData?.bhxh1Lan || item.resultData?.mucHuong || 0)
+                          ).toLocaleString('vi-VN')} ₫
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {item.resultData?.tongThang} tháng
