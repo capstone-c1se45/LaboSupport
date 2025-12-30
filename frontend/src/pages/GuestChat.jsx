@@ -139,7 +139,6 @@ export default function GuestChat() {
             <Link to='/' className='hover:text-gray-900'>Trang chủ</Link>
             <Link to='/guest-chat' className='text-gray-900 font-medium'>AI Chat (Khách)</Link>
             <a href='#features' className='hover:text-gray-900'>Tính năng</a>
-            <a href='#about' className='hover:text-gray-900'>Giới thiệu</a>
           </nav>
           <div className='flex items-center gap-3 text-sm'>
             <Link to='/login' className='px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-700'>Đăng nhập</Link>

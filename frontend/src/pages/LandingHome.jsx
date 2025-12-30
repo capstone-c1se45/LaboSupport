@@ -12,7 +12,6 @@ export default function LandingHome() {
             <img src={logoImg} alt='LaboSupport' className='h-8 w-auto' />
           </a>
           <nav className='hidden md:flex items-center gap-8 text-sm text-gray-700'>
-            <a href='#about' className='hover:text-gray-900'>Giới thiệu</a>
             <a href='/guest-chat' className='hover:text-gray-900'>Trợ lý AI</a>
             <a href='#features' className='hover:text-gray-900'>Tính năng</a>
           </nav>
